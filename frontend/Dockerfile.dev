@@ -1,0 +1,18 @@
+# Entorno de DESARROLLO: corre el dev server de Vite con HMR
+# No usar para producción (para eso está Dockerfile con build + nginx)
+FROM node:20-alpine
+WORKDIR /app
+
+# Instalar dependencias primero (mejor aprovechamiento de cache de Docker)
+COPY package*.json ./
+RUN npm install
+
+# El código fuente se monta como VOLUMEN desde el host (ver docker-compose.yml)
+# para que los cambios se reflejen al instante sin rebuildear (HMR)
+COPY . .
+
+EXPOSE 5173
+
+# --host 0.0.0.0 es imprescindible: dentro del contenedor Vite por default
+# escucha solo en localhost y no sería accesible desde el navegador
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

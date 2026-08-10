@@ -1,39 +1,30 @@
-/* index.css - Actualización de Estética Moderna */
 @import "tailwindcss";
 
-:root {
-  --neon-emerald: #10b981;
-  --neon-amber: #f59e0b;
-  --neon-blue: #3b82f6;
-  --neon-purple: #8b5cf6;
+@theme {
+  --color-primary: #10b981;
+  --color-primary-dark: #059669;
+  --color-surface: #ffffff;
+  --color-background: #f3f4f6;
+  --color-text-main: #1f2937;
+  --color-text-muted: #6b7280;
+
+  --animate-fadeIn: fadeIn 0.2s ease-out forwards;
+  --animate-scaleIn: scaleIn 0.2s ease-out forwards;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 }
 
-/* Sombras Neo-Brutalistas para alta legibilidad */
-.shadow-modern {
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
-}
-
-.card-hover:active {
-  transform: scale(0.96);
-  transition: transform 0.1s ease;
-}
-
-/* Animación de Pulso para Zonas Listas */
-@keyframes pulse-ready {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-.animate-ready {
-  animation: pulse-ready 2s infinite;
-}
-
-/* Scroll horizontal suave para carruseles */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
 }

@@ -8,9 +8,69 @@ services:
       POSTGRES_DB: vivero_db
       TZ: UTC
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vivero-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d vivero_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: vivero-backend
+    environment:
+      DB_URL: jdbc:postgresql://vivero-db:5432/vivero_db?serverTimezone=UTC
+      DB_USER: admin
+      DB_PASS: root
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    ports:
+      - "8080:8080"
+    depends_on:
+      vivero-db:
+        condition: service_healthy
+    networks:
+      - vivero-net
+
+  # Frontend en modo DESARROLLO (default): corre Vite con HMR.
+  # El código del host se monta en vivo → los cambios se reflejan al instante.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: vivero-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - vivero-net
+
+  # Frontend en modo PRODUCCIÓN (opt-in): build de Vite servida por nginx.
+  # Levantar con: docker compose up frontend-prod
+  frontend-prod:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: vivero-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - vivero-net
+
 
 volumes:
   postgres_data:
+
+networks:
+  vivero-net:
+    driver: bridge
