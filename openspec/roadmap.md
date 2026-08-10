@@ -22,18 +22,22 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 | 13| `us-011-admin-panel` | Frontend Panel de Admin (Gestión Roles/Permisos) | Épica 1 | `us-003-multi-negocio` | Autogestión de usuarios y permisos |
 | 14| `us-012-flat-rbac` | Refactor de RBAC a plano sin unidad de negocio | Épica 1 | `us-011-admin-panel` | Simplificar la asignación de roles |
 | 15| `ui-rbac-profile` | Perfil visual de usuario en UI y protección de rutas | Épica 1 | `us-012-flat-rbac` | Restringe secciones según los nuevos roles planos |
-| 16| `us-013-ventas-core` | Transacción Venta y MovimientoStock (Back/Front) | Épica 3 | `us-009-clientes-base`, `us-007-frontend-productos` | El corazón del ERP (descontar stock) |
-| 17| `us-013-ventas-pagos` | Entidad Pago, descuentos y saldos a favor | Épica 4 | `us-013-ventas-core`, `us-010-cuentas-ctes` | Lógica financiera de la venta |
-| 18| `us-014-bandejas-flujo` | HistorialBandejas, entregas y devoluciones | Épica 4 | `us-013-ventas-core`, `us-010-cuentas-ctes` | Trazabilidad de envases por venta |
-| 19| `us-015-realtime-sse` | Endpoints SSE para notificar cambios de stock | Épica 3 | `us-013-ventas-core` | Requiere que existan eventos de stock para emitir |
-| 20| `us-016-remitos-pdf` | Componente Frontend de generación de PDF | Épica 3 | `us-013-ventas-core` | Requiere lectura de datos de la venta |
-| 21| `us-017-finanzas-ui` | Reportes de rentabilidad (Ventas vs Costos) | Épica 5 | `us-013-ventas-core`, `us-008-frontend-insumos` | Tablero financiero final |
+| 16| `ui-feedback-modals` | Reemplazo de alerts nativos por modales/toasts reutilizables | UX | `us-011-admin-panel` | Feedback UX global sin per-page wiring |
+| 17| `us-013-ventas-core` | Transacción Venta y MovimientoStock (Back/Front) | Épica 3 | `us-009-clientes-base`, `us-007-frontend-productos` | El corazón del ERP (descontar stock) |
+| 18| `us-013-ventas-pagos` | Entidad Pago, descuentos y saldos a favor | Épica 4 | `us-013-ventas-core`, `us-010-cuentas-ctes` | Lógica financiera de la venta |
+| 19| `us-014-bandejas-flujo` | HistorialBandejas, entregas y devoluciones | Épica 4 | `us-013-ventas-core`, `us-010-cuentas-ctes` | Trazabilidad de envases por venta |
+| 20| `us-015-realtime-sse` | Endpoints SSE para notificar cambios de stock | Épica 3 | `us-013-ventas-core` | Requiere que existan eventos de stock para emitir |
+| 21| `us-016-remitos-pdf` | Componente Frontend de generación de PDF | Épica 3 | `us-013-ventas-core` | Requiere lectura de datos de la venta |
+| 22| `us-017-finanzas-ui` | Reportes de rentabilidad (Ventas vs Costos) | Épica 5 | `us-013-ventas-core`, `us-008-frontend-insumos` | Tablero financiero final |
 
 
 ## Detalle por change
 
 ### `infra-001-db-viewer` a `us-008-frontend-insumos`
 **(COMPLETADOS)**. La base de datos, seguridad JWT, catálogos backend (Productos e Insumos) y la base del frontend (Login y pantallas de catálogo) ya están implementados.
+
+### `us-009-clientes-base` a `ui-rbac-profile`
+**(COMPLETADOS — archivados en OPSX al 2026-08-10)**. Clientes + Cuentas Corrientes + Panel Admin + RBAC plano + perfil visual de usuario. Detalle original de cada uno a continuación por historial.
 
 ### `us-009-clientes-base`
 **Funcionalidad**: Modelo `Cliente` global, endpoints CRUD en backend, y pantalla ABM en frontend.
@@ -65,11 +69,19 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 **Depende de**: `us-012-flat-rbac`.
 **Justificación**: Permite limpiar la interfaz para empleados de diferentes roles y visualizar correctamente el contexto de la cuenta activa.
 
+### `ui-feedback-modals`
+**(COMPLETADO — archivado en OPSX al 2026-08-10)**.
+**Funcionalidad**: Reemplazo de los 18 `alert`/`confirm` nativos del frontend por componentes reutilizables: `ConfirmDialog`, `PermissionDeniedModal`, `ToastContainer` + store global `useUIStore` (pushToast/askConfirm/denyAccess), montados en `DashboardLayout`. Migrados Productos, Insumos, Clientes y UsuariosAdmin. Corrección de strings de permisos VIVERO_* obsoletos.
+**Depende de**: `us-011-admin-panel`.
+**Justificación**: Feedback UX global y consistente sin wiring por página.
+**Archivo**: `openspec/changes/archive/2026-08-10-ui-feedback-modals/`
+
 ### `us-013-ventas-core`
 **Funcionalidad**: Modelos `Venta`, `VentaDetalle`, `MovimientoStock`. Pantalla de nueva venta optimizada para mobile, que descuente stock físico de los productos.
 **Épica**: Épica 3
 **Depende de**: `us-009-clientes-base`, `us-007-frontend-productos`.
 **Justificación**: El corazón transaccional del ERP. Se enfoca exclusivamente en registrar los items y el total, sin la complejidad de saldos a favor.
+**🚀 PRÓXIMO CHANGE**: es el siguiente a proponer/implementar según el roadmap.
 
 ### `us-013-ventas-pagos`
 **Funcionalidad**: Entidad `Pago`. Lógica para aplicar descuentos a la venta, registrar pagos parciales y enviar deudas/excedentes a la `CuentaCorrienteDinero`.

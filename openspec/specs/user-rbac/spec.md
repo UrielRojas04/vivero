@@ -1,5 +1,6 @@
-## ADDED Requirements
-
+## Purpose
+Definir el modelo de autorización basado en roles y permisos planos (RBAC) para usuarios, y las reglas de presentación y protección de rutas en la UI del frontend según los permisos del usuario autenticado.
+## Requirements
 ### Requirement: Permisos de Insumos
 El sistema MUST requerir permisos explícitos generados a partir de la Unidad de Negocio a la que pertenece el insumo para permitir su gestión.
 
@@ -35,3 +36,22 @@ The system SHALL allow assigning one or multiple roles to a user directly, witho
 #### Scenario: Admin assigns role to a user
 - **WHEN** an Admin submits the form to create or edit a user
 - **THEN** they select the role(s) to assign, and the system saves the relationship directly between the user and the role(s)
+
+### Requirement: Section Rendering Based on Roles
+The UI SHALL conditionally render main navigation sections (Admin, Productos, Insumos) based on the user's role permissions.
+
+#### Scenario: User lacks permission to view products
+- **WHEN** a user with the `LEER_INSUMOS` permission but without `LEER_PRODUCTOS` permission logs in
+- **THEN** the navigation menu hides the "Productos" section, and they cannot access its route
+
+#### Scenario: Admin views all sections
+- **WHEN** a user with the `ADMIN_DB` permission logs in
+- **THEN** the navigation menu shows all sections including "Admin"
+
+### Requirement: Route Protection
+The application SHALL protect specific UI routes from unauthorized access, redirecting users if they attempt to bypass the navigation menu via URL.
+
+#### Scenario: Direct access to unauthorized route
+- **WHEN** a user navigates directly to `/admin` via URL but does not have `ADMIN_DB`
+- **THEN** they are redirected to a default authorized view or shown an "Access Denied" message
+
