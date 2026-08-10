@@ -10,6 +10,7 @@ import com.vivero.gestion.exceptions.ResourceNotFoundException;
 import com.vivero.gestion.models.*;
 import com.vivero.gestion.repositories.*;
 import com.vivero.gestion.services.BandejasService;
+import com.vivero.gestion.services.SseService;
 import com.vivero.gestion.services.VentaService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class VentaServiceImpl implements VentaService {
     private final MovimientoStockRepository movimientoStockRepository;
     private final CuentaCorrienteDineroRepository ccdRepository;
     private final BandejasService bandejasService;
+    private final SseService sseService;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
@@ -38,7 +40,8 @@ public class VentaServiceImpl implements VentaService {
                             ProductoRepository productoRepository,
                             MovimientoStockRepository movimientoStockRepository,
                             CuentaCorrienteDineroRepository ccdRepository,
-                            BandejasService bandejasService) {
+                            BandejasService bandejasService,
+                            SseService sseService) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
@@ -46,6 +49,7 @@ public class VentaServiceImpl implements VentaService {
         this.movimientoStockRepository = movimientoStockRepository;
         this.ccdRepository = ccdRepository;
         this.bandejasService = bandejasService;
+        this.sseService = sseService;
     }
 
     @Override
@@ -85,6 +89,7 @@ public class VentaServiceImpl implements VentaService {
             }
             producto.setStock(stockActual - detReq.getCantidad());
             productoRepository.save(producto); // actualiza stock
+            sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(producto.getId(), producto.getStock()));
 
             // 2. Crear movimiento de stock para la traza
             MovimientoStock mov = new MovimientoStock();

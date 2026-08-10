@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import ProductoForm from '../components/ProductoForm';
 import { useUIStore } from '../store/useUIStore';
+import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, Leaf } from 'lucide-react';
 
@@ -12,6 +13,16 @@ const Productos = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
+  const liveStocks = useStockStore(state => state.liveStocks);
+
+  // Sincronizar stock en vivo con el estado local
+  useEffect(() => {
+    if (Object.keys(liveStocks).length === 0) return;
+    setProductos(prev => prev.map(p => 
+      liveStocks[p.id] !== undefined ? { ...p, stock: liveStocks[p.id] } : p
+    ));
+  }, [liveStocks]);
+
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedProducto, setSelectedProducto] = useState(null);

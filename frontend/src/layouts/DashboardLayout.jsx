@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
@@ -38,6 +39,9 @@ const navGroups = [
 const DashboardLayout = () => {
   const { logout, user, hasPermission } = useAuthStore();
   const navigate = useNavigate();
+
+  // Inicializar conexión SSE globalmente
+  useStockEvents();
 
   const handleLogout = () => {
     logout();

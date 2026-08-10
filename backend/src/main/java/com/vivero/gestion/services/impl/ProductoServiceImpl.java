@@ -4,6 +4,7 @@ import com.vivero.gestion.dto.ProductoDTO;
 import com.vivero.gestion.models.Producto;
 import com.vivero.gestion.repositories.ProductoRepository;
 import com.vivero.gestion.services.ProductoService;
+import com.vivero.gestion.services.SseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,12 @@ import java.util.stream.Collectors;
 public class ProductoServiceImpl implements ProductoService {
 
     private final ProductoRepository productoRepository;
+    private final SseService sseService;
+
     @Autowired
-    public ProductoServiceImpl(ProductoRepository productoRepository) {
+    public ProductoServiceImpl(ProductoRepository productoRepository, SseService sseService) {
         this.productoRepository = productoRepository;
+        this.sseService = sseService;
     }
 
     @Override
@@ -30,6 +34,7 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setStock(dto.getStock() != null ? dto.getStock() : 0);
 
         Producto guardado = productoRepository.save(producto);
+        sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(guardado.getId(), guardado.getStock()));
         return mapToDTO(guardado);
     }
 
@@ -65,6 +70,7 @@ public class ProductoServiceImpl implements ProductoService {
 
 
         Producto actualizado = productoRepository.save(producto);
+        sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(actualizado.getId(), actualizado.getStock()));
         return mapToDTO(actualizado);
     }
 

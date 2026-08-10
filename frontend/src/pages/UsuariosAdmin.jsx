@@ -34,7 +34,8 @@ export default function UsuariosAdmin() {
     const [selectedSections, setSelectedSections] = useState([]);
 
     const SECTIONS = [
-        { id: 'productos', name: 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK', 'ESCRIBIR_VENTAS'] },
+        { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES', 'LEER_STOCK'] },
+        { id: 'productos', name: 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
         { id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] },
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
         { id: 'admin', name: 'Usuarios (Admin)', permNames: ['ADMIN_DB'] }

@@ -4,6 +4,7 @@ import { clientesApi } from '../api/clientes.api';
 import { productosApi } from '../api/productos.api';
 import { ventasApi } from '../api/ventas.api';
 import { useUIStore } from '../store/useUIStore';
+import { useStockStore } from '../store/useStockStore';
 
 // Utilidades para guardar "últimos usados" en LocalStorage
 const getRecents = (key) => JSON.parse(localStorage.getItem(key) || '[]');
@@ -23,6 +24,25 @@ export default function NuevaVenta() {
   const [detalles, setDetalles] = useState([]);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const liveStocks = useStockStore(state => state.liveStocks);
+
+  // Sincronizar stock en vivo con el estado local
+  useEffect(() => {
+    if (Object.keys(liveStocks).length === 0) return;
+    setProductos(prev => prev.map(p => 
+      liveStocks[p.id] !== undefined ? { ...p, stock: liveStocks[p.id] } : p
+    ));
+    setDetalles(prev => prev.map(d => {
+      if (liveStocks[d.productoId] !== undefined) {
+        const newStock = liveStocks[d.productoId];
+        // Si el stock nuevo es menor a la cantidad seleccionada, ajustar
+        const newCantidad = d.cantidad > newStock ? newStock : d.cantidad;
+        return { ...d, stock: newStock, cantidad: newCantidad > 0 ? newCantidad : '' };
+      }
+      return d;
+    }));
+  }, [liveStocks]);
 
   // Auto-calcular bandejas según la cantidad de productos en el carrito
   useEffect(() => {
@@ -59,7 +79,11 @@ export default function NuevaVenta() {
         setClientes(clientesData);
         setProductos(productosData);
       } catch (error) {
-        pushToast('error', 'Error al cargar clientes y productos.');
+        if (error.response && error.response.status === 403) {
+          pushToast('error', 'Permisos insuficientes. Necesitás poder leer clientes y stock para vender.');
+        } else {
+          pushToast('error', 'Error al cargar clientes y productos.');
+        }
       }
     };
     fetchData();
