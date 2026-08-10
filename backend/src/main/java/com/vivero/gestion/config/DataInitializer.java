@@ -2,11 +2,9 @@ package com.vivero.gestion.config;
 
 import com.vivero.gestion.models.Permiso;
 import com.vivero.gestion.models.Rol;
-import com.vivero.gestion.models.UnidadNegocio;
 import com.vivero.gestion.models.Usuario;
 import com.vivero.gestion.repositories.PermisoRepository;
 import com.vivero.gestion.repositories.RolRepository;
-import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -24,31 +22,24 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
-    private final UnidadNegocioRepository unidadNegocioRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public DataInitializer(UsuarioRepository usuarioRepository, 
                            RolRepository rolRepository, 
                            PermisoRepository permisoRepository,
-                           UnidadNegocioRepository unidadNegocioRepository,
                            PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
-        this.unidadNegocioRepository = unidadNegocioRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        // 1. Crear Unidades de Negocio
-        UnidadNegocio vivero = crearUnidad("Vivero");
-        UnidadNegocio herramientas = crearUnidad("Herramientas");
-        UnidadNegocio sustratos = crearUnidad("Sustratos y perlas");
 
-        // 2. Crear Permisos
+        // 1. Crear Permisos
         Permiso pLeerStock = crearPermiso("LEER_STOCK");
         Permiso pEscribirStock = crearPermiso("ESCRIBIR_STOCK");
         Permiso pEscribirVentas = crearPermiso("ESCRIBIR_VENTAS");
@@ -58,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
         Permiso pLeerInsumos = crearPermiso("LEER_INSUMOS");
         Permiso pEscribirInsumos = crearPermiso("ESCRIBIR_INSUMOS");
 
-        // 3. Crear Roles y asignar permisos
+        // 2. Crear Roles y asignar permisos
         Set<Permiso> permisosJefe = new HashSet<>();
         permisosJefe.add(pLeerStock);
         permisosJefe.add(pEscribirStock);
@@ -70,7 +61,6 @@ public class DataInitializer implements CommandLineRunner {
         permisosJefe.add(pEscribirInsumos);
         
         Rol rolJefe = crearRol("JEFE", permisosJefe);
-        // Si el rol ya existía, actualizamos sus permisos para asegurar que tenga los nuevos
         rolJefe.setPermisos(permisosJefe);
         rolRepository.save(rolJefe);
 
@@ -82,27 +72,21 @@ public class DataInitializer implements CommandLineRunner {
         rolEmpleado.setPermisos(permisosEmpleado);
         rolRepository.save(rolEmpleado);
 
-        // 4. Crear Usuario Jefe si no existe
+        // 3. Crear Usuario Jefe si no existe
         if (usuarioRepository.findByUsername("jefe@vivero.com").isEmpty()) {
             Usuario jefe = new Usuario();
             jefe.setUsername("jefe@vivero.com");
             jefe.setPassword(passwordEncoder.encode("jefe123")); // Password seguro
             
-            // 5. Mapear Usuario a su Rol
+            // Mapear Usuario a su Rol
             Set<Rol> rolesJefe = new HashSet<>();
             rolesJefe.add(rolJefe);
             
             jefe.setRoles(rolesJefe);
             
             usuarioRepository.save(jefe);
-            System.out.println("Base de datos inicializada con unidades de negocio, roles y usuario jefe.");
+            System.out.println("Base de datos inicializada con roles y usuario jefe.");
         }
-    }
-    
-    private UnidadNegocio crearUnidad(String nombre) {
-        Optional<UnidadNegocio> opt = unidadNegocioRepository.findByNombre(nombre);
-        if (opt.isPresent()) return opt.get();
-        return unidadNegocioRepository.save(new UnidadNegocio(nombre));
     }
 
     private Permiso crearPermiso(String nombre) {

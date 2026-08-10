@@ -11,7 +11,7 @@ import com.vivero.gestion.dto.UsuarioResponseDTO;
 import com.vivero.gestion.models.Rol;
 import com.vivero.gestion.models.Usuario;
 import com.vivero.gestion.repositories.RolRepository;
-import com.vivero.gestion.repositories.UnidadNegocioRepository;
+
 import com.vivero.gestion.repositories.UsuarioRepository;
 import com.vivero.gestion.services.UsuarioService;
 
@@ -23,7 +23,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
-    private final UnidadNegocioRepository unidadNegocioRepository;
+
     private final PasswordEncoder passwordEncoder;
 
     @Override

@@ -47,8 +47,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         nombre,
         descripcion,
         precio: parseFloat(precio),
-        stock: parseInt(stock, 10),
-        unidadNegocioId: producto?.unidadNegocioId || 1 // Por defecto vivero=1
+        stock: parseInt(stock, 10)
       });
     }
   };

@@ -2,11 +2,8 @@ services:
   vivero-db:
     image: postgres:15
     container_name: vivero-postgres
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: vivero_db
-      TZ: UTC
+    env_file:
+      - .env
     ports:
       - "5433:5432"
     volumes:
@@ -22,11 +19,8 @@ services:
   backend:
     build: ./backend
     container_name: vivero-backend
-    environment:
-      DB_URL: jdbc:postgresql://vivero-db:5432/vivero_db?serverTimezone=UTC
-      DB_USER: admin
-      DB_PASS: root
-      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     depends_on:

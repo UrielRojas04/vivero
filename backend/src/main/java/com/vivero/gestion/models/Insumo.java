@@ -6,8 +6,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 
@@ -31,18 +29,14 @@ public class Insumo {
     @Column(nullable = false)
     private Integer stock = 0;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "unidad_negocio_id", nullable = false)
-    private UnidadNegocio unidadNegocio;
 
     public Insumo() {}
 
-    public Insumo(String nombre, String descripcion, BigDecimal precio, Integer stock, UnidadNegocio unidadNegocio) {
+    public Insumo(String nombre, String descripcion, BigDecimal precio, Integer stock) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
         this.stock = stock;
-        this.unidadNegocio = unidadNegocio;
     }
 
     public Long getId() { return id; }
@@ -60,6 +54,5 @@ public class Insumo {
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
 
-    public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
-    public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
+
 }

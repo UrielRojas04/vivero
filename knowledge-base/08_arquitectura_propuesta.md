@@ -9,9 +9,9 @@ Estructura feature-first por capas (Controller → Service → Repository → Mo
 - **`/controllers`**: Magros. Solo manejan ruteo HTTP, validación de DTOs y llamadas a servicios. Actuales: `AuthController`, `ClienteController`, `InsumoController`, `ProductoController`, `RolController`, `UsuarioController`.
 - **`/services`**: Contienen toda la lógica de negocio y reglas de validación. NUNCA devuelven entidades — mapean a DTOs. Las transacciones se gestionan con `@Transactional`.
 - **`/repositories`**: Interfaces JPA para persistencia.
-- **`/models`**: Entidades JPA (9): `Usuario`, `Rol`, `Permiso`, `Producto`, `Insumo`, `Cliente`, `CuentaCorrienteDinero`, `CuentaCorrienteBandejas`, `UnidadNegocio`.
+- **`/models`**: Entidades JPA (8): `Usuario`, `Rol`, `Permiso`, `Producto`, `Insumo`, `Cliente`, `CuentaCorrienteDinero`, `CuentaCorrienteBandejas`.
 - **`/dto`**: Objetos de transferencia request/response. Previenen fuga de datos sensibles (ej. password).
-- **`/security`**: `JwtFilter`, `JwtUtils`, `CustomUserDetailsService`, `SecurityService` (⚠️ dead code vestigial del multi-negocio).
+- **`/security`**: `JwtFilter`, `JwtUtils`, `CustomUserDetailsService`.
 - **`/config`**: `SecurityConfig` (CORS abierto `allowedOriginPatterns("*")`), `DataInitializer` (seed: 8 permisos, roles JEFE/VENDEDOR/OPERARIO, usuario demo).
 - **`/exceptions`**: Manejo centralizado de errores.
 

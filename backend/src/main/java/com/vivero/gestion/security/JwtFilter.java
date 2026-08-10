@@ -12,9 +12,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -51,7 +53,9 @@ public class JwtFilter extends OncePerRequestFilter {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
                 
                 if (jwtUtils.validateToken(jwt)) {
-                    System.out.println("User details authorities: " + userDetails.getAuthorities());
+                    if (log.isDebugEnabled()) {
+                        log.debug("User details authorities: {}", userDetails.getAuthorities());
+                    }
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     
@@ -60,6 +64,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
+            log.error("Cannot set user authentication: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Token inválido o usuario eliminado\"}");

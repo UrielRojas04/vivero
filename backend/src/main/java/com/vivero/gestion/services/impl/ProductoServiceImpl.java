@@ -2,9 +2,7 @@ package com.vivero.gestion.services.impl;
 
 import com.vivero.gestion.dto.ProductoDTO;
 import com.vivero.gestion.models.Producto;
-import com.vivero.gestion.models.UnidadNegocio;
 import com.vivero.gestion.repositories.ProductoRepository;
-import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.services.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,26 +15,19 @@ import java.util.stream.Collectors;
 public class ProductoServiceImpl implements ProductoService {
 
     private final ProductoRepository productoRepository;
-    private final UnidadNegocioRepository unidadNegocioRepository;
-
     @Autowired
-    public ProductoServiceImpl(ProductoRepository productoRepository, UnidadNegocioRepository unidadNegocioRepository) {
+    public ProductoServiceImpl(ProductoRepository productoRepository) {
         this.productoRepository = productoRepository;
-        this.unidadNegocioRepository = unidadNegocioRepository;
     }
 
     @Override
     @Transactional
     public ProductoDTO crearProducto(ProductoDTO dto) {
-        UnidadNegocio unidad = unidadNegocioRepository.findById(dto.getUnidadNegocioId())
-                .orElseThrow(() -> new RuntimeException("Unidad de negocio no encontrada"));
-
         Producto producto = new Producto();
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
         producto.setStock(dto.getStock() != null ? dto.getStock() : 0);
-        producto.setUnidadNegocio(unidad);
 
         Producto guardado = productoRepository.save(producto);
         return mapToDTO(guardado);
@@ -72,11 +63,6 @@ public class ProductoServiceImpl implements ProductoService {
             producto.setStock(dto.getStock());
         }
 
-        if (dto.getUnidadNegocioId() != null && !dto.getUnidadNegocioId().equals(producto.getUnidadNegocio().getId())) {
-            UnidadNegocio unidad = unidadNegocioRepository.findById(dto.getUnidadNegocioId())
-                    .orElseThrow(() -> new RuntimeException("Unidad de negocio no encontrada"));
-            producto.setUnidadNegocio(unidad);
-        }
 
         Producto actualizado = productoRepository.save(producto);
         return mapToDTO(actualizado);
@@ -96,8 +82,7 @@ public class ProductoServiceImpl implements ProductoService {
                 producto.getNombre(),
                 producto.getDescripcion(),
                 producto.getPrecio(),
-                producto.getStock(),
-                producto.getUnidadNegocio().getId()
+                producto.getStock()
         );
     }
 }

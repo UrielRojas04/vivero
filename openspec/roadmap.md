@@ -13,10 +13,10 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 | 2 | `us-000-setup-clean` | Limpieza inicial, dependencias, estructura base | Infra | `infra-001-db-viewer` | Punto de partida |
 | 3 | `us-001-auth-jwt` | Configuración JWT y Spring Security | Épica 1 | `us-000-setup-clean` | Base de seguridad |
 | 4 | `us-002-auth-rbac` | Entidades Usuario, Rol y Permiso (DB) | Épica 1 | `us-001-auth-jwt` | Base de datos de seguridad |
-| 5 | `us-003-multi-negocio` | Entidad UnidadNegocio y pivote de acceso | Épica 2 | `us-002-auth-rbac` | Establece el tenant para todo el sistema |
-| 6 | `us-004-catalogo-prod` | Entidad Producto (Backend CRUD) | Épica 2 | `us-003-multi-negocio` | Catálogo base |
-| 7 | `us-005-catalogo-insumos` | Entidad Insumo (Backend CRUD) | Épica 5 | `us-003-multi-negocio` | Catálogo de gastos |
-| 8 | `us-006-frontend-login` | Frontend SPA base (Vite) y pantalla Login | Épica 1 | `us-003-multi-negocio` | Interfaz de acceso |
+| 5 | ~`us-003-multi-negocio`~ | ~Entidad UnidadNegocio y pivote de acceso~ | Épica 2 | `us-002-auth-rbac` | **[REVERTIDO]** Reemplazado por sistema global (`chore-limpieza-pre-ventas`) |
+| 6 | `us-004-catalogo-prod` | Entidad Producto (Backend CRUD) | Épica 2 | `us-002-auth-rbac` | Catálogo base |
+| 7 | `us-005-catalogo-insumos` | Entidad Insumo (Backend CRUD) | Épica 5 | `us-002-auth-rbac` | Catálogo de gastos |
+| 8 | `us-006-frontend-login` | Frontend SPA base (Vite) y pantalla Login | Épica 1 | `us-002-auth-rbac` | Interfaz de acceso |
 | 9 | `us-007-frontend-productos` | Pantalla ABM Productos | Épica 2 | `us-004-catalogo-prod`, `us-006-frontend-login` | Requiere backend de productos y login |
 | 10| `us-008-frontend-insumos` | Pantalla ABM Insumos | Épica 5 | `us-005-catalogo-insumos`, `us-006-frontend-login` | Requiere backend de insumos y login |
 | 11| `us-009-clientes-base` | Modelo Cliente, CRUD backend y frontend | Épica 4 | `us-008-frontend-insumos` | Aísla la creación del cliente |

@@ -79,7 +79,7 @@ const Login = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                PIN de Seguridad
+                Contraseña
               </label>
               <div className="mt-1">
                 <input

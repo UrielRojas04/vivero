@@ -2,9 +2,7 @@ package com.vivero.gestion.services.impl;
 
 import com.vivero.gestion.dto.InsumoDTO;
 import com.vivero.gestion.models.Insumo;
-import com.vivero.gestion.models.UnidadNegocio;
 import com.vivero.gestion.repositories.InsumoRepository;
-import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.services.InsumoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,30 +15,19 @@ import java.util.stream.Collectors;
 public class InsumoServiceImpl implements InsumoService {
 
     private final InsumoRepository insumoRepository;
-    private final UnidadNegocioRepository unidadNegocioRepository;
-
     @Autowired
-    public InsumoServiceImpl(InsumoRepository insumoRepository, UnidadNegocioRepository unidadNegocioRepository) {
+    public InsumoServiceImpl(InsumoRepository insumoRepository) {
         this.insumoRepository = insumoRepository;
-        this.unidadNegocioRepository = unidadNegocioRepository;
     }
 
     @Override
     @Transactional
     public InsumoDTO crearInsumo(InsumoDTO dto) {
-        if (dto.getUnidadNegocioId() == null) {
-            throw new IllegalArgumentException("El ID de unidad de negocio es requerido");
-        }
-
-        UnidadNegocio unidad = unidadNegocioRepository.findById(dto.getUnidadNegocioId())
-                .orElseThrow(() -> new RuntimeException("Unidad de negocio no encontrada"));
-
         Insumo insumo = new Insumo();
         insumo.setNombre(dto.getNombre());
         insumo.setDescripcion(dto.getDescripcion());
         insumo.setPrecio(dto.getPrecio());
         insumo.setStock(dto.getStock() != null ? dto.getStock() : 0);
-        insumo.setUnidadNegocio(unidad);
 
         Insumo guardado = insumoRepository.save(insumo);
         return mapToDTO(guardado);
@@ -73,11 +60,6 @@ public class InsumoServiceImpl implements InsumoService {
         if (dto.getPrecio() != null) insumo.setPrecio(dto.getPrecio());
         if (dto.getStock() != null) insumo.setStock(dto.getStock());
 
-        if (dto.getUnidadNegocioId() != null && !dto.getUnidadNegocioId().equals(insumo.getUnidadNegocio().getId())) {
-            UnidadNegocio unidad = unidadNegocioRepository.findById(dto.getUnidadNegocioId())
-                    .orElseThrow(() -> new RuntimeException("Unidad de negocio no encontrada"));
-            insumo.setUnidadNegocio(unidad);
-        }
 
         Insumo actualizado = insumoRepository.save(insumo);
         return mapToDTO(actualizado);
@@ -97,8 +79,7 @@ public class InsumoServiceImpl implements InsumoService {
                 insumo.getNombre(),
                 insumo.getDescripcion(),
                 insumo.getPrecio(),
-                insumo.getStock(),
-                insumo.getUnidadNegocio().getId()
+                insumo.getStock()
         );
     }
 }
