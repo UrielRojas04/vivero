@@ -1,38 +1,42 @@
 # Modelo de Datos
 
-El diseño de la base de datos se fundamenta en un esquema centralizado con discriminación lógica por **Unidad de Negocio** (Tenant).
+> **Estado real (2026-08-10):** 9 entidades JPA en `backend/src/main/java/com/vivero/gestion/models/`. La ejecución de migraciones se maneja con `ddl-auto` + `DataInitializer` (seed de roles/permisos/usuarios demo). No hay `Usuario_Unidad_Rol` (RBAC plano). Las entidades transaccionales (Venta, VentaDetalle, MovimientoStock, Pago, HistorialBandejas) **no existen aún** — se crearán con `us-013-ventas-core` y siguientes.
 
-## Entidades Principales
+## Entidades Reales (implementadas)
 
-### 1. Sistema Base y Seguridad (RBAC)
-- **`UnidadNegocio`**: `id`, `nombre` (Ej: Plantas, Sustratos y Perlitas, Herramientas), `razon_social`, `domicilio_comercial`, `logo_url`, `activa`. *(Contiene los datos formales para imprimir en el remito).*
-- **`Usuario`**: `id`, `username` (Ej: juan.perez), `nombre_completo`, `pin_hash` (PIN de 4-6 dígitos encriptado), `activo`. *No requiere email. Creación centralizada por el Jefe.*
-- **`Rol`**: `id`, `nombre` (Ej: Encargado Vivero).
-- **`Permiso`**: `id`, `codigo` (Ej: STOCK_EDITAR).
-- **`Rol_Permiso`**: Tabla intermedia (N:M).
-- **`Usuario_Unidad_Rol`**: Tabla pivote crítica. Define qué rol tiene un usuario en qué negocio específico (`usuario_id`, `unidad_id`, `rol_id`).
+### 1. Seguridad y RBAC
+- **`Usuario`**: `id`, `username`, `nombreCompleto`, `password` (hash BCrypt), `activo`. Relación N:M con `Rol`. *No requiere email.*
+- **`Rol`**: `id`, `nombre`. Relación N:M con `Permiso` y con `Usuario`.
+- **`Permiso`**: `id`, `codigo` (ej. `LEER_STOCK`, `ADMIN_DB`).
 
-### 2. Catálogo y Finanzas
-- **`Producto`**: `id`, `unidad_id` (FK), `nombre`, `precio_costo`, `precio_venta`, `stock_actual`. *Aislado por unidad*.
-- **`Insumo`**: `id`, `unidad_id` (FK), `descripcion`, `costo`, `fecha_compra`. Para trazabilidad de gastos.
+### 2. Catálogo
+- **`Producto`**: `id`, `unidadNegocioId` (FK a `UnidadNegocio` — vestigial), `nombre`, `precioCosto`, `precioVenta`, `stockActual`.
+- **`Insumo`**: `id`, `unidadNegocioId`, `descripcion`, `costo`, `fechaCompra`. Para trazabilidad de gastos.
 
-### 3. Clientes, Bandejas y Cuentas Corrientes
-- **`Cliente`**: `id`, `nombre_razon_social`, `telefono`. *(Global. El teléfono queda preparado para la futura integración de enviar el PDF directo por WhatsApp).*
-- **`CuentaCorrienteBandejas`**: `id`, `cliente_id` (FK), `balance_bandejas` (entero, deuda total). Sumatoria de todas las ventas adeudadas.
-- **`HistorialBandejas`**: `id`, `cliente_id` (FK), `venta_id` (FK), `cantidad`, `tipo` (ENTREGA/DEVOLUCION), `fecha`, `usuario_id`. *Permite saber exactamente qué devolución pertenece a qué venta.*
-- **`CuentaCorrienteDinero`**: `id`, `cliente_id` (FK), `balance_pesos`. *(Global. Si es positivo, el cliente debe dinero. Si es negativo, tiene saldo a favor. Al ser global, Juan puede usar el saldo a favor que le quedó de comprar Plantas para comprar Herramientas).*
+### 3. Clientes y Cuentas Corrientes
+- **`Cliente`**: `id`, `nombreRazonSocial`, `telefono`. *(El teléfono queda preparado para la futura integración de enviar el PDF directo por WhatsApp).*
+- **`CuentaCorrienteBandejas`**: `id`, `clienteId`, `balanceBandejas` (entero, deuda total).
+- **`CuentaCorrienteDinero`**: `id`, `clienteId`, `balancePesos`. *(Si es positivo, el cliente debe dinero; si es negativo, tiene saldo a favor).*
 
-### 4. Operaciones, Ventas y Pagos
-- **`Venta`**: `id`, `unidad_id` (FK), `cliente_id` (FK), `usuario_id` (FK), `subtotal`, `descuento`, `total_final`, `estado_pago` (PAGADO/PARCIAL/DEBE), `bandejas_entregadas`, `bandejas_devueltas`, `fecha`, `remito_url`.
-- **`VentaDetalle`**: `id`, `venta_id`, `producto_id`, `cantidad`, `precio_unitario_historico`, `subtotal`.
-- **`Pago`**: `id`, `venta_id` (FK), `monto`, `fecha`, `usuario_id`. Para registrar los pagos parciales o posteriores de una venta.
-- **`MovimientoStock`**: `id`, `producto_id` (FK), `cantidad`, `tipo` (IN/OUT), `motivo` (Venta, Descarte, Ajuste), `fecha`, `usuario_id` (Para auditoría).
+### 4. Multi-negocio (VESTIGIAL)
+- **`UnidadNegocio`**: `id`, `nombre`, `razonSocial`, `domicilioComercial`, `logoUrl`, `activa`. **Existe pero no se usa activamente**: no hay controller, `SecurityService` es dead code, y el frontend hardcodea `unidadNegocioId=1`.
+
+## Entidades Planificadas (próximos changes)
+
+### `us-013-ventas-core` (próximo)
+- **`Venta`**: `id`, `unidadNegocioId`, `clienteId`, `usuarioId`, `subtotal`, `descuento`, `totalFinal`, `estadoPago` (PAGADO/PARCIAL/DEBE), `fecha`, `remitoUrl`.
+- **`VentaDetalle`**: `id`, `ventaId`, `productoId`, `cantidad`, `precioUnitarioHistorico`, `subtotal`.
+- **`MovimientoStock`**: `id`, `productoId`, `cantidad`, `tipo` (IN/OUT), `motivo` (Venta, Descarte, Ajuste), `fecha`, `usuarioId`.
+
+### Changes posteriores
+- **`Pago`** (`us-013-ventas-pagos`): `id`, `ventaId`, `monto`, `fecha`, `usuarioId`.
+- **`HistorialBandejas`** (`us-014-bandejas-flujo`): `id`, `clienteId`, `ventaId`, `cantidad`, `tipo` (ENTREGA/DEVOLUCION), `fecha`, `usuarioId`.
 
 ## Relaciones Clave (ERD Lógico)
-- Un `Usuario` puede operar múltiples `UnidadNegocio` si tiene registros en `Usuario_Unidad_Rol`.
-- Toda `Venta` y `Producto` pertenece a una única `UnidadNegocio` (`tenant_id` lógico).
-- El `Cliente` es global para evitar duplicar "Juan Pérez" si compra lechuga (Vivero) y luego tierra (Sustratos).
+- `Usuario` N:M `Rol` N:M `Permiso` (RBAC plano, sin tenant).
+- `Cliente` 1:N `CuentaCorrienteBandejas` y `CuentaCorrienteDinero` (billeteras por cliente).
+- `Producto`/`Insumo` → FK vestigial a `UnidadNegocio`.
 
 ## Restricciones y Reglas de BD
-- Las contraseñas NUNCA se guardan en texto plano (bcrypt).
-- `precio_unitario_historico` en `VentaDetalle` es obligatorio: si el precio de un producto cambia mañana, las ventas de hoy no deben verse afectadas.
+- Las contraseñas NUNCA se guardan en texto plano (BCrypt, cost factor ≥ 12).
+- `precioUnitarioHistorico` en `VentaDetalle` será obligatorio: si el precio de un producto cambia mañana, las ventas de hoy no deben verse afectadas (RN-04).

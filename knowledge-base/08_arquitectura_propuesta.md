@@ -1,22 +1,46 @@
 # Arquitectura Propuesta
 
-Este documento detalla la estructura del código y los patrones arquitectónicos adoptados.
+> **Estado real (2026-08-10):** Este documento describe la **estructura real del repo** y los patrones vigentes (no una arquitectura ideal).
 
-## Backend (Spring Boot) - Clean Architecture Simplificada
-- **Controllers (`/controller`)**: Magros. Solo manejan ruteo HTTP, validación de DTOs y llamadas a servicios.
-- **Services (`/service`)**: Contienen toda la lógica de negocio (reglas de validación, orquestación). NUNCA devuelven entidades, mapean a DTOs.
-- **Repositories (`/repository`)**: Interfaces JPA para persistencia.
-- **DTOs (`/dto`)**: Objetos de transferencia para request/response. Previenen fuga de datos sensibles (ej. passwords).
-- **Security (`/security`)**: Filtros JWT y lógica de RBAC (`@PreAuthorize("hasAuthority('STOCK_EDITAR')")`).
-- **Events (`/sse`)**: Manejo de emisores Server-Sent Events (SseEmitter) para notificaciones push a clientes.
+## Backend (Spring Boot) — package `com.vivero.gestion`
 
-## Frontend (React) - Feature-Sliced Design Simplificado
-- **`/components`**: Componentes UI reutilizables (Botones, Tablas, Modales) sin estado global.
-- **`/features`**: Lógica agrupada por dominio (ej. `/features/ventas`, `/features/bandejas`). Cada feature contiene sus propios componentes específicos y llamadas a API.
-- **`/api`**: Configuración de Axios, interceptores JWT y hooks de React Query (`useQuery`, `useMutation`).
-- **`/store`**: Manejador de estado global mínimo (Zustand o Context API) solo para datos transversales (Usuario logueado, Unidad de Negocio activa).
-- **`/routes`**: React Router dom, definiendo Layouts y protegiendo rutas según los roles del JWT.
+Estructura feature-first por capas (Controller → Service → Repository → Model):
 
-## Despliegue y Orquestación
-- Gestionado vía Docker Compose (ver change `docker-full-stack`).
-- Backend (port 8080) encapsulado. Frontend (port 80) expuesto vía Nginx, que a su vez actúa como Reverse Proxy para `/api` previniendo problemas de CORS.
+- **`/controllers`**: Magros. Solo manejan ruteo HTTP, validación de DTOs y llamadas a servicios. Actuales: `AuthController`, `ClienteController`, `InsumoController`, `ProductoController`, `RolController`, `UsuarioController`.
+- **`/services`**: Contienen toda la lógica de negocio y reglas de validación. NUNCA devuelven entidades — mapean a DTOs. Las transacciones se gestionan con `@Transactional`.
+- **`/repositories`**: Interfaces JPA para persistencia.
+- **`/models`**: Entidades JPA (9): `Usuario`, `Rol`, `Permiso`, `Producto`, `Insumo`, `Cliente`, `CuentaCorrienteDinero`, `CuentaCorrienteBandejas`, `UnidadNegocio`.
+- **`/dto`**: Objetos de transferencia request/response. Previenen fuga de datos sensibles (ej. password).
+- **`/security`**: `JwtFilter`, `JwtUtils`, `CustomUserDetailsService`, `SecurityService` (⚠️ dead code vestigial del multi-negocio).
+- **`/config`**: `SecurityConfig` (CORS abierto `allowedOriginPatterns("*")`), `DataInitializer` (seed: 8 permisos, roles JEFE/VENDEDOR/OPERARIO, usuario demo).
+- **`/exceptions`**: Manejo centralizado de errores.
+
+## Frontend (React) — estructura real
+
+```
+frontend/src/
+├── api/          → axios.js (baseURL http://localhost:8080/api, interceptores JWT)
+├── components/   → UI reutilizable: ConfirmDialog, ToastContainer, PermissionDeniedModal,
+│                   ProductoForm, InsumoForm, ClienteForm, ProtectedRoute
+├── layouts/      → DashboardLayout (sidebar + <Outlet /> + feedback global)
+├── pages/        → Login, Dashboard, Productos, Insumos, Clientes, UsuariosAdmin
+├── store/        → Zustand: useAuthStore (sesión/token), useUIStore (toasts/confirm/deny)
+├── utils/        → errorMessage.js (getErrorMessage)
+└── App.jsx / main.jsx → router React Router
+```
+
+Convenciones de frontend:
+- `cursor-pointer` en todos los botones; iconos con `lucide-react`.
+- Estado del servidor con **TanStack Query**; estado del cliente con **Zustand**.
+- Modal estándar: `fixed inset-0 z-50 flex items-end sm:items-center ... bg-gray-900/60 backdrop-blur-sm animate-fadeIn` + tarjeta `bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl p-6 animate-scaleIn` (bottom-sheet mobile / centered desktop).
+
+## Despliegue y Orquestación (Docker Compose)
+- `frontend` (Vite dev, puerto 5173) — `Dockerfile.dev`, volumen `./frontend:/app`, sin rebuild por cambio.
+- `frontend-prod` (Nginx, puerto 80) — build de producción.
+- `backend` (Spring Boot, puerto 8080).
+- `vivero-db` (PostgreSQL) + pgAdmin (`infra-001-db-viewer`).
+
+## Patrones de seguridad vigentes
+- JWT en header `Authorization: Bearer`; `@PreAuthorize`/checks de permiso en services/controllers.
+- BCrypt (cost ≥ 12) para passwords; JWT secret y credenciales en `.env` / variables de entorno.
+- Sin `System.out.println` en producción (usa logger).

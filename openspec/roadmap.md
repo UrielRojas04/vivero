@@ -1,7 +1,9 @@
 # Roadmap de Implementación
 
-Mapa completo de changes para desarrollar **Sistema Vivero (ERP Multi-Negocio)** de inicio a fin.
+Mapa completo de changes para desarrollar **Sistema Vivero (ERP)** de inicio a fin.
 Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y atomicidad.
+
+> **Nota de estado (2026-08-10):** Los changes `us-001`…`us-012`, `infra-001`, `docker-full-stack`, `ui-rbac-profile` y `ui-feedback-modals` están **completados y archivados**. El multi-negocio por `UnidadNegocio` quedó **vestigial** (RBAC plano desde `us-012`); ver `knowledge-base/10_preguntas_abiertas.md` antes de `us-013-ventas-core`.
 
 ## Orden de ejecución
 
