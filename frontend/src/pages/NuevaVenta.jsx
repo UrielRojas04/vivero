@@ -24,9 +24,20 @@ export default function NuevaVenta() {
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Auto-calcular bandejas según la cantidad de productos en el carrito
+  useEffect(() => {
+    const totalProductos = detalles.reduce((sum, d) => sum + (parseInt(d.cantidad) || 1), 0);
+    if (totalProductos > 0) {
+      setBandejasEntregadas(totalProductos.toString());
+    } else {
+      setBandejasEntregadas('');
+    }
+  }, [detalles]);
+
   // Estados para Modal Liquidación
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [descuento, setDescuento] = useState('');
+  const [bandejasEntregadas, setBandejasEntregadas] = useState('');
   const [pagos, setPagos] = useState([]);
   const [pagoMonto, setPagoMonto] = useState('');
   const [pagoMetodo, setPagoMetodo] = useState('EFECTIVO');
@@ -174,6 +185,7 @@ export default function NuevaVenta() {
     const payload = {
       clienteId: parseInt(clienteId),
       porcentajeDescuento: descuentoVal,
+      bandejasEntregadas: parseInt(bandejasEntregadas) || 0,
       detalles: detalles.map(d => ({ 
         productoId: d.productoId, 
         cantidad: parseInt(d.cantidad) || 1 
@@ -446,8 +458,25 @@ export default function NuevaVenta() {
                       />
                     </div>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-300">
-                    <span className="font-bold text-gray-800">Total Final</span>
+
+              {/* Bandejas */}
+              <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
+                <span className="text-gray-600 font-medium">Bandejas prestadas (opcional)</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 font-medium">Cant:</span>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    value={bandejasEntregadas}
+                    onChange={(e) => setBandejasEntregadas(e.target.value)}
+                    className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-lg">
+                <span className="font-bold text-gray-900">Total a Pagar</span>
                     <span className="font-bold text-xl text-emerald-700">${totalFinal.toFixed(2)}</span>
                   </div>
                 </div>

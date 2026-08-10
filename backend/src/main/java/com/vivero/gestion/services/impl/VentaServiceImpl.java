@@ -9,6 +9,7 @@ import com.vivero.gestion.dto.PagoResponseDTO;
 import com.vivero.gestion.exceptions.ResourceNotFoundException;
 import com.vivero.gestion.models.*;
 import com.vivero.gestion.repositories.*;
+import com.vivero.gestion.services.BandejasService;
 import com.vivero.gestion.services.VentaService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,19 +30,22 @@ public class VentaServiceImpl implements VentaService {
     private final ProductoRepository productoRepository;
     private final MovimientoStockRepository movimientoStockRepository;
     private final CuentaCorrienteDineroRepository ccdRepository;
+    private final BandejasService bandejasService;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
                             UsuarioRepository usuarioRepository,
                             ProductoRepository productoRepository,
                             MovimientoStockRepository movimientoStockRepository,
-                            CuentaCorrienteDineroRepository ccdRepository) {
+                            CuentaCorrienteDineroRepository ccdRepository,
+                            BandejasService bandejasService) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
         this.movimientoStockRepository = movimientoStockRepository;
         this.ccdRepository = ccdRepository;
+        this.bandejasService = bandejasService;
     }
 
     @Override
@@ -148,6 +152,12 @@ public class VentaServiceImpl implements VentaService {
         }
 
         Venta ventaGuardada = ventaRepository.save(venta);
+        
+        // --- Historial Bandejas ---
+        if (request.getBandejasEntregadas() != null && request.getBandejasEntregadas() > 0) {
+            bandejasService.registrarEntrega(cliente.getId(), request.getBandejasEntregadas(), ventaGuardada, username);
+        }
+
         return mapearAVentaResponseDTO(ventaGuardada);
     }
 
@@ -169,6 +179,12 @@ public class VentaServiceImpl implements VentaService {
         dto.setDescuento(venta.getDescuento());
         dto.setTotalFinal(venta.getTotalFinal());
         dto.setEstadoPago(venta.getEstadoPago());
+        
+        // El historial de bandejas no está en la entidad venta directamente como un campo entero,
+        // pero podemos obtenerlo o dejarlo para un endpoint separado. Por simplicidad, no lo seteamos aquí
+        // a menos que sea un requirement explícito (el DTO ahora lo tiene, podríamos agregarlo después si hace falta).
+        dto.setBandejasEntregadas(null); // No lo llenamos por defecto
+
         dto.setFecha(venta.getFecha());
         dto.setRemitoUrl(venta.getRemitoUrl());
 

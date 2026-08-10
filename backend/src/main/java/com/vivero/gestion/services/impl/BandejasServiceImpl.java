@@ -1,0 +1,97 @@
+package com.vivero.gestion.services.impl;
+
+import com.vivero.gestion.dto.HistorialBandejasDTO;
+import com.vivero.gestion.models.*;
+import com.vivero.gestion.repositories.*;
+import com.vivero.gestion.services.BandejasService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class BandejasServiceImpl implements BandejasService {
+
+    @Autowired
+    private HistorialBandejasRepository historialRepository;
+
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private CuentaCorrienteBandejasRepository ccbRepository;
+
+    @Override
+    @Transactional
+    public void registrarEntrega(Long clienteId, Integer cantidad, Venta venta, String username) {
+        if (cantidad == null || cantidad <= 0) return;
+        
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        HistorialBandejas historial = new HistorialBandejas();
+        historial.setCliente(cliente);
+        historial.setVenta(venta);
+        historial.setCantidad(cantidad);
+        historial.setTipo("ENTREGA");
+        historial.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        historial.setUsuario(usuario);
+        historialRepository.save(historial);
+
+        CuentaCorrienteBandejas ccb = ccbRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RuntimeException("Cuenta Corriente de Bandejas no encontrada"));
+        ccb.setBalanceBandejas(ccb.getBalanceBandejas() + cantidad); // Suma deuda
+        ccbRepository.save(ccb);
+    }
+
+    @Override
+    @Transactional
+    public void registrarDevolucion(Long clienteId, Integer cantidad, String username) {
+        if (cantidad == null || cantidad <= 0) throw new RuntimeException("Cantidad inválida");
+
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        HistorialBandejas historial = new HistorialBandejas();
+        historial.setCliente(cliente);
+        historial.setCantidad(cantidad);
+        historial.setTipo("DEVOLUCION");
+        historial.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        historial.setUsuario(usuario);
+        historialRepository.save(historial);
+
+        CuentaCorrienteBandejas ccb = ccbRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RuntimeException("Cuenta Corriente de Bandejas no encontrada"));
+        ccb.setBalanceBandejas(ccb.getBalanceBandejas() - cantidad); // Resta deuda
+        ccbRepository.save(ccb);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HistorialBandejasDTO> obtenerHistorialPorCliente(Long clienteId) {
+        return historialRepository.findByClienteIdOrderByFechaDesc(clienteId).stream()
+                .map(h -> {
+                    HistorialBandejasDTO dto = new HistorialBandejasDTO();
+                    dto.setId(h.getId());
+                    dto.setClienteId(h.getCliente().getId());
+                    dto.setClienteNombre(h.getCliente().getNombreRazonSocial());
+                    dto.setVentaId(h.getVenta() != null ? h.getVenta().getId() : null);
+                    dto.setCantidad(h.getCantidad());
+                    dto.setTipo(h.getTipo());
+                    dto.setFecha(h.getFecha());
+                    dto.setUsuarioNombre(h.getUsuario().getUsername());
+                    return dto;
+                }).collect(Collectors.toList());
+    }
+}

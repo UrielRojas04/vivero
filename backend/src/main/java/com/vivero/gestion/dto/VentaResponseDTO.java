@@ -13,6 +13,7 @@ public class VentaResponseDTO {
     private BigDecimal descuento;
     private BigDecimal totalFinal;
     private String estadoPago;
+    private Integer bandejasEntregadas;
     private LocalDateTime fecha;
     private String remitoUrl;
     private List<VentaDetalleResponseDTO> detalles;
@@ -36,6 +37,8 @@ public class VentaResponseDTO {
     public void setTotalFinal(BigDecimal totalFinal) { this.totalFinal = totalFinal; }
     public String getEstadoPago() { return estadoPago; }
     public void setEstadoPago(String estadoPago) { this.estadoPago = estadoPago; }
+    public Integer getBandejasEntregadas() { return bandejasEntregadas; }
+    public void setBandejasEntregadas(Integer bandejasEntregadas) { this.bandejasEntregadas = bandejasEntregadas; }
     public LocalDateTime getFecha() { return fecha; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
     public String getRemitoUrl() { return remitoUrl; }
