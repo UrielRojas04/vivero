@@ -178,6 +178,7 @@ public class VentaServiceImpl implements VentaService {
         VentaResponseDTO dto = new VentaResponseDTO();
         dto.setId(venta.getId());
         dto.setClienteNombre(venta.getCliente().getNombreRazonSocial());
+        dto.setClienteTelefono(venta.getCliente().getTelefono());
         dto.setUsuarioNombre(venta.getUsuario().getUsername());
         dto.setSubtotal(venta.getSubtotal());
         dto.setPorcentajeDescuento(venta.getPorcentajeDescuento());

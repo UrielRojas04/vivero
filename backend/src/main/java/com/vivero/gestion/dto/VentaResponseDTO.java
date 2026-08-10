@@ -7,6 +7,7 @@ import java.util.List;
 public class VentaResponseDTO {
     private Long id;
     private String clienteNombre;
+    private String clienteTelefono;
     private String usuarioNombre;
     private BigDecimal subtotal;
     private BigDecimal porcentajeDescuento;
@@ -25,6 +26,8 @@ public class VentaResponseDTO {
     public void setId(Long id) { this.id = id; }
     public String getClienteNombre() { return clienteNombre; }
     public void setClienteNombre(String clienteNombre) { this.clienteNombre = clienteNombre; }
+    public String getClienteTelefono() { return clienteTelefono; }
+    public void setClienteTelefono(String clienteTelefono) { this.clienteTelefono = clienteTelefono; }
     public String getUsuarioNombre() { return usuarioNombre; }
     public void setUsuarioNombre(String usuarioNombre) { this.usuarioNombre = usuarioNombre; }
     public BigDecimal getSubtotal() { return subtotal; }

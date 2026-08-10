@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Receipt } from 'lucide-react';
 import { ventasApi } from '../api/ventas.api';
 import { useUIStore } from '../store/useUIStore';
+import ComprobanteVentaModal from '../components/ComprobanteVentaModal';
 
 export default function HistorialVentas() {
   const { pushToast } = useUIStore();
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
 
   useEffect(() => {
     const fetchVentas = async () => {
@@ -39,6 +42,7 @@ export default function HistorialVentas() {
               <th className="p-4 font-semibold text-right">Total Final</th>
               <th className="p-4 font-semibold text-right">Entregó</th>
               <th className="p-4 font-semibold text-center">Estado</th>
+              <th className="p-4 font-semibold text-center">Comprobante</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -58,11 +62,20 @@ export default function HistorialVentas() {
                     {venta.estadoPago}
                   </span>
                 </td>
+                <td className="p-4 text-center">
+                  <button
+                    onClick={() => setVentaSeleccionada(venta)}
+                    title={`Ver comprobante de la venta #${venta.id}`}
+                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Receipt className="w-5 h-5" />
+                  </button>
+                </td>
               </tr>
             ))}
             {ventas.length === 0 && (
               <tr>
-                <td colSpan="6" className="p-8 text-center text-gray-500">
+                <td colSpan="7" className="p-8 text-center text-gray-500">
                   No hay ventas registradas todavía.
                 </td>
               </tr>
@@ -70,6 +83,14 @@ export default function HistorialVentas() {
           </tbody>
         </table>
       </div>
+
+      {ventaSeleccionada && (
+        <ComprobanteVentaModal
+          isOpen={!!ventaSeleccionada}
+          onClose={() => setVentaSeleccionada(null)}
+          venta={ventaSeleccionada}
+        />
+      )}
     </div>
   );
 }
