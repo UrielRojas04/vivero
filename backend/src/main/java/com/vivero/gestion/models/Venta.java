@@ -23,6 +23,7 @@ public class Venta {
     private Usuario usuario; // Quien registra la venta
 
     private BigDecimal subtotal;
+    private BigDecimal porcentajeDescuento;
     private BigDecimal descuento;
     private BigDecimal totalFinal;
     
@@ -32,6 +33,9 @@ public class Venta {
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VentaDetalle> detalles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Pago> pagos = new ArrayList<>();
 
     public Venta() {}
 
@@ -43,6 +47,8 @@ public class Venta {
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public BigDecimal getPorcentajeDescuento() { return porcentajeDescuento; }
+    public void setPorcentajeDescuento(BigDecimal porcentajeDescuento) { this.porcentajeDescuento = porcentajeDescuento; }
     public BigDecimal getDescuento() { return descuento; }
     public void setDescuento(BigDecimal descuento) { this.descuento = descuento; }
     public BigDecimal getTotalFinal() { return totalFinal; }
@@ -56,8 +62,16 @@ public class Venta {
     public List<VentaDetalle> getDetalles() { return detalles; }
     public void setDetalles(List<VentaDetalle> detalles) { this.detalles = detalles; }
     
+    public List<Pago> getPagos() { return pagos; }
+    public void setPagos(List<Pago> pagos) { this.pagos = pagos; }
+    
     public void addDetalle(VentaDetalle detalle) {
         detalles.add(detalle);
         detalle.setVenta(this);
+    }
+
+    public void addPago(Pago pago) {
+        pagos.add(pago);
+        pago.setVenta(this);
     }
 }

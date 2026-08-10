@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Registrar una nueva venta
 El sistema SHALL permitir a un usuario con permisos crear una venta asignando un cliente, un array de detalles (productos vendidos), un porcentaje de descuento opcional, y un array de pagos.

@@ -4,6 +4,8 @@ import com.vivero.gestion.dto.VentaDetalleRequestDTO;
 import com.vivero.gestion.dto.VentaDetalleResponseDTO;
 import com.vivero.gestion.dto.VentaRequestDTO;
 import com.vivero.gestion.dto.VentaResponseDTO;
+import com.vivero.gestion.dto.PagoRequestDTO;
+import com.vivero.gestion.dto.PagoResponseDTO;
 import com.vivero.gestion.exceptions.ResourceNotFoundException;
 import com.vivero.gestion.models.*;
 import com.vivero.gestion.repositories.*;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,17 +28,20 @@ public class VentaServiceImpl implements VentaService {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final MovimientoStockRepository movimientoStockRepository;
+    private final CuentaCorrienteDineroRepository ccdRepository;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
                             UsuarioRepository usuarioRepository,
                             ProductoRepository productoRepository,
-                            MovimientoStockRepository movimientoStockRepository) {
+                            MovimientoStockRepository movimientoStockRepository,
+                            CuentaCorrienteDineroRepository ccdRepository) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
         this.movimientoStockRepository = movimientoStockRepository;
+        this.ccdRepository = ccdRepository;
     }
 
     @Override
@@ -54,11 +60,12 @@ public class VentaServiceImpl implements VentaService {
         Venta venta = new Venta();
         venta.setCliente(cliente);
         venta.setUsuario(usuario);
-        venta.setFecha(LocalDateTime.now());
-        venta.setEstadoPago("DEBE"); // Default, hasta que se implementen pagos
-        venta.setDescuento(BigDecimal.ZERO);
+        venta.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        
+        BigDecimal porcentajeDescuento = request.getPorcentajeDescuento() != null ? request.getPorcentajeDescuento() : BigDecimal.ZERO;
+        venta.setPorcentajeDescuento(porcentajeDescuento);
 
-        BigDecimal totalFinal = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
 
         for (VentaDetalleRequestDTO detReq : request.getDetalles()) {
             Producto producto = productoRepository.findById(detReq.getProductoId())
@@ -81,7 +88,7 @@ public class VentaServiceImpl implements VentaService {
             mov.setCantidad(detReq.getCantidad());
             mov.setTipo("OUT");
             mov.setMotivo("Venta");
-            mov.setFecha(LocalDateTime.now());
+            mov.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
             mov.setUsuario(usuario);
             movimientoStockRepository.save(mov);
 
@@ -91,16 +98,54 @@ public class VentaServiceImpl implements VentaService {
             detalle.setCantidad(detReq.getCantidad());
             BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
             detalle.setPrecioUnitarioHistorico(precioHist);
+            BigDecimal subtotalLine = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
+            detalle.setSubtotal(subtotalLine);
             
-            BigDecimal subtotal = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
-            detalle.setSubtotal(subtotal);
-
             venta.addDetalle(detalle);
-            totalFinal = totalFinal.add(subtotal);
+            subtotal = subtotal.add(subtotalLine);
         }
 
-        venta.setSubtotal(totalFinal);
+        venta.setSubtotal(subtotal);
+        
+        BigDecimal descuento = subtotal.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100));
+        venta.setDescuento(descuento);
+        
+        BigDecimal totalFinal = subtotal.subtract(descuento);
         venta.setTotalFinal(totalFinal);
+
+        BigDecimal totalPagado = BigDecimal.ZERO;
+        if (request.getPagos() != null) {
+            for (PagoRequestDTO pReq : request.getPagos()) {
+                Pago pago = new Pago();
+                pago.setMonto(pReq.getMonto());
+                pago.setMetodoPago(pReq.getMetodoPago());
+                pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+                venta.addPago(pago);
+                totalPagado = totalPagado.add(pReq.getMonto());
+            }
+        }
+
+        BigDecimal diferencia = totalPagado.subtract(totalFinal);
+        if (diferencia.compareTo(BigDecimal.ZERO) != 0) {
+            CuentaCorrienteDinero ccd = ccdRepository.findByClienteId(cliente.getId())
+                    .orElseGet(() -> {
+                        CuentaCorrienteDinero nueva = new CuentaCorrienteDinero();
+                        nueva.setCliente(cliente);
+                        nueva.setBalancePesos(BigDecimal.ZERO);
+                        return ccdRepository.save(nueva);
+                    });
+            
+            if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
+                ccd.agregarDeuda(diferencia.abs());
+                venta.setEstadoPago(totalPagado.compareTo(BigDecimal.ZERO) > 0 ? "PARCIAL" : "DEBE");
+            } else {
+                ccd.agregarSaldoAFavor(diferencia);
+                venta.setEstadoPago("PAGADO");
+            }
+            ccdRepository.save(ccd);
+        } else {
+            venta.setEstadoPago("PAGADO");
+        }
 
         Venta ventaGuardada = ventaRepository.save(venta);
         return mapearAVentaResponseDTO(ventaGuardada);
@@ -120,6 +165,7 @@ public class VentaServiceImpl implements VentaService {
         dto.setClienteNombre(venta.getCliente().getNombreRazonSocial());
         dto.setUsuarioNombre(venta.getUsuario().getUsername());
         dto.setSubtotal(venta.getSubtotal());
+        dto.setPorcentajeDescuento(venta.getPorcentajeDescuento());
         dto.setDescuento(venta.getDescuento());
         dto.setTotalFinal(venta.getTotalFinal());
         dto.setEstadoPago(venta.getEstadoPago());
@@ -140,6 +186,20 @@ public class VentaServiceImpl implements VentaService {
             dto.setDetalles(detallesDto);
         } else {
             dto.setDetalles(new ArrayList<>());
+        }
+
+        if (venta.getPagos() != null) {
+            List<PagoResponseDTO> pagosDto = venta.getPagos().stream().map(p -> {
+                PagoResponseDTO pDto = new PagoResponseDTO();
+                pDto.setId(p.getId());
+                pDto.setMonto(p.getMonto());
+                pDto.setMetodoPago(p.getMetodoPago());
+                pDto.setFecha(p.getFecha());
+                return pDto;
+            }).collect(Collectors.toList());
+            dto.setPagos(pagosDto);
+        } else {
+            dto.setPagos(new ArrayList<>());
         }
         return dto;
     }

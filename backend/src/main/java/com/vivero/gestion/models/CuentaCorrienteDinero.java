@@ -31,4 +31,16 @@ public class CuentaCorrienteDinero {
     private Cliente cliente;
 
     private BigDecimal balancePesos = BigDecimal.ZERO;
+
+    public void agregarDeuda(BigDecimal monto) {
+        if (monto != null) {
+            this.balancePesos = this.balancePesos.subtract(monto);
+        }
+    }
+
+    public void agregarSaldoAFavor(BigDecimal monto) {
+        if (monto != null) {
+            this.balancePesos = this.balancePesos.add(monto);
+        }
+    }
 }

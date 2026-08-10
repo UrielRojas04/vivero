@@ -9,12 +9,14 @@ public class VentaResponseDTO {
     private String clienteNombre;
     private String usuarioNombre;
     private BigDecimal subtotal;
+    private BigDecimal porcentajeDescuento;
     private BigDecimal descuento;
     private BigDecimal totalFinal;
     private String estadoPago;
     private LocalDateTime fecha;
     private String remitoUrl;
     private List<VentaDetalleResponseDTO> detalles;
+    private List<PagoResponseDTO> pagos;
 
     public VentaResponseDTO() {}
 
@@ -26,6 +28,8 @@ public class VentaResponseDTO {
     public void setUsuarioNombre(String usuarioNombre) { this.usuarioNombre = usuarioNombre; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public BigDecimal getPorcentajeDescuento() { return porcentajeDescuento; }
+    public void setPorcentajeDescuento(BigDecimal porcentajeDescuento) { this.porcentajeDescuento = porcentajeDescuento; }
     public BigDecimal getDescuento() { return descuento; }
     public void setDescuento(BigDecimal descuento) { this.descuento = descuento; }
     public BigDecimal getTotalFinal() { return totalFinal; }
@@ -38,4 +42,6 @@ public class VentaResponseDTO {
     public void setRemitoUrl(String remitoUrl) { this.remitoUrl = remitoUrl; }
     public List<VentaDetalleResponseDTO> getDetalles() { return detalles; }
     public void setDetalles(List<VentaDetalleResponseDTO> detalles) { this.detalles = detalles; }
+    public List<PagoResponseDTO> getPagos() { return pagos; }
+    public void setPagos(List<PagoResponseDTO> pagos) { this.pagos = pagos; }
 }

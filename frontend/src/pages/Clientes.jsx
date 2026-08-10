@@ -143,7 +143,7 @@ const Clientes = () => {
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  cliente.balanceDinero > 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+                  cliente.balanceDinero < 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
                 }`}>
                   $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
                 </span>
@@ -203,7 +203,7 @@ const Clientes = () => {
                 <td className="p-4 text-gray-600">{cliente.telefono || '-'}</td>
                 <td className="p-4 text-right">
                   <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${
-                    cliente.balanceDinero > 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+                    cliente.balanceDinero < 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
                   }`}>
                     $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
                   </span>

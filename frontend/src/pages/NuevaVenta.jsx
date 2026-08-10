@@ -24,6 +24,13 @@ export default function NuevaVenta() {
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Estados para Modal Liquidación
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [descuento, setDescuento] = useState('');
+  const [pagos, setPagos] = useState([]);
+  const [pagoMonto, setPagoMonto] = useState('');
+  const [pagoMetodo, setPagoMetodo] = useState('EFECTIVO');
+
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
 
@@ -137,17 +144,41 @@ export default function NuevaVenta() {
     return acc + (curr.precio * cantidadFinal);
   }, 0);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const descuentoVal = parseFloat(descuento) || 0;
+  const descuentoMonto = totalCalculado * (descuentoVal / 100);
+  const totalFinal = totalCalculado - descuentoMonto;
+  const totalPagado = pagos.reduce((acc, p) => acc + p.monto, 0);
+  const saldoFinal = totalPagado - totalFinal;
+
+  const agregarPago = () => {
+    const monto = parseFloat(pagoMonto);
+    if (!monto || monto <= 0) return pushToast('error', 'Monto inválido');
+    setPagos([...pagos, { monto, metodoPago: pagoMetodo }]);
+    setPagoMonto('');
+  };
+
+  const eliminarPago = (index) => {
+    setPagos(pagos.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
     if (!clienteId) return pushToast('error', 'Seleccioná un cliente');
     if (detalles.length === 0) return pushToast('error', 'Agregá al menos un producto a la venta');
 
+    let pagosASubir = [...pagos];
+    const montoPendiente = parseFloat(pagoMonto);
+    if (montoPendiente && montoPendiente > 0) {
+      pagosASubir.push({ monto: montoPendiente, metodoPago: pagoMetodo });
+    }
+
     const payload = {
       clienteId: parseInt(clienteId),
+      porcentajeDescuento: descuentoVal,
       detalles: detalles.map(d => ({ 
         productoId: d.productoId, 
         cantidad: parseInt(d.cantidad) || 1 
-      }))
+      })),
+      pagos: pagosASubir
     };
 
     try {
@@ -163,11 +194,14 @@ export default function NuevaVenta() {
       setClientesRecientesIds(getRecents('recent_clients'));
       setProductosRecientesIds(getRecents('recent_products'));
 
-      // Limpiar formulario
+      // Limpiar formulario y cerrar modal
       setClienteId('');
       setDetalles([]);
       setBusquedaCliente('');
       setBusquedaProducto('');
+      setIsModalOpen(false);
+      setDescuento('');
+      setPagos([]);
     } catch (error) {
       const msg = error.response?.data?.message || 'Error al registrar la venta';
       pushToast('error', msg);
@@ -376,18 +410,132 @@ export default function NuevaVenta() {
             
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => setIsModalOpen(true)}
               disabled={isSubmitting || detalles.length === 0 || !clienteId}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Procesando...' : (
-                <>Confirmar Venta <ArrowRight className="w-5 h-5" /></>
-              )}
+              Confirmar Venta <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
 
       </div>
+
+      {/* Modal de Liquidación */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Liquidar Venta</h2>
+            
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-semibold text-gray-900">${totalCalculado.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-600">Descuento (%)</span>
+                    <div className="flex items-center gap-2">
+                      {descuentoMonto > 0 && <span className="text-sm text-gray-500">(-${descuentoMonto.toFixed(2)})</span>}
+                      <input 
+                        type="number" 
+                        value={descuento}
+                        onChange={e => setDescuento(e.target.value)}
+                        className="w-20 px-2 py-1 text-right border border-gray-300 rounded focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-300">
+                    <span className="font-bold text-gray-800">Total Final</span>
+                    <span className="font-bold text-xl text-emerald-700">${totalFinal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Agregar Pago</h3>
+                  <div className="flex gap-2">
+                    <input 
+                      type="number"
+                      placeholder="Monto"
+                      value={pagoMonto}
+                      onChange={e => setPagoMonto(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
+                    />
+                    <select 
+                      value={pagoMetodo}
+                      onChange={e => setPagoMetodo(e.target.value)}
+                      className="w-32 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
+                    >
+                      <option value="EFECTIVO">Efectivo</option>
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                      <option value="CHEQUE">Cheque</option>
+                    </select>
+                    <button 
+                      onClick={agregarPago}
+                      className="px-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                    >
+                      <Plus className="w-5 h-5"/>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 min-h-[12rem]">
+                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-3">Pagos Ingresados</h3>
+                  {pagos.length === 0 ? (
+                    <p className="text-sm text-gray-400">Sin pagos (queda en CC)</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {pagos.map((p, i) => (
+                        <li key={i} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
+                          <span className="font-medium">{p.metodoPago}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-900 font-bold">${p.monto.toFixed(2)}</span>
+                            <button onClick={() => eliminarPago(i)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className={`p-4 rounded-xl border ${saldoFinal < 0 ? 'bg-red-50 border-red-200' : saldoFinal > 0 ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className={`font-semibold ${saldoFinal < 0 ? 'text-red-700' : saldoFinal > 0 ? 'text-blue-700' : 'text-emerald-700'}`}>
+                      {saldoFinal < 0 ? 'Deuda a CC:' : saldoFinal > 0 ? 'A favor en CC:' : 'Pago Exacto'}
+                    </span>
+                    {saldoFinal !== 0 && (
+                      <span className="font-bold text-xl">
+                        ${Math.abs(saldoFinal).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                disabled={isSubmitting}
+                className="px-6 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-semibold"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-emerald-600 rounded-xl text-white hover:bg-emerald-700 font-bold flex items-center gap-2"
+              >
+                {isSubmitting ? 'Guardando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

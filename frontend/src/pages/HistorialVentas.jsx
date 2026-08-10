@@ -36,7 +36,8 @@ export default function HistorialVentas() {
               <th className="p-4 font-semibold">ID</th>
               <th className="p-4 font-semibold">Fecha</th>
               <th className="p-4 font-semibold">Cliente</th>
-              <th className="p-4 font-semibold text-right">Monto</th>
+              <th className="p-4 font-semibold text-right">Total Final</th>
+              <th className="p-4 font-semibold text-right">Entregó</th>
               <th className="p-4 font-semibold text-center">Estado</th>
             </tr>
           </thead>
@@ -49,6 +50,9 @@ export default function HistorialVentas() {
                 <td className="p-4 text-right font-bold text-emerald-700">
                   ${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}
                 </td>
+                <td className="p-4 text-right font-medium text-gray-700">
+                  ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}
+                </td>
                 <td className="p-4 text-center">
                   <span className="px-2.5 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
                     {venta.estadoPago}
@@ -58,7 +62,7 @@ export default function HistorialVentas() {
             ))}
             {ventas.length === 0 && (
               <tr>
-                <td colSpan="5" className="p-8 text-center text-gray-500">
+                <td colSpan="6" className="p-8 text-center text-gray-500">
                   No hay ventas registradas todavía.
                 </td>
               </tr>
