@@ -28,7 +28,9 @@ frontend/test_ui.cjs
 .agent/
 .agents/
 .claude/
-.opencode/
+
+# --- Skills OPSX del proyecto (SÍ se versionan) ---
+# .opencode/ contiene las skills openspec-*.md del flujo OPSX local — NO ignorar.
 
 # --- IDE / OS ---
 .idea/
