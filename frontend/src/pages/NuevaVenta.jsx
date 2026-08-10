@@ -5,6 +5,7 @@ import { productosApi } from '../api/productos.api';
 import { ventasApi } from '../api/ventas.api';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
+import { useCartStore } from '../store/useCartStore';
 
 // Utilidades para guardar "últimos usados" en LocalStorage
 const getRecents = (key) => JSON.parse(localStorage.getItem(key) || '[]');
@@ -18,14 +19,24 @@ const addRecent = (key, id) => {
 export default function NuevaVenta() {
   const { pushToast } = useUIStore();
   
-  const [clienteId, setClienteId] = useState('');
   const [busquedaCliente, setBusquedaCliente] = useState('');
-  
-  const [detalles, setDetalles] = useState([]);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const liveStocks = useStockStore(state => state.liveStocks);
+
+  const clienteId = useCartStore(state => state.clienteSeleccionado);
+  const detalles = useCartStore(state => state.detalles);
+  const descuento = useCartStore(state => state.descuento);
+  const bandejasEntregadas = useCartStore(state => state.bandejasEntregadas);
+  const setCliente = useCartStore(state => state.setCliente);
+  const setDetalles = useCartStore(state => state.setDetalles);
+  const addDetalle = useCartStore(state => state.addDetalle);
+  const removeDetalle = useCartStore(state => state.removeDetalle);
+  const updateDetalleCantidad = useCartStore(state => state.updateDetalleCantidad);
+  const setDescuento = useCartStore(state => state.setDescuento);
+  const setBandejasEntregadas = useCartStore(state => state.setBandejasEntregadas);
+  const clearCart = useCartStore(state => state.clearCart);
 
   // Sincronizar stock en vivo con el estado local
   useEffect(() => {
@@ -42,7 +53,7 @@ export default function NuevaVenta() {
       }
       return d;
     }));
-  }, [liveStocks]);
+  }, [liveStocks, setDetalles]);
 
   // Auto-calcular bandejas según la cantidad de productos en el carrito
   useEffect(() => {
@@ -52,12 +63,10 @@ export default function NuevaVenta() {
     } else {
       setBandejasEntregadas('');
     }
-  }, [detalles]);
+  }, [detalles, setBandejasEntregadas]);
 
-  // Estados para Modal Liquidación
+  // Estados para Modal Liquidación (transitorios, no persisten)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [descuento, setDescuento] = useState('');
-  const [bandejasEntregadas, setBandejasEntregadas] = useState('');
   const [pagos, setPagos] = useState([]);
   const [pagoMonto, setPagoMonto] = useState('');
   const [pagoMetodo, setPagoMetodo] = useState('EFECTIVO');
@@ -111,7 +120,7 @@ export default function NuevaVenta() {
 
   // ---- Acciones ----
   const seleccionarCliente = (id) => {
-    setClienteId(id);
+    setCliente(id);
     setBusquedaCliente('');
   };
 
@@ -125,53 +134,43 @@ export default function NuevaVenta() {
       if (exists.cantidad >= exists.stock) {
         return pushToast('error', `Stock insuficiente. El máximo de ${producto.nombre} es ${exists.stock}.`);
       }
-      setDetalles(detalles.map(d => 
-        d.productoId === producto.id ? { ...d, cantidad: d.cantidad + 1 } : d
-      ));
+      updateDetalleCantidad(producto.id, exists.cantidad + 1);
     } else {
-      setDetalles([...detalles, { 
+      addDetalle({ 
         productoId: producto.id, 
         nombre: producto.nombre, 
         precio: producto.precio, 
         cantidad: 1,
         stock: producto.stock
-      }]);
+      });
     }
     setBusquedaProducto('');
   };
 
   const modificarCantidad = (productoId, cantidadStr) => {
     if (cantidadStr === '') {
-      setDetalles(detalles.map(d => 
-        d.productoId === productoId ? { ...d, cantidad: '' } : d
-      ));
+      updateDetalleCantidad(productoId, '');
       return;
     }
 
     const cant = parseInt(cantidadStr);
     if (isNaN(cant) || cant <= 0) {
-      setDetalles(detalles.map(d => 
-        d.productoId === productoId ? { ...d, cantidad: 1 } : d
-      ));
+      updateDetalleCantidad(productoId, 1);
       return;
     }
     
     const detalle = detalles.find(d => d.productoId === productoId);
     if (cant > detalle.stock) {
       pushToast('error', `Stock máximo superado. Se ajustó a ${detalle.stock}.`);
-      setDetalles(detalles.map(d => 
-        d.productoId === productoId ? { ...d, cantidad: detalle.stock } : d
-      ));
+      updateDetalleCantidad(productoId, detalle.stock);
       return;
     }
     
-    setDetalles(detalles.map(d => 
-      d.productoId === productoId ? { ...d, cantidad: cant } : d
-    ));
+    updateDetalleCantidad(productoId, cant);
   };
 
   const eliminarDetalle = (productoId) => {
-    setDetalles(detalles.filter(d => d.productoId !== productoId));
+    removeDetalle(productoId);
   };
 
   const totalCalculado = detalles.reduce((acc, curr) => {
@@ -230,13 +229,11 @@ export default function NuevaVenta() {
       setClientesRecientesIds(getRecents('recent_clients'));
       setProductosRecientesIds(getRecents('recent_products'));
 
-      // Limpiar formulario y cerrar modal
-      setClienteId('');
-      setDetalles([]);
+      // Limpiar carrito (store persistido) y estado transitorio del modal
+      clearCart();
       setBusquedaCliente('');
       setBusquedaProducto('');
       setIsModalOpen(false);
-      setDescuento('');
       setPagos([]);
     } catch (error) {
       const msg = error.response?.data?.message || 'Error al registrar la venta';
@@ -274,7 +271,7 @@ export default function NuevaVenta() {
                 </div>
                 <button 
                   type="button" 
-                  onClick={() => setClienteId('')} 
+                  onClick={() => setCliente('')} 
                   className="px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer border border-emerald-200"
                 >
                   Cambiar
