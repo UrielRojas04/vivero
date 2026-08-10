@@ -6,6 +6,9 @@ import Productos from './pages/Productos';
 import Insumos from './pages/Insumos';
 import Clientes from './pages/Clientes';
 import UsuariosAdmin from './pages/UsuariosAdmin';
+import NuevaVenta from './pages/NuevaVenta';
+import HistorialVentas from './pages/HistorialVentas';
+import VentasLayout from './pages/VentasLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 
@@ -31,6 +34,16 @@ function App() {
 
             <Route element={<ProtectedRoute requiredPermission="LEER_CLIENTES" />}>
               <Route path="/clientes" element={<Clientes />} />
+            </Route>
+
+            {/* Módulo de Ventas con sus subsecciones */}
+            <Route path="/ventas" element={<ProtectedRoute requiredPermission="ESCRIBIR_VENTAS" />}>
+              <Route element={<VentasLayout />}>
+                <Route path="nueva" element={<NuevaVenta />} />
+                <Route path="historial" element={<HistorialVentas />} />
+                {/* Redirección por defecto */}
+                <Route index element={<Navigate to="nueva" replace />} />
+              </Route>
             </Route>
 
             <Route element={<ProtectedRoute requiredPermission="ADMIN_DB" />}>

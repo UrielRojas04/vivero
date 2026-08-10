@@ -47,8 +47,9 @@ services:
       - vivero-net
 
   # Frontend en modo PRODUCCIÓN (opt-in): build de Vite servida por nginx.
-  # Levantar con: docker compose up frontend-prod
+  # Levantar con: docker compose --profile prod up frontend-prod
   frontend-prod:
+    profiles: ["prod"]
     build:
       context: ./frontend
       args:

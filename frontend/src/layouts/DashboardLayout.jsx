@@ -4,14 +4,35 @@ import { useAuthStore } from '../store/useAuthStore';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks } from 'lucide-react';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/productos', label: 'Productos (Plantas)', icon: Package, permission: 'LEER_STOCK' },
-  { to: '/insumos', label: 'Insumos', icon: Wrench, permission: 'LEER_INSUMOS' },
-  { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES' },
-  { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
+const navGroups = [
+  {
+    title: 'Principal',
+    items: [
+      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ]
+  },
+  {
+    title: 'Ventas',
+    items: [
+      { to: '/ventas/nueva', label: 'Ventas', icon: ShoppingCart, permission: 'ESCRIBIR_VENTAS' },
+    ]
+  },
+  {
+    title: 'Catálogo',
+    items: [
+      { to: '/productos', label: 'Productos (Plantas)', icon: Package, permission: 'LEER_STOCK' },
+      { to: '/insumos', label: 'Insumos', icon: Wrench, permission: 'LEER_INSUMOS' },
+    ]
+  },
+  {
+    title: 'Gestión',
+    items: [
+      { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES' },
+      { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
+    ]
+  }
 ];
 
 const DashboardLayout = () => {
@@ -32,24 +53,40 @@ const DashboardLayout = () => {
           <span className="font-bold text-lg text-gray-900">Vivero ERP</span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map(({ to, label, icon: Icon, permission }) => {
-            if (permission && !hasPermission(permission)) return null;
+        <nav className="flex-1 p-4 overflow-y-auto space-y-6">
+          {navGroups.map((group, idx) => {
+            // Filtrar los items del grupo según permisos
+            const visibleItems = group.items.filter(
+              (item) => !item.permission || hasPermission(item.permission)
+            );
+
+            // Si ningún item del grupo es visible, no mostramos el grupo
+            if (visibleItems.length === 0) return null;
+
             return (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`
-                }
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                {label}
-              </NavLink>
+              <div key={idx}>
+                <h3 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  {group.title}
+                </h3>
+                <div className="space-y-1">
+                  {visibleItems.map(({ to, label, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className={({ isActive }) =>
+                        `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`
+                      }
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             );
           })}
         </nav>
