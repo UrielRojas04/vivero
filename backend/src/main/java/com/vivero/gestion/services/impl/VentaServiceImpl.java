@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ public class VentaServiceImpl implements VentaService {
     private final CuentaCorrienteDineroRepository ccdRepository;
     private final BandejasService bandejasService;
     private final SseService sseService;
+    private final ChequeRepository chequeRepository;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
@@ -41,7 +43,8 @@ public class VentaServiceImpl implements VentaService {
                             MovimientoStockRepository movimientoStockRepository,
                             CuentaCorrienteDineroRepository ccdRepository,
                             BandejasService bandejasService,
-                            SseService sseService) {
+                            SseService sseService,
+                            ChequeRepository chequeRepository) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
@@ -50,6 +53,7 @@ public class VentaServiceImpl implements VentaService {
         this.ccdRepository = ccdRepository;
         this.bandejasService = bandejasService;
         this.sseService = sseService;
+        this.chequeRepository = chequeRepository;
     }
 
     @Override
@@ -125,6 +129,8 @@ public class VentaServiceImpl implements VentaService {
         venta.setTotalFinal(totalFinal);
 
         BigDecimal totalPagado = BigDecimal.ZERO;
+        List<Cheque> chequesAInsertar = new java.util.ArrayList<>();
+
         if (request.getPagos() != null) {
             for (PagoRequestDTO pReq : request.getPagos()) {
                 Pago pago = new Pago();
@@ -133,6 +139,22 @@ public class VentaServiceImpl implements VentaService {
                 pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
                 venta.addPago(pago);
                 totalPagado = totalPagado.add(pReq.getMonto());
+
+                if ("CHEQUE".equalsIgnoreCase(pReq.getMetodoPago())) {
+                    Cheque cheque = new Cheque();
+                    LocalDate fechaRec = pReq.getFechaRecepcion() != null ? 
+                            pReq.getFechaRecepcion() : 
+                            LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")).toLocalDate();
+                    cheque.setFechaRecepcion(fechaRec);
+                    cheque.setCliente(cliente);
+                    // venta se setea después de guardar la venta para evitar TransientObjectException
+                    cheque.setMonto(pReq.getMonto());
+                    cheque.setBanco(pReq.getBanco());
+                    cheque.setNumeroSerie(pReq.getNumeroSerie());
+                    cheque.setFechaCobro(pReq.getFechaCobro());
+                    cheque.setEstado(EstadoCheque.EN_CARTERA);
+                    chequesAInsertar.add(cheque);
+                }
             }
         }
 
@@ -159,6 +181,12 @@ public class VentaServiceImpl implements VentaService {
         }
 
         Venta ventaGuardada = ventaRepository.save(venta);
+
+        // Guardar cheques ahora que la venta ya tiene ID
+        for (Cheque c : chequesAInsertar) {
+            c.setVenta(ventaGuardada);
+            chequeRepository.save(c);
+        }
         
         // --- Historial Bandejas ---
         if (request.getBandejasEntregadas() != null && request.getBandejasEntregadas() > 0) {

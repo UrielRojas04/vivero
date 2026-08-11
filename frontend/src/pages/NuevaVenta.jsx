@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Trash2, Search, ArrowRight, Clock, UserCheck } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '../api/clientes.api';
 import { productosApi } from '../api/productos.api';
 import { ventasApi } from '../api/ventas.api';
@@ -18,6 +19,7 @@ const addRecent = (key, id) => {
 
 export default function NuevaVenta() {
   const { pushToast } = useUIStore();
+  const queryClient = useQueryClient();
   
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
@@ -70,6 +72,10 @@ export default function NuevaVenta() {
   const [pagos, setPagos] = useState([]);
   const [pagoMonto, setPagoMonto] = useState('');
   const [pagoMetodo, setPagoMetodo] = useState('EFECTIVO');
+  const [pagoBanco, setPagoBanco] = useState('');
+  const [pagoNumeroSerie, setPagoNumeroSerie] = useState('');
+  const [pagoFechaCobro, setPagoFechaCobro] = useState('');
+  const [pagoFechaRecepcion, setPagoFechaRecepcion] = useState('');
 
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -187,8 +193,21 @@ export default function NuevaVenta() {
   const agregarPago = () => {
     const monto = parseFloat(pagoMonto);
     if (!monto || monto <= 0) return pushToast('error', 'Monto inválido');
-    setPagos([...pagos, { monto, metodoPago: pagoMetodo }]);
+    
+    const nuevoPago = { monto, metodoPago: pagoMetodo };
+    if (pagoMetodo === 'CHEQUE') {
+      nuevoPago.banco = pagoBanco || null;
+      nuevoPago.numeroSerie = pagoNumeroSerie || null;
+      nuevoPago.fechaCobro = pagoFechaCobro || null;
+      nuevoPago.fechaRecepcion = pagoFechaRecepcion || null;
+    }
+    
+    setPagos([...pagos, nuevoPago]);
     setPagoMonto('');
+    setPagoBanco('');
+    setPagoNumeroSerie('');
+    setPagoFechaCobro('');
+    setPagoFechaRecepcion('');
   };
 
   const eliminarPago = (index) => {
@@ -202,7 +221,14 @@ export default function NuevaVenta() {
     let pagosASubir = [...pagos];
     const montoPendiente = parseFloat(pagoMonto);
     if (montoPendiente && montoPendiente > 0) {
-      pagosASubir.push({ monto: montoPendiente, metodoPago: pagoMetodo });
+      const nuevoPago = { monto: montoPendiente, metodoPago: pagoMetodo };
+      if (pagoMetodo === 'CHEQUE') {
+        nuevoPago.banco = pagoBanco || null;
+        nuevoPago.numeroSerie = pagoNumeroSerie || null;
+        nuevoPago.fechaCobro = pagoFechaCobro || null;
+        nuevoPago.fechaRecepcion = pagoFechaRecepcion || null;
+      }
+      pagosASubir.push(nuevoPago);
     }
 
     const payload = {
@@ -235,6 +261,12 @@ export default function NuevaVenta() {
       setBusquedaProducto('');
       setIsModalOpen(false);
       setPagos([]);
+
+      // Invalidar caches para que otras pantallas se actualicen
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+      queryClient.invalidateQueries({ queryKey: ['cheques'] });
+      queryClient.invalidateQueries({ queryKey: ['productos'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientos'] });
     } catch (error) {
       const msg = error.response?.data?.message || 'Error al registrar la venta';
       pushToast('error', msg);
@@ -504,29 +536,45 @@ export default function NuevaVenta() {
 
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-2">Agregar Pago</h3>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number"
-                      placeholder="Monto"
-                      value={pagoMonto}
-                      onChange={e => setPagoMonto(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
-                    />
-                    <select 
-                      value={pagoMetodo}
-                      onChange={e => setPagoMetodo(e.target.value)}
-                      className="w-32 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
-                    >
-                      <option value="EFECTIVO">Efectivo</option>
-                      <option value="TRANSFERENCIA">Transferencia</option>
-                      <option value="CHEQUE">Cheque</option>
-                    </select>
-                    <button 
-                      onClick={agregarPago}
-                      className="px-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
-                    >
-                      <Plus className="w-5 h-5"/>
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <input 
+                        type="number"
+                        placeholder="Monto"
+                        value={pagoMonto}
+                        onChange={e => setPagoMonto(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
+                      />
+                      <select 
+                        value={pagoMetodo}
+                        onChange={e => setPagoMetodo(e.target.value)}
+                        className="w-32 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
+                      >
+                        <option value="EFECTIVO">Efectivo</option>
+                        <option value="TRANSFERENCIA">Transferencia</option>
+                        <option value="CHEQUE">Cheque</option>
+                      </select>
+                      <button 
+                        onClick={agregarPago}
+                        className="px-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                      >
+                        <Plus className="w-5 h-5"/>
+                      </button>
+                    </div>
+                    {pagoMetodo === 'CHEQUE' && (
+                      <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                        <input type="text" placeholder="Banco" value={pagoBanco} onChange={e => setPagoBanco(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                        <input type="text" placeholder="N° Serie" value={pagoNumeroSerie} onChange={e => setPagoNumeroSerie(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                        <div className="flex flex-col">
+                          <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha Emisión/Recepción</label>
+                          <input type="date" value={pagoFechaRecepcion} onChange={e => setPagoFechaRecepcion(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha de Cobro</label>
+                          <input type="date" value={pagoFechaCobro} onChange={e => setPagoFechaCobro(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -539,12 +587,20 @@ export default function NuevaVenta() {
                   ) : (
                     <ul className="space-y-2">
                       {pagos.map((p, i) => (
-                        <li key={i} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
-                          <span className="font-medium">{p.metodoPago}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-900 font-bold">${p.monto.toFixed(2)}</span>
-                            <button onClick={() => eliminarPago(i)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                        <li key={i} className="flex flex-col text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{p.metodoPago}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-gray-900 font-bold">${p.monto.toFixed(2)}</span>
+                              <button onClick={() => eliminarPago(i)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                            </div>
                           </div>
+                          {p.metodoPago === 'CHEQUE' && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {p.banco && <span>Banco: {p.banco}</span>}
+                              {p.numeroSerie && <span className="ml-2">N°: {p.numeroSerie}</span>}
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>

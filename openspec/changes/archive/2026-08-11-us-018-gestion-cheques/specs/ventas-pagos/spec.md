@@ -1,9 +1,4 @@
-# ventas-pagos Specification
-
-## Purpose
-TBD - created by archiving change us-013-ventas-pagos.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Registro de Pagos
 El sistema SHALL permitir asociar múltiples pagos a una Venta. Cada pago MUST indicar el monto, método de pago y fecha. Si el método de pago seleccionado es CHEQUE, el sistema SHALL permitir (pero no obligar) ingresar los metadatos del cheque (banco, número de serie, fecha de cobro) asociándolos automáticamente a la Venta y Cliente.
@@ -15,10 +10,3 @@ El sistema SHALL permitir asociar múltiples pagos a una Venta. Cada pago MUST i
 #### Scenario: Pago con Cheque detallado
 - **WHEN** el usuario selecciona CHEQUE como método de pago e ingresa datos como banco "Santander" y monto
 - **THEN** el sistema registra el Pago asociado a la Venta y paralelamente persiste el objeto Cheque vinculado a esa Venta.
-
-### Requirement: Descuentos sobre Ventas
-El sistema SHALL permitir registrar un porcentaje de descuento sobre el subtotal de la venta.
-
-#### Scenario: Descuento aplicado
-- **WHEN** se aplica un 10% de descuento a una venta de $5000
-- **THEN** el sistema calcula el descuento exacto ($500) y el totalFinal se fija en $4500.
