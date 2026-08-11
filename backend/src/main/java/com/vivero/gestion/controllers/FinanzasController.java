@@ -55,6 +55,7 @@ public class FinanzasController {
     public ResponseEntity<Page<VentaLiteDTO>> listarVentas(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         LocalDate desdeEfectivo = desde != null ? desde : LocalDate.now().withDayOfMonth(1);
@@ -63,6 +64,7 @@ public class FinanzasController {
         Page<VentaLiteDTO> ventas = finanzasService.listarVentas(
                 desdeEfectivo.atStartOfDay(),
                 hastaEfectivo.atTime(LocalTime.MAX),
+                q,
                 pageable);
         return ResponseEntity.ok(ventas);
     }

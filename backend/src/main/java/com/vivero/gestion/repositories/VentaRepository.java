@@ -26,9 +26,11 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
                 v.id, v.id, v.fecha, v.cliente.nombreRazonSocial, v.totalFinal, v.estadoPago)
             FROM Venta v
             WHERE v.fecha BETWEEN :desde AND :hasta
+              AND (:q IS NULL OR :q = '' OR LOWER(v.cliente.nombreRazonSocial) LIKE LOWER(CONCAT('%', :q, '%')))
             ORDER BY v.fecha DESC
             """)
     Page<VentaLiteDTO> listarVentasPorRango(@Param("desde") LocalDateTime desde,
                                             @Param("hasta") LocalDateTime hasta,
+                                            @Param("q") String q,
                                             Pageable pageable);
 }

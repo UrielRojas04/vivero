@@ -21,8 +21,8 @@ public class GastoService {
     private GastoRepository gastoRepository;
 
     @Transactional(readOnly = true)
-    public Page<GastoDTO> listarGastos(Pageable pageable) {
-        return gastoRepository.listarGastosUnificados(pageable)
+    public Page<GastoDTO> listarGastos(String q, Pageable pageable) {
+        return gastoRepository.listarGastosUnificados(q, pageable)
                 .map(this::mapUnificadoToDTO);
     }
 

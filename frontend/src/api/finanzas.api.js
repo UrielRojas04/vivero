@@ -6,8 +6,8 @@ export const finanzasApi = {
     return data;
   },
 
-  fetchVentasFinanzas: async (desde, hasta, page = 0, size = 10) => {
-    const { data } = await axiosInstance.get('/finanzas/ventas', { params: { desde, hasta, page, size } });
+  fetchVentasFinanzas: async (desde, hasta, q, page = 0, size = 10) => {
+    const { data } = await axiosInstance.get('/finanzas/ventas', { params: { desde, hasta, q, page, size } });
     return data;
   }
 };

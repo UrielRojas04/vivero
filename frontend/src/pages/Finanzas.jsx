@@ -5,20 +5,23 @@ import {
   Coins,
   HandCoins,
   Percent,
-  PieChart,
+  PieChart as PieChartIcon,
   Calendar,
   ChevronLeft,
   ChevronRight,
   Loader2,
   ReceiptText,
   Plus,
-  Trash2,
-  TrendingDown
+  TrendingDown,
+  Search,
+  ArrowLeft
 } from 'lucide-react';
 import { finanzasApi } from '../api/finanzas.api';
 import { getGastos, createGasto } from '../api/gastos.api';
+import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const currentYear = new Date().getFullYear();
 const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
@@ -30,20 +33,44 @@ const Finanzas = () => {
   const { pushToast, denyAccess } = useUIStore();
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  
+  // Drill-down states
+  const [showVentas, setShowVentas] = useState(false);
+  const [showGastos, setShowGastos] = useState(false);
+
+  // Search and Pagination
   const [page, setPage] = useState(0);
   const [size] = useState(10);
   const [gastosPage, setGastosPage] = useState(0);
-  
+  const [searchVentas, setSearchVentas] = useState('');
+  const [debouncedSearchVentas, setDebouncedSearchVentas] = useState('');
+  const [searchGastos, setSearchGastos] = useState('');
+  const [debouncedSearchGastos, setDebouncedSearchGastos] = useState('');
+
   const [nuevoGasto, setNuevoGasto] = useState({ concepto: '', monto: '' });
 
   const desde = `${selectedYear}-01-01`;
   const hasta = `${selectedYear}-12-31`;
 
-  // Al cambiar de año, volvemos a la primera página
+  // Al cambiar de año o búsqueda, volvemos a la primera página
   useEffect(() => {
     setPage(0);
+  }, [selectedYear, debouncedSearchVentas]);
+
+  useEffect(() => {
     setGastosPage(0);
-  }, [selectedYear]);
+  }, [selectedYear, debouncedSearchGastos]);
+
+  // Debounce para búsquedas
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearchVentas(searchVentas), 500);
+    return () => clearTimeout(handler);
+  }, [searchVentas]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearchGastos(searchGastos), 500);
+    return () => clearTimeout(handler);
+  }, [searchGastos]);
 
   const resumenQuery = useQuery({
     queryKey: ['finanzas', 'resumen', { desde, hasta }],
@@ -51,15 +78,22 @@ const Finanzas = () => {
   });
 
   const ventasQuery = useQuery({
-    queryKey: ['finanzas', 'ventas', { desde, hasta, page, size }],
-    queryFn: () => finanzasApi.fetchVentasFinanzas(desde, hasta, page, size),
+    queryKey: ['finanzas', 'ventas', { desde, hasta, q: debouncedSearchVentas, page, size }],
+    queryFn: () => finanzasApi.fetchVentasFinanzas(desde, hasta, debouncedSearchVentas, page, size),
     placeholderData: keepPreviousData,
+    enabled: showVentas,
   });
 
   const gastosQuery = useQuery({
-    queryKey: ['finanzas', 'gastos', { desde, hasta, page: gastosPage, size: 5 }],
-    queryFn: () => getGastos({ desde, hasta, page: gastosPage, size: 5 }),
+    queryKey: ['finanzas', 'gastos', { q: debouncedSearchGastos, page: gastosPage, size: 5 }],
+    queryFn: () => getGastos({ q: debouncedSearchGastos, page: gastosPage, size: 5 }),
     placeholderData: keepPreviousData,
+    enabled: showGastos,
+  });
+
+  const productosQuery = useQuery({
+    queryKey: ['productos', 'all'],
+    queryFn: () => productosApi.getAll(),
   });
 
   const createGastoMutation = useMutation({
@@ -75,13 +109,12 @@ const Finanzas = () => {
     }
   });
 
-  // Feedback de errores exclusivamente vía useUIStore (nunca alert/confirm)
   useEffect(() => {
     if (!resumenQuery.isError) return;
     if (resumenQuery.error?.response?.status === 403) {
       denyAccess('No tienes permisos de finanzas (requiere ADMIN_DB).');
     } else {
-      pushToast('error', getErrorMessage(resumenQuery.error, 'Ocurrió un error al cargar el resumen de finanzas. Intente nuevamente.'));
+      pushToast('error', getErrorMessage(resumenQuery.error, 'Ocurrió un error al cargar el resumen de finanzas.'));
     }
   }, [resumenQuery.isError, resumenQuery.error, pushToast, denyAccess]);
 
@@ -112,24 +145,36 @@ const Finanzas = () => {
   const gastos = gastosQuery.data?.content || [];
   const totalPages = ventasQuery.data?.totalPages || 0;
   const totalElements = ventasQuery.data?.totalElements || 0;
-  
   const gastosTotalPages = gastosQuery.data?.totalPages || 0;
 
   const loadingResumen = resumenQuery.isPending;
-  const loadingVentas = ventasQuery.isPending;
+  const loadingVentas = ventasQuery.isFetching;
   const fetchingVentas = ventasQuery.isFetching;
-  const loadingGastos = gastosQuery.isPending;
+  const loadingGastos = gastosQuery.isFetching;
   const fetchingGastos = gastosQuery.isFetching;
 
   const totalVentas = resumen?.totalVentas ?? 0;
   const totalCostos = resumen?.totalCostos ?? 0;
   const gananciaNeta = resumen?.gananciaNeta ?? 0;
   const margen = resumen?.margen ?? 0;
-  const barMax = Math.max(totalVentas, totalCostos, 1);
 
   const kpis = [
-    { label: 'Total Ventas', value: formatMoney(totalVentas), icon: Wallet, iconClass: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Total Costos', value: formatMoney(totalCostos), icon: Coins, iconClass: 'bg-red-50 text-red-500' },
+    { 
+      label: 'Total Ventas', 
+      value: formatMoney(totalVentas), 
+      icon: Wallet, 
+      iconClass: 'bg-emerald-50 text-emerald-600',
+      active: showVentas,
+      onClick: () => { setShowVentas(!showVentas); setShowGastos(false); }
+    },
+    { 
+      label: 'Total Costos', 
+      value: formatMoney(totalCostos), 
+      icon: Coins, 
+      iconClass: 'bg-red-50 text-red-500',
+      active: showGastos,
+      onClick: () => { setShowGastos(!showGastos); setShowVentas(false); }
+    },
     { label: 'Ganancia Neta', value: formatMoney(gananciaNeta), icon: HandCoins, iconClass: 'bg-blue-50 text-blue-600' },
     { label: 'Margen de Ganancia', value: `${margen.toLocaleString('es-AR')} %`, icon: Percent, iconClass: 'bg-violet-50 text-violet-600' },
   ];
@@ -140,13 +185,31 @@ const Finanzas = () => {
     return 'bg-red-50 text-red-700';
   };
 
+  const chartData = [
+    { name: 'Ventas', value: totalVentas, color: '#10b981' },
+    { name: 'Costos/Gastos', value: totalCostos, color: '#ef4444' }
+  ].filter(d => d.value > 0);
+
+  const productos = productosQuery.data || [];
+  const topStockData = [...productos]
+    .sort((a, b) => (b.stock || 0) - (a.stock || 0))
+    .slice(0, 5)
+    .map((p, index) => {
+      const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+      return {
+        name: p.nombre.length > 15 ? p.nombre.substring(0, 15) + '...' : p.nombre,
+        stock: p.stock,
+        color: colors[index % colors.length]
+      };
+    });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-gray-900">Finanzas</h1>
-          <PieChart className="w-5 h-5 text-emerald-500" />
+          <PieChartIcon className="w-5 h-5 text-emerald-500" />
         </div>
 
         {/* Selector de Año */}
@@ -167,10 +230,8 @@ const Finanzas = () => {
         </div>
       </div>
 
-      {/* Nota informativa de cálculo */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-800">
-        Los costos de productos se calculan al precio de costo registrado al momento de cada venta (costo histórico).
-        Los gastos en insumos corresponden a las compras del período seleccionado.
+        Haz clic en las tarjetas de <strong>Total Ventas</strong> o <strong>Total Costos</strong> para explorar el detalle.
       </div>
 
       {loadingResumen ? (
@@ -183,7 +244,11 @@ const Finanzas = () => {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {kpis.map((kpi) => (
-              <div key={kpi.label} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <div 
+                key={kpi.label} 
+                onClick={kpi.onClick}
+                className={`bg-white rounded-2xl border p-5 shadow-sm transition-all ${kpi.onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-md' : ''} ${kpi.active ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200'}`}
+              >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-gray-500">{kpi.label}</p>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${kpi.iconClass}`}>
@@ -195,95 +260,130 @@ const Finanzas = () => {
             ))}
           </div>
 
-          {/* Layout 2 Columnas */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Cruce Ventas vs Costos */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm h-full">
-              <h2 className="text-base font-bold text-gray-900 mb-4">Ventas vs Costos del período</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-semibold text-emerald-700">Ventas</span>
-                    <span className="text-sm font-bold text-emerald-700">{formatMoney(totalVentas)}</span>
-                  </div>
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                      style={{ width: `${(totalVentas / barMax) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-semibold text-red-600">Costos (incluye gastos)</span>
-                    <span className="text-sm font-bold text-red-600">{formatMoney(totalCostos)}</span>
-                  </div>
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-red-500 rounded-full transition-all duration-500"
-                      style={{ width: `${(totalCostos / barMax) * 100}%` }}
-                    />
-                  </div>
+          {/* Gráficos Estadísticos */}
+          {!showVentas && !showGastos && chartData.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col items-center">
+                <h2 className="text-base font-bold text-gray-900 w-full mb-2">Distribución Financiera</h2>
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={110}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatMoney(value)} />
+                      <Legend verticalAlign="bottom" height={36}/>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-              <p className="mt-4 text-xs text-gray-400">
-                Ganancia neta del período: <span className="font-semibold text-gray-600">{formatMoney(gananciaNeta)}</span>
-              </p>
-            </div>
 
-            {/* Gastos y Egresos Extras */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col h-full">
-              <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingDown className="w-5 h-5 text-red-500" />
-                Gastos del período
-              </h2>
-              
-              <form onSubmit={handleCrearGasto} className="flex flex-col sm:flex-row gap-3 mb-6">
-                <input
-                  type="text"
-                  placeholder="Concepto (ej: Luz, Internet...)"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-                  value={nuevoGasto.concepto}
-                  onChange={e => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
-                  required
-                />
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col items-center">
+                <h2 className="text-base font-bold text-gray-900 w-full mb-2">Top 5 Productos en Stock</h2>
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topStockData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip cursor={{fill: '#f3f4f6'}} />
+                      <Bar dataKey="stock" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                        {topStockData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sección de Gastos (Drill-down) */}
+          {showGastos && (
+            <div className="bg-white rounded-2xl border border-gray-900 p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowGastos(false)} 
+                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors"
+                    title="Volver"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-base font-bold text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                    <TrendingDown className="w-5 h-5 text-red-500" />
+                    Costos y Gastos
+                  </h2>
+                </div>
+                
+                <div className="relative w-full xl:w-80">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="Monto"
-                    className="w-full sm:w-32 border border-gray-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-                    value={nuevoGasto.monto}
-                    onChange={e => setNuevoGasto({ ...nuevoGasto, monto: e.target.value })}
-                    required
+                    type="text"
+                    placeholder="Buscar por concepto o insumo..."
+                    value={searchGastos}
+                    onChange={(e) => setSearchGastos(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={createGastoMutation.isPending}
-                  className="flex items-center justify-center gap-1 bg-gray-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
-                >
-                  {createGastoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Registrar
-                </button>
-              </form>
+                
+                <form onSubmit={handleCrearGasto} className="flex flex-row items-center gap-2 w-full xl:w-auto bg-gray-50/80 p-2 rounded-xl border border-gray-100">
+                  <input
+                    type="text"
+                    placeholder="Nuevo Gasto..."
+                    className="flex-1 w-32 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                    value={nuevoGasto.concepto}
+                    onChange={e => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
+                    required
+                  />
+                  <div className="relative w-24">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="Monto"
+                      className="w-full border border-gray-200 rounded-lg pl-5 pr-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      value={nuevoGasto.monto}
+                      onChange={e => setNuevoGasto({ ...nuevoGasto, monto: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={createGastoMutation.isPending}
+                    title="Registrar Gasto"
+                    className="flex items-center justify-center bg-gray-900 text-white rounded-lg p-1.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    {createGastoMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                  </button>
+                </form>
+              </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="min-h-[200px]">
                 {loadingGastos ? (
                   <div className="py-8 flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
                   </div>
                 ) : gastos.length === 0 ? (
                   <div className="py-8 text-center text-sm text-gray-500">
-                    No hay gastos registrados en este período.
+                    No hay gastos o costos que coincidan con la búsqueda.
                   </div>
                 ) : (
                   <ul className="space-y-3">
                     {gastos.map(gasto => (
-                      <li key={gasto.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                      <li key={gasto.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm">
                         <div>
                           <p className="text-sm font-semibold text-gray-900 flex items-center">
                             {gasto.concepto}
@@ -326,95 +426,119 @@ const Finanzas = () => {
                 </div>
               )}
             </div>
-          </div>
+          )}
         </>
       )}
 
-      {/* Listado de ventas paginado */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-bold text-gray-900">Ventas del período</h2>
-          <span className="text-sm text-gray-500 font-medium">{totalElements} ventas</span>
-        </div>
-
-        {loadingVentas ? (
-          <div className="p-16 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-500">Cargando ventas...</p>
-          </div>
-        ) : ventas.length === 0 ? (
-          <div className="p-16 flex flex-col items-center justify-center text-center">
-            <ReceiptText className="w-10 h-10 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">No hay ventas en el rango seleccionado.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/75 border-b border-gray-200">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">N° Venta</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado de Pago</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método de Pago</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {ventas.map((venta) => (
-                  <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {new Date(venta.fecha).toLocaleString('es-AR')}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{venta.clienteNombre}</td>
-                    <td className="px-6 py-4 text-right font-bold text-emerald-700">
-                      {formatMoney(venta.totalFinal)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
-                        {venta.estadoDePago}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {venta.metodoPago || '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Paginación */}
-        {totalPages > 0 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500 flex items-center gap-2">
-              {fetchingVentas && <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />}
-              Página <span className="font-semibold text-gray-900">{page + 1}</span> de{' '}
-              <span className="font-semibold text-gray-900">{totalPages}</span>
-            </p>
+      {/* Sección de Ventas (Drill-down) */}
+      {!loadingResumen && showVentas && (
+        <div className="bg-white rounded-2xl border border-gray-900 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              <button 
+                onClick={() => setShowVentas(false)} 
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors"
+                title="Volver"
               >
-                <ChevronLeft className="w-4 h-4" />
-                Anterior
+                <ArrowLeft className="w-5 h-5" />
               </button>
-              <button
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page >= totalPages - 1}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              >
-                Siguiente
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Detalle de Ventas</h2>
+                <span className="text-sm text-gray-500 font-medium">{totalElements} ventas en total</span>
+              </div>
+            </div>
+            
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre de cliente..."
+                value={searchVentas}
+                onChange={(e) => setSearchVentas(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              />
             </div>
           </div>
-        )}
-      </div>
+
+          {loadingVentas ? (
+            <div className="p-16 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+              <p className="text-sm font-medium text-gray-500">Cargando ventas...</p>
+            </div>
+          ) : ventas.length === 0 ? (
+            <div className="p-16 flex flex-col items-center justify-center text-center">
+              <ReceiptText className="w-10 h-10 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500">No hay ventas que coincidan con la búsqueda.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/75 border-b border-gray-200">
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">N° Venta</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado de Pago</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método de Pago</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {ventas.map((venta) => (
+                    <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {new Date(venta.fecha).toLocaleString('es-AR')}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{venta.clienteNombre}</td>
+                      <td className="px-6 py-4 text-right font-bold text-emerald-700">
+                        {formatMoney(venta.totalFinal)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
+                          {venta.estadoDePago}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center text-sm text-gray-600">
+                        {venta.metodoPago || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Paginación */}
+          {totalPages > 0 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <p className="text-sm text-gray-500 flex items-center gap-2">
+                {fetchingVentas && <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />}
+                Página <span className="font-semibold text-gray-900">{page + 1}</span> de{' '}
+                <span className="font-semibold text-gray-900">{totalPages}</span>
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(Math.max(0, page - 1))}
+                  disabled={page === 0}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-white"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-white"
+                >
+                  Siguiente
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

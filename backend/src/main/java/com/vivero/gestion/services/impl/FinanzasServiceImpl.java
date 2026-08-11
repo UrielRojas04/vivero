@@ -70,8 +70,8 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, Pageable pageable) {
-        Page<VentaLiteDTO> ventas = ventaRepository.listarVentasPorRango(desde, hasta, pageable);
+    public Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Pageable pageable) {
+        Page<VentaLiteDTO> ventas = ventaRepository.listarVentasPorRango(desde, hasta, q, pageable);
         if (ventas.isEmpty()) {
             return ventas;
         }

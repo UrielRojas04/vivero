@@ -33,12 +33,28 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     'INSUMO' as tipo 
                 FROM insumos
             ) as unificados
+            WHERE (:q IS NULL OR :q = '' OR LOWER(unificados.concepto) LIKE LOWER(CONCAT('%', :q, '%')))
             """,
             countQuery = """
-            SELECT 
-                (SELECT COUNT(*) FROM gastos) + 
-                (SELECT COUNT(*) FROM insumos)
+            SELECT COUNT(*) FROM (
+                SELECT 
+                    CONCAT('G-', id) as idUnico, 
+                    concepto as concepto, 
+                    monto as monto, 
+                    fecha as fecha, 
+                    'MANUAL' as tipo 
+                FROM gastos
+                UNION ALL
+                SELECT 
+                    CONCAT('I-', id) as idUnico, 
+                    CONCAT('Insumo: ', nombre) as concepto, 
+                    precio as monto, 
+                    fecha_compra as fecha, 
+                    'INSUMO' as tipo 
+                FROM insumos
+            ) as unificados
+            WHERE (:q IS NULL OR :q = '' OR LOWER(unificados.concepto) LIKE LOWER(CONCAT('%', :q, '%')))
             """,
             nativeQuery = true)
-    Page<GastoUnificadoView> listarGastosUnificados(Pageable pageable);
+    Page<GastoUnificadoView> listarGastosUnificados(@org.springframework.data.repository.query.Param("q") String q, Pageable pageable);
 }

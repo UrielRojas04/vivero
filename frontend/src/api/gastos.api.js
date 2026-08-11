@@ -1,6 +1,6 @@
 import axiosInstance from './axios';
 
-export const getGastos = async (params = { page: 0, size: 10 }) => {
+export const getGastos = async (params = { q: '', page: 0, size: 10 }) => {
   const response = await axiosInstance.get('/gastos', { params });
   return response.data;
 };

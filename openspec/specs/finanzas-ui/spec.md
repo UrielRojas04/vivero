@@ -27,7 +27,7 @@ El sistema SHALL permitir listar las ventas de un período con paginación, devo
 - **THEN** el sistema devuelve una página vacía (sin elementos) con los metadatos de paginación consistentes, sin errores.
 
 ### Requirement: Sección Finanzas protegida por permiso en la navegación
-El sistema SHALL exponer la sección "Finanzas" en la navegación principal del frontend únicamente a usuarios con permiso `ADMIN_DB`; para el resto de los roles la entrada SHALL estar oculta y la ruta SHALL bloquear el acceso sin el permiso.
+El sistema SHALL exponer la sección "Finanzas" en la navegación principal del frontend únicamente a usuarios con permiso `ADMIN_DB`; para el resto de los roles la entrada SHALL estar oculta y la ruta SHALL bloquear el acceso sin el permiso. Adicionalmente, el dashboard principal SHALL mostrar tarjetas KPI de métricas financieras, gráficos estadísticos y secciones desplegables interactivas para el detalle de "Ventas" y "Gastos" con buscador por texto.
 
 #### Scenario: Usuario Jefe ve la sección Finanzas
 - **WHEN** un usuario autenticado con permiso `ADMIN_DB` inicia sesión
@@ -39,4 +39,12 @@ El sistema SHALL exponer la sección "Finanzas" en la navegación principal del 
 
 #### Scenario: Tablero muestra KPIs y cruce Ventas vs Costos
 - **WHEN** el usuario con `ADMIN_DB` abre la pantalla de Finanzas con un rango de fechas seleccionado y datos disponibles
-- **THEN** el sistema renderiza tarjetas KPI (total ventas, total costos, ganancia neta, margen %) y el cruce Ventas vs Costos del período, con feedback de carga y de error vía `useUIStore` y sin `alert`/`confirm` nativos.
+- **THEN** el sistema renderiza tarjetas KPI (total ventas, total costos, ganancia neta, margen %) y gráficos visuales y estadísticos de distribución de ingresos/egresos, manteniendo ocultos los detalles de las tablas inicialmente.
+
+#### Scenario: Usuario interactúa con KPIs para ver el detalle
+- **WHEN** el usuario hace clic en la tarjeta de "Total Ventas" o "Total Costos"
+- **THEN** el sistema despliega la tabla paginada correspondiente, permitiéndole usar una barra de búsqueda para filtrar los resultados, colapsando la otra vista para enfocar la lectura.
+
+#### Scenario: Búsqueda en los listados
+- **WHEN** el usuario ingresa texto en el buscador de la tabla (Ventas o Gastos)
+- **THEN** el frontend dispara la consulta paginada al backend con el parámetro de búsqueda y el backend devuelve únicamente los registros que coinciden con dicho criterio en su nombre/cliente/concepto.

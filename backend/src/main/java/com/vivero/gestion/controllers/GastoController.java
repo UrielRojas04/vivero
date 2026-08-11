@@ -21,9 +21,10 @@ public class GastoController {
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN_DB')")
     public ResponseEntity<Page<GastoDTO>> listarGastos(
+            @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(gastoService.listarGastos(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fecha"))));
+        return ResponseEntity.ok(gastoService.listarGastos(q, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fecha"))));
     }
 
     @PostMapping

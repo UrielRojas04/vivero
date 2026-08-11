@@ -9,5 +9,5 @@ import java.time.LocalDateTime;
 
 public interface FinanzasService {
     DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta);
-    Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, Pageable pageable);
+    Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Pageable pageable);
 }
