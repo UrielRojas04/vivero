@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "insumos")
@@ -25,6 +26,9 @@ public class Insumo {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
+
+    @Column
+    private LocalDateTime fechaCompra;
 
     @Column(nullable = false)
     private Integer stock = 0;
@@ -50,6 +54,9 @@ public class Insumo {
 
     public BigDecimal getPrecio() { return precio; }
     public void setPrecio(BigDecimal precio) { this.precio = precio; }
+
+    public LocalDateTime getFechaCompra() { return fechaCompra; }
+    public void setFechaCompra(LocalDateTime fechaCompra) { this.fechaCompra = fechaCompra; }
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }

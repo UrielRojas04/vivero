@@ -107,6 +107,8 @@ public class VentaServiceImpl implements VentaService {
             detalle.setCantidad(detReq.getCantidad());
             BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
             detalle.setPrecioUnitarioHistorico(precioHist);
+            BigDecimal costoHist = producto.getPrecioCosto() != null ? producto.getPrecioCosto() : BigDecimal.ZERO;
+            detalle.setPrecioCostoHistorico(costoHist);
             BigDecimal subtotalLine = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
             detalle.setSubtotal(subtotalLine);
             

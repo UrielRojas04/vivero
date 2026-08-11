@@ -6,6 +6,7 @@ import Productos from './pages/Productos';
 import Insumos from './pages/Insumos';
 import Clientes from './pages/Clientes';
 import UsuariosAdmin from './pages/UsuariosAdmin';
+import Finanzas from './pages/Finanzas';
 import NuevaVenta from './pages/NuevaVenta';
 import HistorialVentas from './pages/HistorialVentas';
 import VentasLayout from './pages/VentasLayout';
@@ -48,6 +49,7 @@ function App() {
 
             <Route element={<ProtectedRoute requiredPermission="ADMIN_DB" />}>
               <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
+              <Route path="/finanzas" element={<Finanzas />} />
             </Route>
           </Route>
         </Route>

@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,9 @@ public class InsumoServiceImpl implements InsumoService {
         insumo.setNombre(dto.getNombre());
         insumo.setDescripcion(dto.getDescripcion());
         insumo.setPrecio(dto.getPrecio());
+        insumo.setFechaCompra(dto.getFechaCompra() != null
+                ? dto.getFechaCompra()
+                : LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
         insumo.setStock(dto.getStock() != null ? dto.getStock() : 0);
 
         Insumo guardado = insumoRepository.save(insumo);
@@ -58,6 +63,7 @@ public class InsumoServiceImpl implements InsumoService {
         if (dto.getNombre() != null) insumo.setNombre(dto.getNombre());
         if (dto.getDescripcion() != null) insumo.setDescripcion(dto.getDescripcion());
         if (dto.getPrecio() != null) insumo.setPrecio(dto.getPrecio());
+        if (dto.getFechaCompra() != null) insumo.setFechaCompra(dto.getFechaCompra());
         if (dto.getStock() != null) insumo.setStock(dto.getStock());
 
 
@@ -79,6 +85,7 @@ public class InsumoServiceImpl implements InsumoService {
                 insumo.getNombre(),
                 insumo.getDescripcion(),
                 insumo.getPrecio(),
+                insumo.getFechaCompra(),
                 insumo.getStock()
         );
     }

@@ -3,7 +3,7 @@
 Mapa completo de changes para desarrollar **Sistema Vivero (ERP)** de inicio a fin.
 Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y atomicidad.
 
-> **Nota de estado (2026-08-10):** Todos los changes hasta `us-015-realtime-sse` están **completados y archivados** en OPSX (incl. `infra-001-db-viewer`, `docker-full-stack`, `chore-limpieza-pre-ventas`, `ui-rbac-profile`, `ui-feedback-modals` y `ui-cart-persistence`). El multi-negocio por `UnidadNegocio` quedó **vestigial** (RBAC plano desde `us-012`; `us-003-multi-negocio` **[REVERTIDO]** — reemplazado por `chore-limpieza-pre-ventas`). **Pendientes:** `us-016-remitos-pdf` y `us-017-finanzas-ui`.
+> **Nota de estado (2026-08-10):** Todos los changes hasta `us-016-remitos-pdf` están **completados y archivados** en OPSX (incl. `infra-001-db-viewer`, `docker-full-stack`, `chore-limpieza-pre-ventas`, `ui-rbac-profile`, `ui-feedback-modals`, `ui-cart-persistence` y `us-016-remitos-pdf`). El multi-negocio por `UnidadNegocio` quedó **vestigial** (RBAC plano desde `us-012`; `us-003-multi-negocio` **[REVERTIDO]** — reemplazado por `chore-limpieza-pre-ventas`). **Pendiente:** `us-017-finanzas-ui`.
 
 ## Orden de ejecución
 
@@ -31,8 +31,8 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 | 20| ✅ `us-014-bandejas-flujo` | HistorialBandejas, entregas y devoluciones | Épica 4 | `us-013-ventas-core`, `us-010-cuentas-ctes` | Trazabilidad de envases por venta |
 | 21| ✅ `us-015-realtime-sse` | Endpoints SSE para notificar cambios de stock | Épica 3 | `us-013-ventas-core` | Requiere que existan eventos de stock para emitir |
 | 22| ✅ `ui-cart-persistence` | Carrito de ventas persistente en UI (Zustand + sessionStorage) | Épica 3 | `us-013-ventas-core` | Evita perder el carrito al navegar/refrescar |
-| 23| 🚀 `us-016-remitos-pdf` | Componente Frontend de generación de PDF | Épica 3 | `us-013-ventas-core` | **PRÓXIMO CHANGE** |
-| 24| `us-017-finanzas-ui` | Reportes de rentabilidad (Ventas vs Costos) | Épica 5 | `us-013-ventas-core`, `us-008-frontend-insumos` | Tablero financiero final |
+| 23| ✅ `us-016-remitos-pdf` | Remito PDF/Imagen + WhatsApp | Épica 3 | `us-013-ventas-core` | Comprobante client-side con envío por WhatsApp |
+| 24| 🚀 `us-017-finanzas-ui` | Reportes de rentabilidad (Ventas vs Costos) | Épica 5 | `us-013-ventas-core`, `us-008-frontend-insumos` | **PRÓXIMO CHANGE** — Tablero financiero final |
 
 
 ## Detalle por change
@@ -132,14 +132,16 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 **Archivo**: `openspec/changes/archive/2026-08-10-ui-cart-persistence/`
 
 ### `us-016-remitos-pdf`
-**Funcionalidad**: Generación en memoria (client-side) del comprobante de venta (PDF o Imagen) para enviarlo al cliente (integración preparada para botón "Enviar por WhatsApp").
+**(COMPLETADO — archivado en OPSX al 2026-08-10)**.
+**Funcionalidad**: Generación en memoria (client-side) del comprobante de venta (PDF o Imagen) para enviarlo al cliente. `ComprobanteVentaModal.jsx` desde el historial: descarga PDF (`jspdf`), exporta PNG completo (`html-to-image`, clon off-screen sin recorte) y "Enviar por WhatsApp" — en escritorio copia el PNG al portapapeles y abre `web.whatsapp.com/send?phone={clienteTelefono}` reutilizando la ventana (`whatsapp-remito`); en móvil intenta Web Share con el archivo. `clienteTelefono` expuesto en `VentaResponseDTO`.
 **Épica**: Épica 3
 **Depende de**: `us-013-ventas-core`.
 **Justificación**: Necesidad crítica de UX/UI final de la transacción comercial.
-**🚀 PRÓXIMO CHANGE**: es el siguiente a proponer/implementar según el roadmap.
+**Archivo**: `openspec/changes/archive/2026-08-10-us-016-remitos-pdf/`
 
 ### `us-017-finanzas-ui`
 **Funcionalidad**: Dashboards y agregaciones. Cruce de totales de ventas vs costos de insumos y plantas.
 **Épica**: Épica 5
 **Depende de**: `us-013-ventas-core`, `us-008-frontend-insumos`.
 **Justificación**: El entregable final para el dueño del negocio: ver la rentabilidad neta.
+**🚀 PRÓXIMO CHANGE**: es el siguiente a proponer/implementar según el roadmap.

@@ -5,6 +5,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precio, setPrecio] = useState('');
+  const [precioCosto, setPrecioCosto] = useState('');
   const [stock, setStock] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -13,11 +14,13 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setNombre(producto.nombre || '');
       setDescripcion(producto.descripcion || '');
       setPrecio(producto.precio || '');
+      setPrecioCosto(producto.precioCosto || '');
       setStock(producto.stock || '');
     } else {
       setNombre('');
       setDescripcion('');
       setPrecio('');
+      setPrecioCosto('');
       setStock('');
     }
     setErrors({});
@@ -30,6 +33,9 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       newErrors.precio = 'El precio es requerido';
     } else if (parseFloat(precio) <= 0) {
       newErrors.precio = 'El precio debe ser mayor a 0';
+    }
+    if (precioCosto !== '' && parseFloat(precioCosto) < 0) {
+      newErrors.precioCosto = 'El precio de costo no puede ser negativo';
     }
     if (stock === '' || stock === null) {
       newErrors.stock = 'El stock es requerido';
@@ -47,6 +53,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         nombre,
         descripcion,
         precio: parseFloat(precio),
+        precioCosto: precioCosto === '' ? null : parseFloat(precioCosto),
         stock: parseInt(stock, 10)
       });
     }
@@ -167,6 +174,28 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 <p className="mt-1 text-xs text-red-500 font-medium">{errors.stock}</p>
               )}
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="precioCosto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              Precio de Costo (ARS)
+            </label>
+            <input
+              id="precioCosto"
+              type="number"
+              step="0.01"
+              min="0"
+              value={precioCosto}
+              onChange={(e) => setPrecioCosto(e.target.value)}
+              className={`w-full px-4 py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
+                errors.precioCosto ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+              }`}
+              placeholder="0.00"
+            />
+            <p className="mt-1 text-xs text-gray-400">Opcional: lo usamos para calcular la rentabilidad en Finanzas.</p>
+            {errors.precioCosto && (
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.precioCosto}</p>
+            )}
           </div>
 
           {/* Footer Actions */}

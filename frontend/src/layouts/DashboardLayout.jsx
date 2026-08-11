@@ -5,7 +5,7 @@ import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart } from 'lucide-react';
 
 const navGroups = [
   {
@@ -32,6 +32,7 @@ const navGroups = [
     items: [
       { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES' },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
+      { to: '/finanzas', label: 'Finanzas', icon: PieChart, permission: 'ADMIN_DB' },
     ]
   }
 ];

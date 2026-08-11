@@ -5,6 +5,7 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precio, setPrecio] = useState('');
+  const [fechaCompra, setFechaCompra] = useState('');
   const [stock, setStock] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -13,11 +14,13 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
       setNombre(insumo.nombre || '');
       setDescripcion(insumo.descripcion || '');
       setPrecio(insumo.precio || '');
+      setFechaCompra(insumo.fechaCompra ? String(insumo.fechaCompra).slice(0, 10) : '');
       setStock(insumo.stock || '');
     } else {
       setNombre('');
       setDescripcion('');
       setPrecio('');
+      setFechaCompra('');
       setStock('');
     }
     setErrors({});
@@ -47,6 +50,7 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
         nombre,
         descripcion,
         precio: parseFloat(precio),
+        fechaCompra: fechaCompra ? `${fechaCompra}T00:00:00` : null,
         stock: parseInt(stock, 10)
       });
     }
@@ -168,6 +172,20 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                   <p className="mt-1 text-xs text-red-500 font-medium">{errors.stock}</p>
                 )}
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="fechaCompra" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                Fecha de Compra
+              </label>
+              <input
+                id="fechaCompra"
+                type="date"
+                value={fechaCompra}
+                onChange={(e) => setFechaCompra(e.target.value)}
+                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all text-base sm:text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-400">Opcional: se usa para calcular los gastos del período en Finanzas.</p>
             </div>
 
             {/* Footer Actions */}
