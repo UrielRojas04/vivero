@@ -69,14 +69,7 @@ export default function NuevaVenta() {
 
   // Estados para Modal Liquidación (transitorios, no persisten)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pagos, setPagos] = useState([]);
-  const [pagoMonto, setPagoMonto] = useState('');
-  const [pagoMetodo, setPagoMetodo] = useState('EFECTIVO');
-  const [pagoBanco, setPagoBanco] = useState('');
-  const [pagoNumeroSerie, setPagoNumeroSerie] = useState('');
-  const [pagoFechaCobro, setPagoFechaCobro] = useState('');
-  const [pagoFechaRecepcion, setPagoFechaRecepcion] = useState('');
-
+  const [pagosLineas, setPagosLineas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
 
@@ -187,49 +180,61 @@ export default function NuevaVenta() {
   const descuentoVal = parseFloat(descuento) || 0;
   const descuentoMonto = totalCalculado * (descuentoVal / 100);
   const totalFinal = totalCalculado - descuentoMonto;
-  const totalPagado = pagos.reduce((acc, p) => acc + p.monto, 0);
+  const totalPagado = pagosLineas.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
   const saldoFinal = totalPagado - totalFinal;
 
-  const agregarPago = () => {
-    const monto = parseFloat(pagoMonto);
-    if (!monto || monto <= 0) return pushToast('error', 'Monto inválido');
-    
-    const nuevoPago = { monto, metodoPago: pagoMetodo };
-    if (pagoMetodo === 'CHEQUE') {
-      nuevoPago.banco = pagoBanco || null;
-      nuevoPago.numeroSerie = pagoNumeroSerie || null;
-      nuevoPago.fechaCobro = pagoFechaCobro || null;
-      nuevoPago.fechaRecepcion = pagoFechaRecepcion || null;
+  useEffect(() => {
+    if (isModalOpen && pagosLineas.length === 0) {
+      setPagosLineas([{
+        id: crypto.randomUUID(),
+        monto: totalFinal > 0 ? totalFinal : '',
+        metodoPago: 'EFECTIVO',
+        banco: '',
+        numeroSerie: '',
+        fechaCobro: '',
+        fechaRecepcion: ''
+      }]);
     }
-    
-    setPagos([...pagos, nuevoPago]);
-    setPagoMonto('');
-    setPagoBanco('');
-    setPagoNumeroSerie('');
-    setPagoFechaCobro('');
-    setPagoFechaRecepcion('');
+  }, [isModalOpen, pagosLineas.length, totalFinal]);
+
+  const addLineaPago = () => {
+    setPagosLineas(prev => [...prev, {
+      id: crypto.randomUUID(),
+      monto: '',
+      metodoPago: 'EFECTIVO',
+      banco: '',
+      numeroSerie: '',
+      fechaCobro: '',
+      fechaRecepcion: ''
+    }]);
   };
 
-  const eliminarPago = (index) => {
-    setPagos(pagos.filter((_, i) => i !== index));
+  const updateLineaPago = (id, field, value) => {
+    setPagosLineas(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
+  const removeLineaPago = (id) => {
+    setPagosLineas(prev => prev.filter(p => p.id !== id));
+  };
   const handleSubmit = async () => {
     if (!clienteId) return pushToast('error', 'Seleccioná un cliente');
     if (detalles.length === 0) return pushToast('error', 'Agregá al menos un producto a la venta');
 
-    let pagosASubir = [...pagos];
-    const montoPendiente = parseFloat(pagoMonto);
-    if (montoPendiente && montoPendiente > 0) {
-      const nuevoPago = { monto: montoPendiente, metodoPago: pagoMetodo };
-      if (pagoMetodo === 'CHEQUE') {
-        nuevoPago.banco = pagoBanco || null;
-        nuevoPago.numeroSerie = pagoNumeroSerie || null;
-        nuevoPago.fechaCobro = pagoFechaCobro || null;
-        nuevoPago.fechaRecepcion = pagoFechaRecepcion || null;
-      }
-      pagosASubir.push(nuevoPago);
-    }
+    const pagosASubir = pagosLineas
+      .filter(p => {
+        const amt = parseFloat(p.monto);
+        return amt && amt > 0;
+      })
+      .map(p => {
+        const payloadPago = { monto: parseFloat(p.monto), metodoPago: p.metodoPago };
+        if (p.metodoPago === 'CHEQUE') {
+          payloadPago.banco = p.banco || null;
+          payloadPago.numeroSerie = p.numeroSerie || null;
+          payloadPago.fechaCobro = p.fechaCobro || null;
+          payloadPago.fechaRecepcion = p.fechaRecepcion || null;
+        }
+        return payloadPago;
+      });
 
     const payload = {
       clienteId: parseInt(clienteId),
@@ -260,7 +265,7 @@ export default function NuevaVenta() {
       setBusquedaCliente('');
       setBusquedaProducto('');
       setIsModalOpen(false);
-      setPagos([]);
+      setPagosLineas([]);
 
       // Invalidar caches para que otras pantallas se actualicen
       queryClient.invalidateQueries({ queryKey: ['ventas'] });
@@ -488,11 +493,11 @@ export default function NuevaVenta() {
 
       {/* Modal de Liquidación */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-6 overflow-y-auto max-h-[90vh]">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Liquidar Venta</h2>
             
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
               <div className="space-y-4">
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <div className="flex justify-between mb-2">
@@ -534,80 +539,7 @@ export default function NuevaVenta() {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Agregar Pago</h3>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <input 
-                        type="number"
-                        placeholder="Monto"
-                        value={pagoMonto}
-                        onChange={e => setPagoMonto(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
-                      />
-                      <select 
-                        value={pagoMetodo}
-                        onChange={e => setPagoMetodo(e.target.value)}
-                        className="w-32 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500"
-                      >
-                        <option value="EFECTIVO">Efectivo</option>
-                        <option value="TRANSFERENCIA">Transferencia</option>
-                        <option value="CHEQUE">Cheque</option>
-                      </select>
-                      <button 
-                        onClick={agregarPago}
-                        className="px-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
-                      >
-                        <Plus className="w-5 h-5"/>
-                      </button>
-                    </div>
-                    {pagoMetodo === 'CHEQUE' && (
-                      <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                        <input type="text" placeholder="Banco" value={pagoBanco} onChange={e => setPagoBanco(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
-                        <input type="text" placeholder="N° Serie" value={pagoNumeroSerie} onChange={e => setPagoNumeroSerie(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
-                        <div className="flex flex-col">
-                          <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha Emisión/Recepción</label>
-                          <input type="date" value={pagoFechaRecepcion} onChange={e => setPagoFechaRecepcion(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
-                        </div>
-                        <div className="flex flex-col">
-                          <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha de Cobro</label>
-                          <input type="date" value={pagoFechaCobro} onChange={e => setPagoFechaCobro(e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 min-h-[12rem]">
-                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-3">Pagos Ingresados</h3>
-                  {pagos.length === 0 ? (
-                    <p className="text-sm text-gray-400">Sin pagos (queda en CC)</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {pagos.map((p, i) => (
-                        <li key={i} className="flex flex-col text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">{p.metodoPago}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-gray-900 font-bold">${p.monto.toFixed(2)}</span>
-                              <button onClick={() => eliminarPago(i)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
-                            </div>
-                          </div>
-                          {p.metodoPago === 'CHEQUE' && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {p.banco && <span>Banco: {p.banco}</span>}
-                              {p.numeroSerie && <span className="ml-2">N°: {p.numeroSerie}</span>}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className={`p-4 rounded-xl border ${saldoFinal < 0 ? 'bg-red-50 border-red-200' : saldoFinal > 0 ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                <div className={`p-4 rounded-xl border shadow-sm transition-colors ${saldoFinal < 0 ? 'bg-red-50 border-red-200' : saldoFinal > 0 ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
                   <div className="flex justify-between items-center">
                     <span className={`font-semibold ${saldoFinal < 0 ? 'text-red-700' : saldoFinal > 0 ? 'text-blue-700' : 'text-emerald-700'}`}>
                       {saldoFinal < 0 ? 'Deuda a CC:' : saldoFinal > 0 ? 'A favor en CC:' : 'Pago Exacto'}
@@ -617,6 +549,67 @@ export default function NuevaVenta() {
                         ${Math.abs(saldoFinal).toFixed(2)}
                       </span>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Desglose de Pagos</h3>
+                  <div className="flex flex-col gap-3">
+                    {pagosLineas.map((linea, index) => (
+                      <div key={linea.id} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex gap-2">
+                          <input 
+                            type="number"
+                            placeholder="Monto"
+                            value={linea.monto}
+                            onChange={e => updateLineaPago(linea.id, 'monto', e.target.value)}
+                            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 font-semibold"
+                          />
+                          <select 
+                            value={linea.metodoPago}
+                            onChange={e => updateLineaPago(linea.id, 'metodoPago', e.target.value)}
+                            className="w-32 shrink-0 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 bg-gray-50"
+                          >
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="CHEQUE">Cheque</option>
+                          </select>
+                          <button 
+                            type="button"
+                            onClick={() => removeLineaPago(linea.id)}
+                            disabled={pagosLineas.length === 1}
+                            className={`px-3 py-2 shrink-0 rounded-lg flex items-center justify-center transition-colors ${pagosLineas.length === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-red-500 hover:bg-red-100 hover:text-red-700'}`}
+                            title="Eliminar fila"
+                          >
+                            <Trash2 className="w-5 h-5"/>
+                          </button>
+                        </div>
+                        {linea.metodoPago === 'CHEQUE' && (
+                          <div className="grid grid-cols-2 gap-2 text-sm mt-3 pl-2 border-l-2 border-emerald-300">
+                            <input type="text" placeholder="Banco" value={linea.banco} onChange={e => updateLineaPago(linea.id, 'banco', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                            <input type="text" placeholder="N° Serie" value={linea.numeroSerie} onChange={e => updateLineaPago(linea.id, 'numeroSerie', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                            <div className="flex flex-col">
+                              <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha Emisión/Recepción</label>
+                              <input type="date" value={linea.fechaRecepcion} onChange={e => updateLineaPago(linea.id, 'fechaRecepcion', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                            </div>
+                            <div className="flex flex-col">
+                              <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha de Cobro</label>
+                              <input type="date" value={linea.fechaCobro} onChange={e => updateLineaPago(linea.id, 'fechaCobro', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    <button
+                      type="button"
+                      onClick={addLineaPago}
+                      className="w-full py-3 border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl text-gray-600 font-medium hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-5 h-5"/> Añadir otro pago
+                    </button>
                   </div>
                 </div>
               </div>

@@ -3,6 +3,7 @@ package com.vivero.gestion.controllers;
 import com.vivero.gestion.dto.DashboardResumenDTO;
 import com.vivero.gestion.dto.VentaLiteDTO;
 import com.vivero.gestion.services.FinanzasService;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -58,7 +59,7 @@ public class FinanzasController {
             @RequestParam(defaultValue = "10") int size) {
         LocalDate desdeEfectivo = desde != null ? desde : LocalDate.now().withDayOfMonth(1);
         LocalDate hastaEfectivo = hasta != null ? hasta : LocalDate.now();
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(Sort.Direction.DESC, "id"));
         Page<VentaLiteDTO> ventas = finanzasService.listarVentas(
                 desdeEfectivo.atStartOfDay(),
                 hastaEfectivo.atTime(LocalTime.MAX),

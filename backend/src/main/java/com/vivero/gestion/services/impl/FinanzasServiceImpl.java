@@ -2,10 +2,12 @@ package com.vivero.gestion.services.impl;
 
 import com.vivero.gestion.dto.DashboardResumenDTO;
 import com.vivero.gestion.dto.VentaLiteDTO;
+import com.vivero.gestion.repositories.GastoRepository;
 import com.vivero.gestion.repositories.InsumoRepository;
 import com.vivero.gestion.repositories.PagoRepository;
 import com.vivero.gestion.repositories.VentaDetalleRepository;
 import com.vivero.gestion.repositories.VentaRepository;
+import com.vivero.gestion.models.Gasto;
 import com.vivero.gestion.services.FinanzasService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -28,15 +30,18 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final VentaDetalleRepository ventaDetalleRepository;
     private final InsumoRepository insumoRepository;
     private final PagoRepository pagoRepository;
+    private final GastoRepository gastoRepository;
 
     public FinanzasServiceImpl(VentaRepository ventaRepository,
                                VentaDetalleRepository ventaDetalleRepository,
                                InsumoRepository insumoRepository,
-                               PagoRepository pagoRepository) {
+                               PagoRepository pagoRepository,
+                               GastoRepository gastoRepository) {
         this.ventaRepository = ventaRepository;
         this.ventaDetalleRepository = ventaDetalleRepository;
         this.insumoRepository = insumoRepository;
         this.pagoRepository = pagoRepository;
+        this.gastoRepository = gastoRepository;
     }
 
     @Override
@@ -45,7 +50,13 @@ public class FinanzasServiceImpl implements FinanzasService {
         BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta);
         BigDecimal costoProductosVendidos = ventaDetalleRepository.sumarCostoVendido(desde, hasta);
         BigDecimal gastosInsumos = insumoRepository.sumarGastosInsumos(desde, hasta);
-        BigDecimal totalCostos = costoProductosVendidos.add(gastosInsumos);
+        
+        List<Gasto> gastos = gastoRepository.findByFechaBetween(desde, hasta);
+        BigDecimal totalGastos = gastos.stream()
+                .map(Gasto::getMonto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalCostos = costoProductosVendidos.add(gastosInsumos).add(totalGastos);
         BigDecimal gananciaNeta = totalVentas.subtract(totalCostos);
         BigDecimal margen = calcularMargen(gananciaNeta, totalVentas);
 

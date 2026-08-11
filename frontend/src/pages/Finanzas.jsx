@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Wallet,
   Coins,
@@ -11,8 +11,12 @@ import {
   ChevronRight,
   Loader2,
   ReceiptText,
+  Plus,
+  Trash2,
+  TrendingDown
 } from 'lucide-react';
 import { finanzasApi } from '../api/finanzas.api';
+import { getGastos, createGasto } from '../api/gastos.api';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
 
@@ -24,9 +28,13 @@ const formatMoney = (value) =>
 
 const Finanzas = () => {
   const { pushToast, denyAccess } = useUIStore();
+  const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [page, setPage] = useState(0);
   const [size] = useState(10);
+  const [gastosPage, setGastosPage] = useState(0);
+  
+  const [nuevoGasto, setNuevoGasto] = useState({ concepto: '', monto: '' });
 
   const desde = `${selectedYear}-01-01`;
   const hasta = `${selectedYear}-12-31`;
@@ -34,6 +42,7 @@ const Finanzas = () => {
   // Al cambiar de año, volvemos a la primera página
   useEffect(() => {
     setPage(0);
+    setGastosPage(0);
   }, [selectedYear]);
 
   const resumenQuery = useQuery({
@@ -45,6 +54,25 @@ const Finanzas = () => {
     queryKey: ['finanzas', 'ventas', { desde, hasta, page, size }],
     queryFn: () => finanzasApi.fetchVentasFinanzas(desde, hasta, page, size),
     placeholderData: keepPreviousData,
+  });
+
+  const gastosQuery = useQuery({
+    queryKey: ['finanzas', 'gastos', { desde, hasta, page: gastosPage, size: 5 }],
+    queryFn: () => getGastos({ desde, hasta, page: gastosPage, size: 5 }),
+    placeholderData: keepPreviousData,
+  });
+
+  const createGastoMutation = useMutation({
+    mutationFn: createGasto,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['finanzas', 'gastos']);
+      queryClient.invalidateQueries(['finanzas', 'resumen']);
+      pushToast('success', 'Gasto registrado correctamente');
+      setNuevoGasto({ concepto: '', monto: '' });
+    },
+    onError: (error) => {
+      pushToast('error', getErrorMessage(error, 'Error al registrar el gasto'));
+    }
   });
 
   // Feedback de errores exclusivamente vía useUIStore (nunca alert/confirm)
@@ -70,13 +98,28 @@ const Finanzas = () => {
     setSelectedYear(parseInt(e.target.value, 10));
   };
 
+  const handleCrearGasto = (e) => {
+    e.preventDefault();
+    if (!nuevoGasto.concepto || !nuevoGasto.monto) return;
+    createGastoMutation.mutate({
+      concepto: nuevoGasto.concepto,
+      monto: parseFloat(nuevoGasto.monto)
+    });
+  };
+
   const resumen = resumenQuery.data;
   const ventas = ventasQuery.data?.content || [];
+  const gastos = gastosQuery.data?.content || [];
   const totalPages = ventasQuery.data?.totalPages || 0;
   const totalElements = ventasQuery.data?.totalElements || 0;
+  
+  const gastosTotalPages = gastosQuery.data?.totalPages || 0;
+
   const loadingResumen = resumenQuery.isPending;
   const loadingVentas = ventasQuery.isPending;
   const fetchingVentas = ventasQuery.isFetching;
+  const loadingGastos = gastosQuery.isPending;
+  const fetchingGastos = gastosQuery.isFetching;
 
   const totalVentas = resumen?.totalVentas ?? 0;
   const totalCostos = resumen?.totalCostos ?? 0;
@@ -152,38 +195,137 @@ const Finanzas = () => {
             ))}
           </div>
 
-          {/* Cruce Ventas vs Costos */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-bold text-gray-900 mb-4">Ventas vs Costos del período</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-semibold text-emerald-700">Ventas</span>
-                  <span className="text-sm font-bold text-emerald-700">{formatMoney(totalVentas)}</span>
+          {/* Layout 2 Columnas */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Cruce Ventas vs Costos */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm h-full">
+              <h2 className="text-base font-bold text-gray-900 mb-4">Ventas vs Costos del período</h2>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm font-semibold text-emerald-700">Ventas</span>
+                    <span className="text-sm font-bold text-emerald-700">{formatMoney(totalVentas)}</span>
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(totalVentas / barMax) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                    style={{ width: `${(totalVentas / barMax) * 100}%` }}
-                  />
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm font-semibold text-red-600">Costos (incluye gastos)</span>
+                    <span className="text-sm font-bold text-red-600">{formatMoney(totalCostos)}</span>
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-red-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(totalCostos / barMax) * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-semibold text-red-600">Costos</span>
-                  <span className="text-sm font-bold text-red-600">{formatMoney(totalCostos)}</span>
-                </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-red-500 rounded-full transition-all duration-500"
-                    style={{ width: `${(totalCostos / barMax) * 100}%` }}
-                  />
-                </div>
-              </div>
+              <p className="mt-4 text-xs text-gray-400">
+                Ganancia neta del período: <span className="font-semibold text-gray-600">{formatMoney(gananciaNeta)}</span>
+              </p>
             </div>
-            <p className="mt-4 text-xs text-gray-400">
-              Ganancia neta del período: <span className="font-semibold text-gray-600">{formatMoney(gananciaNeta)}</span>
-            </p>
+
+            {/* Gastos y Egresos Extras */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col h-full">
+              <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-red-500" />
+                Gastos del período
+              </h2>
+              
+              <form onSubmit={handleCrearGasto} className="flex flex-col sm:flex-row gap-3 mb-6">
+                <input
+                  type="text"
+                  placeholder="Concepto (ej: Luz, Internet...)"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                  value={nuevoGasto.concepto}
+                  onChange={e => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
+                  required
+                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="Monto"
+                    className="w-full sm:w-32 border border-gray-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                    value={nuevoGasto.monto}
+                    onChange={e => setNuevoGasto({ ...nuevoGasto, monto: e.target.value })}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={createGastoMutation.isPending}
+                  className="flex items-center justify-center gap-1 bg-gray-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {createGastoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Registrar
+                </button>
+              </form>
+
+              <div className="flex-1 overflow-y-auto">
+                {loadingGastos ? (
+                  <div className="py-8 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+                  </div>
+                ) : gastos.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-gray-500">
+                    No hay gastos registrados en este período.
+                  </div>
+                ) : (
+                  <ul className="space-y-3">
+                    {gastos.map(gasto => (
+                      <li key={gasto.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 flex items-center">
+                            {gasto.concepto}
+                            {gasto.tipo === 'INSUMO' && (
+                              <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-600 rounded-full border border-blue-100">INSUMO</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-500">{new Date(gasto.fecha).toLocaleDateString('es-AR')}</p>
+                        </div>
+                        <span className="font-bold text-red-600">{formatMoney(gasto.monto)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              
+              {/* Paginación Gastos */}
+              {gastosTotalPages > 0 && (
+                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    {fetchingGastos && <Loader2 className="w-3 h-3 text-emerald-600 animate-spin" />}
+                    Página {gastosPage + 1} de {gastosTotalPages}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setGastosPage(Math.max(0, gastosPage - 1))}
+                      disabled={gastosPage === 0}
+                      className="p-1 rounded-md text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setGastosPage(Math.min(gastosTotalPages - 1, gastosPage + 1))}
+                      disabled={gastosPage >= gastosTotalPages - 1}
+                      className="p-1 rounded-md text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
