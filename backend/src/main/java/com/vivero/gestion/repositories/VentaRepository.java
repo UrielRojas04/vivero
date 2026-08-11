@@ -11,9 +11,12 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
+
+    List<Venta> findAllByOrderByFechaDesc();
 
     @Query("SELECT COALESCE(SUM(v.totalFinal), 0) FROM Venta v WHERE v.fecha BETWEEN :desde AND :hasta")
     BigDecimal sumarTotalVentas(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);

@@ -36,7 +36,6 @@ export default function HistorialVentas() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
-              <th className="p-4 font-semibold">ID</th>
               <th className="p-4 font-semibold">Fecha</th>
               <th className="p-4 font-semibold">Cliente</th>
               <th className="p-4 font-semibold text-right">Total Final</th>
@@ -48,7 +47,6 @@ export default function HistorialVentas() {
           <tbody className="divide-y divide-gray-100">
             {ventas.map((venta) => (
               <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="p-4 text-gray-900 font-medium">#{venta.id}</td>
                 <td className="p-4 text-gray-600">{new Date(venta.fecha).toLocaleString('es-AR')}</td>
                 <td className="p-4 font-medium text-gray-900">{venta.clienteNombre}</td>
                 <td className="p-4 text-right font-bold text-emerald-700">
@@ -75,7 +73,7 @@ export default function HistorialVentas() {
             ))}
             {ventas.length === 0 && (
               <tr>
-                <td colSpan="7" className="p-8 text-center text-gray-500">
+                <td colSpan="6" className="p-8 text-center text-gray-500">
                   No hay ventas registradas todavía.
                 </td>
               </tr>

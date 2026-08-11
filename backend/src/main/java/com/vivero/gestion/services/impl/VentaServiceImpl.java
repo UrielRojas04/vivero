@@ -199,7 +199,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional(readOnly = true)
     public List<VentaResponseDTO> listarVentas() {
-        return ventaRepository.findAll().stream()
+        return ventaRepository.findAllByOrderByFechaDesc().stream()
                 .map(this::mapearAVentaResponseDTO)
                 .collect(Collectors.toList());
     }
