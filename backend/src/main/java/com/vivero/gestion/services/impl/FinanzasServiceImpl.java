@@ -48,7 +48,6 @@ public class FinanzasServiceImpl implements FinanzasService {
     @Transactional(readOnly = true)
     public DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta) {
         BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta);
-        BigDecimal costoProductosVendidos = ventaDetalleRepository.sumarCostoVendido(desde, hasta);
         BigDecimal gastosInsumos = insumoRepository.sumarGastosInsumos(desde, hasta);
         
         List<Gasto> gastos = gastoRepository.findByFechaBetween(desde, hasta);
@@ -56,7 +55,7 @@ public class FinanzasServiceImpl implements FinanzasService {
                 .map(Gasto::getMonto)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalCostos = costoProductosVendidos.add(gastosInsumos).add(totalGastos);
+        BigDecimal totalCostos = gastosInsumos.add(totalGastos);
         BigDecimal gananciaNeta = totalVentas.subtract(totalCostos);
         BigDecimal margen = calcularMargen(gananciaNeta, totalVentas);
 

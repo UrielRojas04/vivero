@@ -8,17 +8,15 @@ public class ProductoDTO {
     private String nombre;
     private String descripcion;
     private BigDecimal precio;
-    private BigDecimal precioCosto;
     private Integer stock;
 
     public ProductoDTO() {}
 
-    public ProductoDTO(Long id, String nombre, String descripcion, BigDecimal precio, BigDecimal precioCosto, Integer stock) {
+    public ProductoDTO(Long id, String nombre, String descripcion, BigDecimal precio, Integer stock) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
-        this.precioCosto = precioCosto;
         this.stock = stock;
     }
 
@@ -33,9 +31,6 @@ public class ProductoDTO {
 
     public BigDecimal getPrecio() { return precio; }
     public void setPrecio(BigDecimal precio) { this.precio = precio; }
-
-    public BigDecimal getPrecioCosto() { return precioCosto; }
-    public void setPrecioCosto(BigDecimal precioCosto) { this.precioCosto = precioCosto; }
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }

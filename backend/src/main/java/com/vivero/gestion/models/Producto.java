@@ -26,9 +26,6 @@ public class Producto {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal precioCosto;
-
     @Column(nullable = false)
     private Integer stock = 0;
 
@@ -53,9 +50,6 @@ public class Producto {
 
     public BigDecimal getPrecio() { return precio; }
     public void setPrecio(BigDecimal precio) { this.precio = precio; }
-
-    public BigDecimal getPrecioCosto() { return precioCosto; }
-    public void setPrecioCosto(BigDecimal precioCosto) { this.precioCosto = precioCosto; }
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }

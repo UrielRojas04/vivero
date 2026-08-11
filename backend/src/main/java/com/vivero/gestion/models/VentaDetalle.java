@@ -22,9 +22,6 @@ public class VentaDetalle {
     private Integer cantidad;
     private BigDecimal precioUnitarioHistorico;
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal precioCostoHistorico;
-
     private BigDecimal subtotal;
 
     public VentaDetalle() {}
@@ -41,6 +38,4 @@ public class VentaDetalle {
     public void setPrecioUnitarioHistorico(BigDecimal precioUnitarioHistorico) { this.precioUnitarioHistorico = precioUnitarioHistorico; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
-    public BigDecimal getPrecioCostoHistorico() { return precioCostoHistorico; }
-    public void setPrecioCostoHistorico(BigDecimal precioCostoHistorico) { this.precioCostoHistorico = precioCostoHistorico; }
 }

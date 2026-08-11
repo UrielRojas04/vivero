@@ -31,7 +31,6 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
-        producto.setPrecioCosto(dto.getPrecioCosto());
         producto.setStock(dto.getStock() != null ? dto.getStock() : 0);
 
         Producto guardado = productoRepository.save(producto);
@@ -65,10 +64,6 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
         
-        if (dto.getPrecioCosto() != null) {
-            producto.setPrecioCosto(dto.getPrecioCosto());
-        }
-
         if (dto.getStock() != null) {
             producto.setStock(dto.getStock());
         }
@@ -93,7 +88,6 @@ public class ProductoServiceImpl implements ProductoService {
                 producto.getNombre(),
                 producto.getDescripcion(),
                 producto.getPrecio(),
-                producto.getPrecioCosto(),
                 producto.getStock()
         );
     }

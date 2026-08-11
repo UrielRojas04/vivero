@@ -2,10 +2,10 @@
 Esta especificación define el comportamiento del registro de productos y actualización de stock dentro del catálogo.
 ## Requirements
 ### Requirement: Registro de Producto
-El sistema MUST permitir registrar un nuevo producto (planta). Ya no está asociado a una Unidad de Negocio.
+El sistema MUST permitir registrar un nuevo producto (planta). Ya no está asociado a una Unidad de Negocio ni posee un precio de costo (los costos se manejan globalmente como Gastos).
 
 #### Scenario: Registro exitoso por usuario autorizado
-- **WHEN** un usuario con permisos envía una solicitud para crear un producto
+- **WHEN** un usuario con permisos envía una solicitud para crear un producto sin proveer precio de costo
 - **THEN** el sistema persiste el producto de forma global (sin tenant) y devuelve el estado HTTP 201 Created
 
 #### Scenario: Fallo por falta de permisos
