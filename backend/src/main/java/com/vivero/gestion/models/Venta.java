@@ -6,19 +6,24 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "ventas")
+@SQLDelete(sql = "UPDATE ventas SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 public class Venta {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario; // Quien registra la venta
 
@@ -30,6 +35,9 @@ public class Venta {
     private String estadoPago; // PAGADO, PARCIAL, DEBE
     private LocalDateTime fecha;
     private String remitoUrl;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VentaDetalle> detalles = new ArrayList<>();

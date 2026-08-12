@@ -3,19 +3,24 @@ package com.vivero.gestion.models;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "venta_detalles")
+@SQLDelete(sql = "UPDATE venta_detalles SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 public class VentaDetalle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "venta_id")
     private Venta venta;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "producto_id")
     private Producto producto;
 
@@ -23,6 +28,9 @@ public class VentaDetalle {
     private BigDecimal precioUnitarioHistorico;
 
     private BigDecimal subtotal;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
 
     public VentaDetalle() {}
 

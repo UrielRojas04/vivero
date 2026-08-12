@@ -10,8 +10,13 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "insumos")
+@SQLDelete(sql = "UPDATE insumos SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 public class Insumo {
 
     @Id
@@ -32,6 +37,9 @@ public class Insumo {
 
     @Column(nullable = false)
     private Integer stock = 0;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
 
 
     public Insumo() {}

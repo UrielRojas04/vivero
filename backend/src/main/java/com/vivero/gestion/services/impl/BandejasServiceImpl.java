@@ -84,13 +84,33 @@ public class BandejasServiceImpl implements BandejasService {
                 .map(h -> {
                     HistorialBandejasDTO dto = new HistorialBandejasDTO();
                     dto.setId(h.getId());
-                    dto.setClienteId(h.getCliente().getId());
-                    dto.setClienteNombre(h.getCliente().getNombreRazonSocial());
-                    dto.setVentaId(h.getVenta() != null ? h.getVenta().getId() : null);
+                    try {
+                        if (h.getCliente() != null) {
+                            dto.setClienteId(h.getCliente().getId());
+                            dto.setClienteNombre(h.getCliente().getNombreRazonSocial());
+                        } else {
+                            dto.setClienteNombre("(eliminado)");
+                        }
+                    } catch (jakarta.persistence.EntityNotFoundException e) {
+                        dto.setClienteNombre("(eliminado)");
+                    }
+                    try {
+                        dto.setVentaId(h.getVenta() != null ? h.getVenta().getId() : null);
+                    } catch (jakarta.persistence.EntityNotFoundException e) {
+                        // Venta was soft-deleted
+                    }
                     dto.setCantidad(h.getCantidad());
                     dto.setTipo(h.getTipo());
                     dto.setFecha(h.getFecha());
-                    dto.setUsuarioNombre(h.getUsuario().getUsername());
+                    try {
+                        if (h.getUsuario() != null) {
+                            dto.setUsuarioNombre(h.getUsuario().getUsername());
+                        } else {
+                            dto.setUsuarioNombre("(eliminado)");
+                        }
+                    } catch (jakarta.persistence.EntityNotFoundException e) {
+                        dto.setUsuarioNombre("(eliminado)");
+                    }
                     return dto;
                 }).collect(Collectors.toList());
     }

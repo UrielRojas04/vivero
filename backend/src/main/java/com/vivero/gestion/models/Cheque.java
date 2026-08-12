@@ -4,8 +4,13 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "cheques")
+@SQLDelete(sql = "UPDATE cheques SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 public class Cheque {
 
     @Id
@@ -22,6 +27,9 @@ public class Cheque {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venta_id")
     private Venta venta;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
 
     @Column(length = 50)
     private String numeroInterno;

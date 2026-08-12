@@ -20,6 +20,7 @@ import { finanzasApi } from '../api/finanzas.api';
 import { getGastos, createGasto } from '../api/gastos.api';
 import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
+import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
@@ -31,6 +32,7 @@ const formatMoney = (value) =>
 
 const Finanzas = () => {
   const { pushToast, denyAccess } = useUIStore();
+  const liveStocks = useStockStore(state => state.liveStocks);
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   
@@ -190,7 +192,10 @@ const Finanzas = () => {
     { name: 'Costos/Gastos', value: totalCostos, color: '#ef4444' }
   ].filter(d => d.value > 0);
 
-  const productos = productosQuery.data || [];
+  const productos = (productosQuery.data || []).map(p => ({
+    ...p,
+    stock: liveStocks[p.id] !== undefined ? liveStocks[p.id] : p.stock
+  }));
   const topStockData = [...productos]
     .sort((a, b) => (b.stock || 0) - (a.stock || 0))
     .slice(0, 5)

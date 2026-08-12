@@ -75,12 +75,20 @@ public class ChequeServiceImpl implements ChequeService {
         ChequeDTO dto = new ChequeDTO();
         dto.setId(cheque.getId());
         dto.setFechaRecepcion(cheque.getFechaRecepcion());
-        if (cheque.getCliente() != null) {
-            dto.setClienteId(cheque.getCliente().getId());
-            dto.setClienteNombre(cheque.getCliente().getNombreRazonSocial());
+        try {
+            if (cheque.getCliente() != null) {
+                dto.setClienteId(cheque.getCliente().getId());
+                dto.setClienteNombre(cheque.getCliente().getNombreRazonSocial());
+            }
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            dto.setClienteNombre("(eliminado)");
         }
-        if (cheque.getVenta() != null) {
-            dto.setVentaId(cheque.getVenta().getId());
+        try {
+            if (cheque.getVenta() != null) {
+                dto.setVentaId(cheque.getVenta().getId());
+            }
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            // Venta was soft-deleted, skip
         }
         dto.setNumeroInterno(cheque.getNumeroInterno());
         dto.setMonto(cheque.getMonto());

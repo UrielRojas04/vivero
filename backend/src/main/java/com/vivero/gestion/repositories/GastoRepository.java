@@ -24,6 +24,7 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     fecha as fecha, 
                     'MANUAL' as tipo 
                 FROM gastos
+                WHERE deleted = false
                 UNION ALL
                 SELECT 
                     CONCAT('I-', id) as idUnico, 
@@ -32,6 +33,7 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     fecha_compra as fecha, 
                     'INSUMO' as tipo 
                 FROM insumos
+                WHERE deleted = false
             ) as unificados
             WHERE (:q IS NULL OR :q = '' OR LOWER(unificados.concepto) LIKE LOWER(CONCAT('%', :q, '%')))
             """,
@@ -44,6 +46,7 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     fecha as fecha, 
                     'MANUAL' as tipo 
                 FROM gastos
+                WHERE deleted = false
                 UNION ALL
                 SELECT 
                     CONCAT('I-', id) as idUnico, 
@@ -52,6 +55,7 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     fecha_compra as fecha, 
                     'INSUMO' as tipo 
                 FROM insumos
+                WHERE deleted = false
             ) as unificados
             WHERE (:q IS NULL OR :q = '' OR LOWER(unificados.concepto) LIKE LOWER(CONCAT('%', :q, '%')))
             """,

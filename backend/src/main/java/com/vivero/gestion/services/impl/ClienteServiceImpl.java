@@ -76,10 +76,10 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!clienteRepository.existsById(id)) {
-            throw new RuntimeException("Cliente no encontrado con id " + id);
-        }
-        clienteRepository.deleteById(id);
+        Cliente cliente = clienteRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        cliente.setDeleted(true);
+        clienteRepository.save(cliente);
     }
 
     private ClienteDTO mapToDTO(Cliente cliente) {

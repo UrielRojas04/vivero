@@ -13,7 +13,7 @@ public class HistorialBandejas {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
@@ -30,7 +30,7 @@ public class HistorialBandejas {
     @Column(nullable = false)
     private LocalDateTime fecha;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 }

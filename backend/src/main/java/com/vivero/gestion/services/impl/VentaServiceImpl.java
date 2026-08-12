@@ -205,9 +205,25 @@ public class VentaServiceImpl implements VentaService {
     private VentaResponseDTO mapearAVentaResponseDTO(Venta venta) {
         VentaResponseDTO dto = new VentaResponseDTO();
         dto.setId(venta.getId());
-        dto.setClienteNombre(venta.getCliente().getNombreRazonSocial());
-        dto.setClienteTelefono(venta.getCliente().getTelefono());
-        dto.setUsuarioNombre(venta.getUsuario().getUsername());
+        try {
+            if (venta.getCliente() != null) {
+                dto.setClienteNombre(venta.getCliente().getNombreRazonSocial());
+                dto.setClienteTelefono(venta.getCliente().getTelefono());
+            } else {
+                dto.setClienteNombre("(eliminado)");
+            }
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            dto.setClienteNombre("(eliminado)");
+        }
+        try {
+            if (venta.getUsuario() != null) {
+                dto.setUsuarioNombre(venta.getUsuario().getUsername());
+            } else {
+                dto.setUsuarioNombre("(eliminado)");
+            }
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            dto.setUsuarioNombre("(eliminado)");
+        }
         dto.setSubtotal(venta.getSubtotal());
         dto.setPorcentajeDescuento(venta.getPorcentajeDescuento());
         dto.setDescuento(venta.getDescuento());
@@ -226,8 +242,16 @@ public class VentaServiceImpl implements VentaService {
             List<VentaDetalleResponseDTO> detallesDto = venta.getDetalles().stream().map(d -> {
                 VentaDetalleResponseDTO dDto = new VentaDetalleResponseDTO();
                 dDto.setId(d.getId());
-                dDto.setProductoId(d.getProducto().getId());
-                dDto.setProductoNombre(d.getProducto().getNombre());
+                try {
+                    if (d.getProducto() != null) {
+                        dDto.setProductoId(d.getProducto().getId());
+                        dDto.setProductoNombre(d.getProducto().getNombre());
+                    } else {
+                        dDto.setProductoNombre("(eliminado)");
+                    }
+                } catch (jakarta.persistence.EntityNotFoundException e) {
+                    dDto.setProductoNombre("(eliminado)");
+                }
                 dDto.setCantidad(d.getCantidad());
                 dDto.setPrecioUnitarioHistorico(d.getPrecioUnitarioHistorico());
                 dDto.setSubtotal(d.getSubtotal());

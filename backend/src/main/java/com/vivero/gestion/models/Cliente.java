@@ -1,6 +1,7 @@
 package com.vivero.gestion.models;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -11,8 +12,13 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "clientes")
+@SQLDelete(sql = "UPDATE clientes SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 @Data
 public class Cliente {
 
@@ -24,11 +30,14 @@ public class Cliente {
 
     private String telefono;
 
-    @OneToOne(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
+
+    @OneToOne(mappedBy = "cliente", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @ToString.Exclude
     private CuentaCorrienteDinero cuentaCorrienteDinero;
 
-    @OneToOne(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToOne(mappedBy = "cliente", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @ToString.Exclude
     private CuentaCorrienteBandejas cuentaCorrienteBandejas;
 }

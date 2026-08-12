@@ -4,8 +4,13 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "gastos")
+@SQLDelete(sql = "UPDATE gastos SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 public class Gasto {
 
     @Id
@@ -20,6 +25,9 @@ public class Gasto {
 
     @Column(nullable = false)
     private LocalDateTime fecha;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
 
     public Gasto() {
     }

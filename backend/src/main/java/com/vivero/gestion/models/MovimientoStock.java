@@ -3,15 +3,27 @@ package com.vivero.gestion.models;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "movimientos_stock")
+@SQLDelete(sql = "UPDATE movimientos_stock SET deleted = true WHERE id=?")
+@SQLRestriction("deleted = false")
 public class MovimientoStock {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
+    @JoinColumn(name = "venta_id")
+    private Venta venta;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
+
+    @ManyToOne
     @JoinColumn(name = "producto_id")
     private Producto producto;
 
@@ -21,7 +33,7 @@ public class MovimientoStock {
 
     private LocalDateTime fecha;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario; // Quien lo registró
 

@@ -23,10 +23,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query("""
             SELECT new com.vivero.gestion.dto.VentaLiteDTO(
-                v.id, v.id, v.fecha, v.cliente.nombreRazonSocial, v.totalFinal, v.estadoPago)
-            FROM Venta v
+                v.id, v.id, v.fecha, COALESCE(c.nombreRazonSocial, '(eliminado)'), v.totalFinal, v.estadoPago)
+            FROM Venta v LEFT JOIN v.cliente c
             WHERE v.fecha BETWEEN :desde AND :hasta
-              AND (:q IS NULL OR :q = '' OR LOWER(v.cliente.nombreRazonSocial) LIKE LOWER(CONCAT('%', :q, '%')))
+              AND (:q IS NULL OR :q = '' OR LOWER(COALESCE(c.nombreRazonSocial, '(eliminado)')) LIKE LOWER(CONCAT('%', :q, '%')))
             ORDER BY v.fecha DESC
             """)
     Page<VentaLiteDTO> listarVentasPorRango(@Param("desde") LocalDateTime desde,
