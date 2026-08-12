@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '../api/clientes.api';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import FormattedNumberInput from './FormattedNumberInput';
 
 const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
   const [monto, setMonto] = useState('');
@@ -116,14 +117,11 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <span className="text-gray-500 font-medium">$</span>
                 </div>
-                <input
-                  type="number"
+                <FormattedNumberInput
                   id="monto"
-                  step="0.01"
-                  min="0.01"
                   required
                   value={monto}
-                  onChange={(e) => setMonto(e.target.value)}
+                  onChange={(val) => setMonto(val)}
                   className="w-full pl-8 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                   placeholder="Ej: 5000"
                 />

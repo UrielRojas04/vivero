@@ -23,6 +23,7 @@ import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import FormattedNumberInput from '../components/FormattedNumberInput';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const currentYear = new Date().getFullYear();
@@ -365,16 +366,14 @@ const Finanzas = () => {
                     onChange={e => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
                     required
                   />
-                  <div className="relative w-24">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
+                  <div className="relative w-32 sm:w-40">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-base">$</span>
+                    <FormattedNumberInput
+                      id="monto"
                       placeholder="Monto"
-                      className="w-full border border-gray-200 rounded-lg pl-5 pr-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                       value={nuevoGasto.monto}
-                      onChange={e => setNuevoGasto({ ...nuevoGasto, monto: e.target.value })}
+                      onChange={val => setNuevoGasto({ ...nuevoGasto, monto: val })}
                       required
                     />
                   </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import FormattedNumberInput from './FormattedNumberInput';
 
 const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
   const [nombre, setNombre] = useState('');
@@ -133,14 +134,10 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                 <label htmlFor="precio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                   Precio (ARS)
                 </label>
-                <input
+                <FormattedNumberInput
                   id="precio"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  inputMode="decimal"
                   value={precio}
-                  onChange={(e) => setPrecio(e.target.value)}
+                  onChange={(val) => setPrecio(val)}
                   className={`w-full px-4 py-3 sm:py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base ${
                     errors.precio ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-sky-500'
                   }`}
@@ -155,14 +152,10 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                 <label htmlFor="stock" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                   Stock (Unidades)
                 </label>
-                <input
+                <FormattedNumberInput
                   id="stock"
-                  type="number"
-                  min="0"
-                  step="1"
-                  inputMode="numeric"
                   value={stock}
-                  onChange={(e) => setStock(e.target.value)}
+                  onChange={(val) => setStock(val)}
                   className={`w-full px-4 py-3 sm:py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base ${
                     errors.stock ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-sky-500'
                   }`}

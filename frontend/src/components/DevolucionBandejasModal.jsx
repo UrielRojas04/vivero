@@ -3,6 +3,7 @@ import { X, PackageMinus } from 'lucide-react';
 import api from '../api/axios';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import FormattedNumberInput from './FormattedNumberInput';
 
 const DevolucionBandejasModal = ({ isOpen, onClose, cliente, onSuccess }) => {
   const { pushToast } = useUIStore();
@@ -59,15 +60,13 @@ const DevolucionBandejasModal = ({ isOpen, onClose, cliente, onSuccess }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cantidad a devolver
               </label>
-              <input
-                type="number"
-                min="1"
+              <FormattedNumberInput
+                id="cantidadBandejas"
                 required
                 value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
+                onChange={(val) => setCantidad(val)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-gray-50 hover:bg-white focus:bg-white text-lg font-semibold"
                 placeholder="0"
-                autoFocus
               />
             </div>
           </div>

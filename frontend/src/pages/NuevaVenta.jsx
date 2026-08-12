@@ -7,6 +7,7 @@ import { ventasApi } from '../api/ventas.api';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { useCartStore } from '../store/useCartStore';
+import FormattedNumberInput from '../components/FormattedNumberInput';
 
 // Utilidades para guardar "últimos usados" en LocalStorage
 const getRecents = (key) => JSON.parse(localStorage.getItem(key) || '[]');
@@ -16,6 +17,8 @@ const addRecent = (key, id) => {
   recents = [id, ...recents.filter(x => x !== id)].slice(0, 5);
   localStorage.setItem(key, JSON.stringify(recents));
 };
+
+const formatCurrency = (value) => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function NuevaVenta() {
   const { pushToast } = useUIStore();
@@ -458,7 +461,7 @@ export default function NuevaVenta() {
                       min="1"
                       max={d.stock}
                     />
-                    <span className="font-bold text-gray-900">${(d.precio * d.cantidad).toFixed(2)}</span>
+                    <span className="font-bold text-gray-900">${formatCurrency(d.precio * d.cantidad)}</span>
                   </div>
                   
                   <button 
@@ -475,7 +478,7 @@ export default function NuevaVenta() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex justify-between items-center mb-6">
               <span className="text-gray-600 font-medium">Total a cobrar:</span>
-              <span className="text-3xl font-bold text-gray-900">${totalCalculado.toFixed(2)}</span>
+              <span className="text-3xl font-bold text-gray-900">${formatCurrency(totalCalculado)}</span>
             </div>
             
             <button
@@ -502,16 +505,16 @@ export default function NuevaVenta() {
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-semibold text-gray-900">${totalCalculado.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900">${formatCurrency(totalCalculado)}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600">Descuento (%)</span>
                     <div className="flex items-center gap-2">
-                      {descuentoMonto > 0 && <span className="text-sm text-gray-500">(-${descuentoMonto.toFixed(2)})</span>}
-                      <input 
-                        type="number" 
+                      {descuentoMonto > 0 && <span className="text-sm text-gray-500">(-${formatCurrency(descuentoMonto)})</span>}
+                      <FormattedNumberInput
+                        id="descuento"
                         value={descuento}
-                        onChange={e => setDescuento(e.target.value)}
+                        onChange={val => setDescuento(val)}
                         className="w-20 px-2 py-1 text-right border border-gray-300 rounded focus:ring-emerald-500"
                       />
                     </div>
@@ -522,12 +525,11 @@ export default function NuevaVenta() {
                 <span className="text-gray-600 font-medium">Bandejas prestadas (opcional)</span>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-medium">Cant:</span>
-                  <input
-                    type="number"
+                  <FormattedNumberInput
+                    id="bandejasEntregadas"
                     placeholder="0"
-                    min="0"
                     value={bandejasEntregadas}
-                    onChange={(e) => setBandejasEntregadas(e.target.value)}
+                    onChange={(val) => setBandejasEntregadas(val)}
                     className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right font-semibold"
                   />
                 </div>
@@ -535,7 +537,7 @@ export default function NuevaVenta() {
 
               <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-lg">
                 <span className="font-bold text-gray-900">Total a Pagar</span>
-                    <span className="font-bold text-xl text-emerald-700">${totalFinal.toFixed(2)}</span>
+                    <span className="font-bold text-xl text-emerald-700">${formatCurrency(totalFinal)}</span>
                   </div>
                 </div>
 
@@ -546,7 +548,7 @@ export default function NuevaVenta() {
                     </span>
                     {saldoFinal !== 0 && (
                       <span className="font-bold text-xl">
-                        ${Math.abs(saldoFinal).toFixed(2)}
+                        ${formatCurrency(Math.abs(saldoFinal))}
                       </span>
                     )}
                   </div>
@@ -560,11 +562,11 @@ export default function NuevaVenta() {
                     {pagosLineas.map((linea, index) => (
                       <div key={linea.id} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
                         <div className="flex gap-2">
-                          <input 
-                            type="number"
+                          <FormattedNumberInput
+                            id={`monto-${linea.id}`}
                             placeholder="Monto"
                             value={linea.monto}
-                            onChange={e => updateLineaPago(linea.id, 'monto', e.target.value)}
+                            onChange={val => updateLineaPago(linea.id, 'monto', val)}
                             className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 font-semibold"
                           />
                           <select 
