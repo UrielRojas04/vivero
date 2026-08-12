@@ -1,3 +1,5 @@
+## MODIFIED Requirements
+
 ### Requirement: Registro de Gastos Financieros
 El sistema SHALL permitir al usuario crear, listar, visualizar y eliminar (lógicamente) registros de gastos de forma independiente a las ventas. Cada gasto debe tener un concepto, un monto y una fecha asociada.
 

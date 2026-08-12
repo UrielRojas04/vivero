@@ -32,4 +32,11 @@ public class GastoController {
     public ResponseEntity<GastoDTO> crearGasto(@RequestBody GastoDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(gastoService.crearGasto(dto));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    public ResponseEntity<Void> eliminarGasto(@PathVariable Long id) {
+        gastoService.eliminarGasto(id);
+        return ResponseEntity.noContent().build();
+    }
 }

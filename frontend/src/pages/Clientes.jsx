@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, DollarSign } from 'lucide-react';
 import ClienteForm from '../components/ClienteForm';
 import DevolucionBandejasModal from '../components/DevolucionBandejasModal';
 import HistorialBandejasModal from '../components/HistorialBandejasModal';
+import AjusteSaldoModal from '../components/AjusteSaldoModal';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
 
@@ -15,6 +16,7 @@ const Clientes = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDevolucionModalOpen, setIsDevolucionModalOpen] = useState(false);
   const [isHistorialModalOpen, setIsHistorialModalOpen] = useState(false);
+  const [isAjusteModalOpen, setIsAjusteModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,6 +66,11 @@ const Clientes = () => {
   const handleOpenHistorial = (cliente) => {
     setEditingCliente(cliente);
     setIsHistorialModalOpen(true);
+  };
+
+  const handleOpenAjusteSaldo = (cliente) => {
+    setEditingCliente(cliente);
+    setIsAjusteModalOpen(true);
   };
 
   const handleSubmit = async (formData) => {
@@ -171,9 +178,15 @@ const Clientes = () => {
             <div className="flex gap-2 pt-2 border-t border-gray-50">
               <button
                 onClick={() => handleOpenModal(cliente)}
-                className="flex-1 flex justify-center items-center py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg font-medium transition-colors cursor-pointer"
+                className="flex-1 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Pencil className="w-4 h-4 mr-2" /> Editar
+                <Pencil className="w-4 h-4" /> Editar
+              </button>
+              <button
+                onClick={() => handleOpenAjusteSaldo(cliente)}
+                className="flex-1 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <DollarSign className="w-4 h-4" /> Saldo
               </button>
               <button
                 onClick={() => handleConfirmDelete(cliente.id, cliente.nombreRazonSocial)}
@@ -261,6 +274,13 @@ const Clientes = () => {
                     </button>
                     <div className="w-px h-6 bg-gray-200 mx-1 self-center"></div>
                     <button
+                      onClick={() => handleOpenAjusteSaldo(cliente)}
+                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                      title="Ajustar Saldo"
+                    >
+                      <DollarSign className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => handleOpenDevolucion(cliente)}
                       className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
                       title="Devolver Bandejas"
@@ -305,7 +325,16 @@ const Clientes = () => {
 
       <HistorialBandejasModal
         isOpen={isHistorialModalOpen}
-        onClose={() => { setIsHistorialModalOpen(false); setEditingCliente(null); }}
+        onClose={() => setIsHistorialModalOpen(false)}
+        cliente={editingCliente}
+      />
+
+      <AjusteSaldoModal
+        isOpen={isAjusteModalOpen}
+        onClose={() => {
+          setIsAjusteModalOpen(false);
+          fetchClientes();
+        }}
         cliente={editingCliente}
       />
     </div>

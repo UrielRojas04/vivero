@@ -9,3 +9,8 @@ export const createGasto = async (gastoData) => {
   const response = await axiosInstance.post('/gastos', gastoData);
   return response.data;
 };
+
+export const deleteGasto = async (id) => {
+  const response = await axiosInstance.delete(`/gastos/${id}`);
+  return response.data;
+};

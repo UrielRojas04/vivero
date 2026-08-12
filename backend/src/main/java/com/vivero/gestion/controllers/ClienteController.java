@@ -50,4 +50,10 @@ public class ClienteController {
         clienteService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PreAuthorize("hasAuthority('ESCRIBIR_CLIENTES')")
+    @PostMapping("/{id}/saldo/ajuste")
+    public ResponseEntity<ClienteDTO> ajustarSaldo(@PathVariable Long id, @RequestBody com.vivero.gestion.dto.AjusteSaldoDTO ajusteDTO) {
+        return ResponseEntity.ok(clienteService.ajustarSaldo(id, ajusteDTO.getMonto()));
+    }
 }

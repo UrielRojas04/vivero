@@ -14,10 +14,11 @@ import {
   Plus,
   TrendingDown,
   Search,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react';
 import { finanzasApi } from '../api/finanzas.api';
-import { getGastos, createGasto } from '../api/gastos.api';
+import { getGastos, createGasto, deleteGasto } from '../api/gastos.api';
 import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
@@ -31,7 +32,7 @@ const formatMoney = (value) =>
   `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const Finanzas = () => {
-  const { pushToast, denyAccess } = useUIStore();
+  const { pushToast, denyAccess, askConfirm } = useUIStore();
   const liveStocks = useStockStore(state => state.liveStocks);
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -108,6 +109,18 @@ const Finanzas = () => {
     },
     onError: (error) => {
       pushToast('error', getErrorMessage(error, 'Error al registrar el gasto'));
+    }
+  });
+
+  const deleteGastoMutation = useMutation({
+    mutationFn: (id) => deleteGasto(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['finanzas', 'gastos']);
+      queryClient.invalidateQueries(['finanzas', 'resumen']);
+      pushToast('success', 'Gasto eliminado correctamente');
+    },
+    onError: (error) => {
+      pushToast('error', getErrorMessage(error, 'Error al eliminar el gasto'));
     }
   });
 
@@ -398,7 +411,28 @@ const Finanzas = () => {
                           </p>
                           <p className="text-xs text-gray-500">{new Date(gasto.fecha).toLocaleDateString('es-AR')}</p>
                         </div>
-                        <span className="font-bold text-red-600">{formatMoney(gasto.monto)}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="font-bold text-red-600">{formatMoney(gasto.monto)}</span>
+                          {gasto.tipo === 'MANUAL' && (
+                            <button
+                              onClick={() => {
+                                askConfirm({
+                                  title: 'Eliminar Gasto',
+                                  message: '¿Está seguro de eliminar este gasto?',
+                                  onConfirm: () => {
+                                    const rawId = gasto.id.toString().replace('G-', '');
+                                    deleteGastoMutation.mutate(rawId);
+                                  }
+                                });
+                              }}
+                              disabled={deleteGastoMutation.isPending}
+                              title="Eliminar"
+                              className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                              {deleteGastoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>

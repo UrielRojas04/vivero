@@ -37,6 +37,14 @@ public class GastoService {
         return mapToDTO(guardado);
     }
 
+    @Transactional
+    public void eliminarGasto(Long id) {
+        if (!gastoRepository.existsById(id)) {
+            throw new RuntimeException("Gasto no encontrado con id " + id);
+        }
+        gastoRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public List<GastoDTO> listarGastosPorRango(LocalDateTime start, LocalDateTime end) {
         return gastoRepository.findByFechaBetween(start, end).stream()

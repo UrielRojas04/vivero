@@ -82,6 +82,25 @@ public class ClienteServiceImpl implements ClienteService {
         clienteRepository.save(cliente);
     }
 
+    @Override
+    @Transactional
+    public ClienteDTO ajustarSaldo(Long id, BigDecimal monto) {
+        Cliente cliente = clienteRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        
+        CuentaCorrienteDinero cta = cliente.getCuentaCorrienteDinero();
+        if (cta == null) {
+            cta = new CuentaCorrienteDinero();
+            cta.setBalancePesos(BigDecimal.ZERO);
+            cta.setCliente(cliente);
+            cliente.setCuentaCorrienteDinero(cta);
+        }
+        
+        cta.setBalancePesos(cta.getBalancePesos().add(monto));
+        Cliente updated = clienteRepository.save(cliente);
+        return mapToDTO(updated);
+    }
+
     private ClienteDTO mapToDTO(Cliente cliente) {
         return ClienteDTO.builder()
                 .id(cliente.getId())
