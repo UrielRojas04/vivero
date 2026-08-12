@@ -10,7 +10,7 @@ export default function VariedadesBandejas() {
   const [selectedBandeja, setSelectedBandeja] = useState(null);
   
   const queryClient = useQueryClient();
-  const { pushToast } = useUIStore();
+  const { pushToast, pushConfirm } = useUIStore();
 
   const { data: bandejas = [], isLoading } = useQuery({
     queryKey: ['variedades-bandejas'],
@@ -26,7 +26,10 @@ export default function VariedadesBandejas() {
       queryClient.invalidateQueries({ queryKey: ['variedades-bandejas'] });
       pushToast('success', 'Bandeja eliminada con éxito');
     },
-    onError: () => pushToast('error', 'Error al eliminar bandeja')
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Error al eliminar bandeja';
+      pushToast('error', msg);
+    }
   });
 
   const handleEdit = (bandeja) => {
@@ -35,9 +38,12 @@ export default function VariedadesBandejas() {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('¿Está seguro que desea eliminar este tipo de bandeja?')) {
-      deleteMutation.mutate(id);
-    }
+    pushConfirm({
+      title: 'Eliminar Bandeja',
+      message: '¿Está seguro que desea eliminar este tipo de bandeja? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      onConfirm: () => deleteMutation.mutate(id)
+    });
   };
 
   const handleCloseModal = () => {
@@ -49,16 +55,7 @@ export default function VariedadesBandejas() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-            <LayoutDashboard size={24} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tipos de Bandejas</h1>
-            <p className="text-gray-500 text-sm mt-1">Gestione los modelos y su capacidad</p>
-          </div>
-        </div>
+      <div className="flex justify-end mb-2">
         <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm cursor-pointer font-medium"
@@ -87,6 +84,11 @@ export default function VariedadesBandejas() {
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                     {bandeja.cantidadCeldas} celdas
                   </span>
+                  {bandeja.enUso && (
+                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="No se puede eliminar porque está siendo utilizada en siembras">
+                      EN USO
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
@@ -97,7 +99,12 @@ export default function VariedadesBandejas() {
                   </button>
                   <button
                     onClick={() => handleDelete(bandeja.id)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"
+                    disabled={bandeja.enUso}
+                    className={`p-2 rounded-lg transition-colors ${
+                      bandeja.enUso 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-red-600 hover:text-red-900 hover:bg-red-50 cursor-pointer'
+                    }`}
                   >
                     <Trash2 size={18} />
                   </button>

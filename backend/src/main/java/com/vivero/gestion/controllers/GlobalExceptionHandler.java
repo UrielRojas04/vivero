@@ -35,6 +35,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Conflict");
+        errorResponse.put("message", "No se puede eliminar el registro porque está en uso por otros elementos del sistema.");
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllExceptions(Exception ex) {
         ex.printStackTrace(); // Log to console

@@ -7,4 +7,6 @@ import com.vivero.gestion.models.Siembra;
 
 @Repository
 public interface SiembraRepository extends JpaRepository<Siembra, Long> {
+    boolean existsByVariedadPlantaId(Long variedadPlantaId);
+    boolean existsByVariedadBandejaId(Long variedadBandejaId);
 }

@@ -65,13 +65,25 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
     ? plantas.filter(p => p.nombre.toLowerCase().includes(busquedaPlanta.toLowerCase()))
     : plantas;
 
+  const obtenerDiasCrecimiento = (planta, date = new Date()) => {
+    const mes = date.getMonth(); // 0 a 11
+    const mesesMapping = [
+      'diasEnero', 'diasFebrero', 'diasMarzo', 'diasAbril',
+      'diasMayo', 'diasJunio', 'diasJulio', 'diasAgosto',
+      'diasSeptiembre', 'diasOctubre', 'diasNoviembre', 'diasDiciembre'
+    ];
+    return planta[mesesMapping[mes]] || 0;
+  };
+
   const seleccionarPlanta = (planta) => {
     setBusquedaPlanta(planta.nombre);
     setShowDropdown(false);
     const id = planta.id.toString();
-    if (planta.diasCrecimiento) {
+    
+    const dias = obtenerDiasCrecimiento(planta);
+    if (dias > 0) {
       const date = new Date();
-      date.setDate(date.getDate() + planta.diasCrecimiento);
+      date.setDate(date.getDate() + dias);
       setFormData(prev => ({
         ...prev,
         variedadPlantaId: id,

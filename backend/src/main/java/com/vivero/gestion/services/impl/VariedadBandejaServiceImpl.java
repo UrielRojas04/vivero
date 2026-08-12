@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.vivero.gestion.dto.VariedadBandejaDTO;
 import com.vivero.gestion.models.VariedadBandeja;
 import com.vivero.gestion.repositories.VariedadBandejaRepository;
+import com.vivero.gestion.repositories.SiembraRepository;
 import com.vivero.gestion.services.VariedadBandejaService;
 
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class VariedadBandejaServiceImpl implements VariedadBandejaService {
 
     private final VariedadBandejaRepository repository;
+    private final SiembraRepository siembraRepository;
 
     @Override
     public List<VariedadBandejaDTO> obtenerTodas() {
@@ -60,6 +62,7 @@ public class VariedadBandejaServiceImpl implements VariedadBandejaService {
         dto.setId(model.getId());
         dto.setNombre(model.getNombre());
         dto.setCantidadCeldas(model.getCantidadCeldas());
+        dto.setEnUso(siembraRepository.existsByVariedadBandejaId(model.getId()));
         return dto;
     }
 }

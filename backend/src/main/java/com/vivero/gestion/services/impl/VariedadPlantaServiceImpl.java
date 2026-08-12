@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.vivero.gestion.dto.VariedadPlantaDTO;
 import com.vivero.gestion.models.VariedadPlanta;
 import com.vivero.gestion.repositories.VariedadPlantaRepository;
+import com.vivero.gestion.repositories.SiembraRepository;
 import com.vivero.gestion.services.VariedadPlantaService;
 
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class VariedadPlantaServiceImpl implements VariedadPlantaService {
 
     private final VariedadPlantaRepository repository;
+    private final SiembraRepository siembraRepository;
 
     @Override
     public List<VariedadPlantaDTO> obtenerTodas() {
@@ -36,7 +38,18 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
         VariedadPlanta model = new VariedadPlanta();
         model.setNombre(dto.getNombre());
         model.setDescripcion(dto.getDescripcion());
-        model.setDiasCrecimiento(dto.getDiasCrecimiento());
+        model.setDiasEnero(dto.getDiasEnero());
+        model.setDiasFebrero(dto.getDiasFebrero());
+        model.setDiasMarzo(dto.getDiasMarzo());
+        model.setDiasAbril(dto.getDiasAbril());
+        model.setDiasMayo(dto.getDiasMayo());
+        model.setDiasJunio(dto.getDiasJunio());
+        model.setDiasJulio(dto.getDiasJulio());
+        model.setDiasAgosto(dto.getDiasAgosto());
+        model.setDiasSeptiembre(dto.getDiasSeptiembre());
+        model.setDiasOctubre(dto.getDiasOctubre());
+        model.setDiasNoviembre(dto.getDiasNoviembre());
+        model.setDiasDiciembre(dto.getDiasDiciembre());
         return mapToDTO(repository.save(model));
     }
 
@@ -47,7 +60,18 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
                 .orElseThrow(() -> new RuntimeException("VariedadPlanta no encontrada"));
         model.setNombre(dto.getNombre());
         model.setDescripcion(dto.getDescripcion());
-        model.setDiasCrecimiento(dto.getDiasCrecimiento());
+        model.setDiasEnero(dto.getDiasEnero());
+        model.setDiasFebrero(dto.getDiasFebrero());
+        model.setDiasMarzo(dto.getDiasMarzo());
+        model.setDiasAbril(dto.getDiasAbril());
+        model.setDiasMayo(dto.getDiasMayo());
+        model.setDiasJunio(dto.getDiasJunio());
+        model.setDiasJulio(dto.getDiasJulio());
+        model.setDiasAgosto(dto.getDiasAgosto());
+        model.setDiasSeptiembre(dto.getDiasSeptiembre());
+        model.setDiasOctubre(dto.getDiasOctubre());
+        model.setDiasNoviembre(dto.getDiasNoviembre());
+        model.setDiasDiciembre(dto.getDiasDiciembre());
         return mapToDTO(repository.save(model));
     }
 
@@ -62,7 +86,19 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
         dto.setId(model.getId());
         dto.setNombre(model.getNombre());
         dto.setDescripcion(model.getDescripcion());
-        dto.setDiasCrecimiento(model.getDiasCrecimiento());
+        dto.setDiasEnero(model.getDiasEnero());
+        dto.setDiasFebrero(model.getDiasFebrero());
+        dto.setDiasMarzo(model.getDiasMarzo());
+        dto.setDiasAbril(model.getDiasAbril());
+        dto.setDiasMayo(model.getDiasMayo());
+        dto.setDiasJunio(model.getDiasJunio());
+        dto.setDiasJulio(model.getDiasJulio());
+        dto.setDiasAgosto(model.getDiasAgosto());
+        dto.setDiasSeptiembre(model.getDiasSeptiembre());
+        dto.setDiasOctubre(model.getDiasOctubre());
+        dto.setDiasNoviembre(model.getDiasNoviembre());
+        dto.setDiasDiciembre(model.getDiasDiciembre());
+        dto.setEnUso(siembraRepository.existsByVariedadPlantaId(model.getId()));
         return dto;
     }
 }

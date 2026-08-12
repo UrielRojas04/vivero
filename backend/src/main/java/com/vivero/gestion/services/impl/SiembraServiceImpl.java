@@ -146,7 +146,18 @@ public class SiembraServiceImpl implements SiembraService {
             vpDto.setId(siembra.getVariedadPlanta().getId());
             vpDto.setNombre(siembra.getVariedadPlanta().getNombre());
             vpDto.setDescripcion(siembra.getVariedadPlanta().getDescripcion());
-            vpDto.setDiasCrecimiento(siembra.getVariedadPlanta().getDiasCrecimiento());
+            vpDto.setDiasEnero(siembra.getVariedadPlanta().getDiasEnero());
+            vpDto.setDiasFebrero(siembra.getVariedadPlanta().getDiasFebrero());
+            vpDto.setDiasMarzo(siembra.getVariedadPlanta().getDiasMarzo());
+            vpDto.setDiasAbril(siembra.getVariedadPlanta().getDiasAbril());
+            vpDto.setDiasMayo(siembra.getVariedadPlanta().getDiasMayo());
+            vpDto.setDiasJunio(siembra.getVariedadPlanta().getDiasJunio());
+            vpDto.setDiasJulio(siembra.getVariedadPlanta().getDiasJulio());
+            vpDto.setDiasAgosto(siembra.getVariedadPlanta().getDiasAgosto());
+            vpDto.setDiasSeptiembre(siembra.getVariedadPlanta().getDiasSeptiembre());
+            vpDto.setDiasOctubre(siembra.getVariedadPlanta().getDiasOctubre());
+            vpDto.setDiasNoviembre(siembra.getVariedadPlanta().getDiasNoviembre());
+            vpDto.setDiasDiciembre(siembra.getVariedadPlanta().getDiasDiciembre());
             dto.setVariedadPlanta(vpDto);
         }
         

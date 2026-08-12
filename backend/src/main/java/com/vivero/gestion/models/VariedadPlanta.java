@@ -17,5 +17,18 @@ public class VariedadPlanta {
     
     private String nombre;
     private String descripcion;
-    private Integer diasCrecimiento;
+    
+    // Días de crecimiento por mes
+    private Integer diasEnero;
+    private Integer diasFebrero;
+    private Integer diasMarzo;
+    private Integer diasAbril;
+    private Integer diasMayo;
+    private Integer diasJunio;
+    private Integer diasJulio;
+    private Integer diasAgosto;
+    private Integer diasSeptiembre;
+    private Integer diasOctubre;
+    private Integer diasNoviembre;
+    private Integer diasDiciembre;
 }

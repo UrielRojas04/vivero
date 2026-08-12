@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Registro de Variedades de Plantas
 El sistema SHALL permitir al usuario (con permisos suficientes) registrar una nueva variedad de planta cultivable indicando los días de crecimiento para cada uno de los 12 meses del año.
