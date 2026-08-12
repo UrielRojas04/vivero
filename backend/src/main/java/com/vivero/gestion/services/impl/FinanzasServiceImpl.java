@@ -7,6 +7,7 @@ import com.vivero.gestion.repositories.InsumoRepository;
 import com.vivero.gestion.repositories.PagoRepository;
 import com.vivero.gestion.repositories.VentaDetalleRepository;
 import com.vivero.gestion.repositories.VentaRepository;
+import com.vivero.gestion.repositories.ChequeRepository;
 import com.vivero.gestion.models.Gasto;
 import com.vivero.gestion.services.FinanzasService;
 import org.springframework.data.domain.Page;
@@ -31,17 +32,20 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final InsumoRepository insumoRepository;
     private final PagoRepository pagoRepository;
     private final GastoRepository gastoRepository;
+    private final ChequeRepository chequeRepository;
 
     public FinanzasServiceImpl(VentaRepository ventaRepository,
                                VentaDetalleRepository ventaDetalleRepository,
                                InsumoRepository insumoRepository,
                                PagoRepository pagoRepository,
-                               GastoRepository gastoRepository) {
+                               GastoRepository gastoRepository,
+                               ChequeRepository chequeRepository) {
         this.ventaRepository = ventaRepository;
         this.ventaDetalleRepository = ventaDetalleRepository;
         this.insumoRepository = insumoRepository;
         this.pagoRepository = pagoRepository;
         this.gastoRepository = gastoRepository;
+        this.chequeRepository = chequeRepository;
     }
 
     @Override
@@ -58,12 +62,14 @@ public class FinanzasServiceImpl implements FinanzasService {
         BigDecimal totalCostos = gastosInsumos.add(totalGastos);
         BigDecimal gananciaNeta = totalVentas.subtract(totalCostos);
         BigDecimal margen = calcularMargen(gananciaNeta, totalVentas);
+        BigDecimal chequesEnCartera = chequeRepository.sumarChequesEnCartera();
 
         DashboardResumenDTO dto = new DashboardResumenDTO();
         dto.setTotalVentas(totalVentas);
         dto.setTotalCostos(totalCostos);
         dto.setGananciaNeta(gananciaNeta);
         dto.setMargen(margen);
+        dto.setChequesEnCartera(chequesEnCartera);
         return dto;
     }
 

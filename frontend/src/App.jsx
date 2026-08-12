@@ -8,6 +8,10 @@ import Clientes from './pages/Clientes';
 import UsuariosAdmin from './pages/UsuariosAdmin';
 import Finanzas from './pages/Finanzas';
 import Cheques from './pages/Cheques';
+import Siembras from './pages/Siembras';
+import VariedadesPlantas from './pages/VariedadesPlantas';
+import VariedadesBandejas from './pages/VariedadesBandejas';
+import Configuracion from './pages/Configuracion';
 import NuevaVenta from './pages/NuevaVenta';
 import HistorialVentas from './pages/HistorialVentas';
 import VentasLayout from './pages/VentasLayout';
@@ -28,6 +32,7 @@ function App() {
             
             <Route element={<ProtectedRoute requiredPermission="LEER_STOCK" />}>
               <Route path="/productos" element={<Productos />} />
+              <Route path="/siembras" element={<Siembras />} />
             </Route>
 
             <Route element={<ProtectedRoute requiredPermission="LEER_INSUMOS" />}>
@@ -52,6 +57,9 @@ function App() {
               <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
               <Route path="/finanzas" element={<Finanzas />} />
               <Route path="/cheques" element={<Cheques />} />
+              <Route path="/variedades-plantas" element={<VariedadesPlantas />} />
+              <Route path="/variedades-bandejas" element={<VariedadesBandejas />} />
+              <Route path="/configuracion" element={<Configuracion />} />
             </Route>
           </Route>
         </Route>

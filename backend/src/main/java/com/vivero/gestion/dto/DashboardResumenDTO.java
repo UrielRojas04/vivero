@@ -8,6 +8,7 @@ public class DashboardResumenDTO {
     private BigDecimal totalCostos;
     private BigDecimal gananciaNeta;
     private BigDecimal margen;
+    private BigDecimal chequesEnCartera;
 
     public DashboardResumenDTO() {}
 
@@ -19,4 +20,6 @@ public class DashboardResumenDTO {
     public void setGananciaNeta(BigDecimal gananciaNeta) { this.gananciaNeta = gananciaNeta; }
     public BigDecimal getMargen() { return margen; }
     public void setMargen(BigDecimal margen) { this.margen = margen; }
+    public BigDecimal getChequesEnCartera() { return chequesEnCartera; }
+    public void setChequesEnCartera(BigDecimal chequesEnCartera) { this.chequesEnCartera = chequesEnCartera; }
 }

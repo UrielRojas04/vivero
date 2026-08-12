@@ -54,6 +54,9 @@ public class Cheque {
     @Column(length = 150)
     private String entregadoA;
 
+    @Column(columnDefinition = "boolean default false")
+    private Boolean esEmisionPropia = false;
+
     // Getters and Setters
 
     public Long getId() {
@@ -150,5 +153,13 @@ public class Cheque {
 
     public void setEntregadoA(String entregadoA) {
         this.entregadoA = entregadoA;
+    }
+
+    public Boolean getEsEmisionPropia() {
+        return esEmisionPropia;
+    }
+
+    public void setEsEmisionPropia(Boolean esEmisionPropia) {
+        this.esEmisionPropia = esEmisionPropia;
     }
 }

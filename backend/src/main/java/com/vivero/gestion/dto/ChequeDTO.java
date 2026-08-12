@@ -17,6 +17,8 @@ public class ChequeDTO {
     private String estado;
     private LocalDate fechaEntrega;
     private String entregadoA;
+    private Boolean esEmisionPropia;
+    private Long endosadoAClienteId;
 
     public Long getId() {
         return id;
@@ -120,5 +122,21 @@ public class ChequeDTO {
 
     public void setEntregadoA(String entregadoA) {
         this.entregadoA = entregadoA;
+    }
+
+    public Boolean getEsEmisionPropia() {
+        return esEmisionPropia;
+    }
+
+    public void setEsEmisionPropia(Boolean esEmisionPropia) {
+        this.esEmisionPropia = esEmisionPropia;
+    }
+
+    public Long getEndosadoAClienteId() {
+        return endosadoAClienteId;
+    }
+
+    public void setEndosadoAClienteId(Long endosadoAClienteId) {
+        this.endosadoAClienteId = endosadoAClienteId;
     }
 }

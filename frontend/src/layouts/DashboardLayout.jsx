@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 const navGroups = [
   {
@@ -25,6 +25,7 @@ const navGroups = [
     items: [
       { to: '/productos', label: 'Productos (Plantas)', icon: Package, permission: 'LEER_STOCK' },
       { to: '/insumos', label: 'Insumos', icon: Wrench, permission: 'LEER_INSUMOS' },
+      { to: '/siembras', label: 'Siembras', icon: Sprout, permission: 'LEER_STOCK' },
     ]
   },
   {
@@ -41,6 +42,7 @@ const navGroups = [
 const DashboardLayout = () => {
   const { logout, user, hasPermission } = useAuthStore();
   const navigate = useNavigate();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   // Inicializar conexión SSE globalmente
   useStockEvents();
@@ -97,29 +99,60 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 relative">
           {user && (
-            <div className="flex items-center mb-4 px-2">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg mr-3 shadow-sm border border-emerald-200">
-                {user.username ? user.username.charAt(0).toUpperCase() : '?'}
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-semibold text-gray-800 truncate" title={user.username}>
-                  {user.username}
-                </p>
-                <p className="text-xs text-emerald-600 font-medium truncate" title={user.roles?.[0]}>
-                  {user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'SIN ROL'}
-                </p>
-              </div>
-            </div>
+            <>
+              <button 
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center w-full p-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg mr-3 shadow-sm border border-emerald-200 hover:bg-emerald-200 transition-colors shrink-0">
+                  {user.username ? user.username.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div className="text-left overflow-hidden flex-1">
+                  <p className="text-sm font-semibold text-gray-800 truncate" title={user.username}>
+                    {user.username}
+                  </p>
+                  <p className="text-xs text-emerald-600 font-medium truncate" title={user.roles?.[0]}>
+                    {user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'SIN ROL'}
+                  </p>
+                </div>
+                <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Profile Menu Popover */}
+              {isProfileMenuOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsProfileMenuOpen(false)}
+                  />
+                  <div className="absolute bottom-16 left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 animate-in fade-in slide-in-from-bottom-2">
+                    <p className="px-3 py-1 mb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Opciones</p>
+                    
+                    <NavLink
+                      to="/configuracion"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className={({ isActive }) => `flex items-center px-4 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700 hover:bg-gray-50 hover:text-emerald-600'}`}
+                    >
+                      <Settings className="w-4 h-4 mr-3" />
+                      Configuración
+                    </NavLink>
+                    
+                    <div className="h-px bg-gray-100 my-2"></div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
           )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Cerrar Sesión
-          </button>
         </div>
       </aside>
 
