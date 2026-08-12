@@ -13,6 +13,8 @@ import com.vivero.gestion.models.Cliente;
 import com.vivero.gestion.models.CuentaCorrienteBandejas;
 import com.vivero.gestion.models.CuentaCorrienteDinero;
 import com.vivero.gestion.repositories.ClienteRepository;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import com.vivero.gestion.services.ClienteService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,11 +24,19 @@ import lombok.RequiredArgsConstructor;
 public class ClienteServiceImpl implements ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<ClienteDTO> getAll() {
-        return clienteRepository.findAll().stream()
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Cliente> clientes;
+        if (unidadId != null) {
+            clientes = clienteRepository.findAllByUnidadNegocioId(unidadId);
+        } else {
+            clientes = clienteRepository.findAll();
+        }
+        return clientes.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -34,8 +44,15 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional(readOnly = true)
     public ClienteDTO getById(Long id) {
-        Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        Cliente cliente;
+        if (unidadId != null) {
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
+        } else {
+            cliente = clienteRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        }
         return mapToDTO(cliente);
     }
 
@@ -45,6 +62,11 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = new Cliente();
         cliente.setNombreRazonSocial(dto.getNombreRazonSocial());
         cliente.setTelefono(dto.getTelefono());
+        
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            cliente.setUnidadNegocio(unidadNegocioRepository.getReferenceById(unidadId));
+        }
         
         CuentaCorrienteDinero ctaDinero = new CuentaCorrienteDinero();
         ctaDinero.setBalancePesos(BigDecimal.ZERO);
@@ -63,8 +85,15 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public ClienteDTO update(Long id, ClienteDTO dto) {
-        Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        Cliente cliente;
+        if (unidadId != null) {
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
+        } else {
+            cliente = clienteRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        }
         
         cliente.setNombreRazonSocial(dto.getNombreRazonSocial());
         cliente.setTelefono(dto.getTelefono());
@@ -76,8 +105,15 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Cliente cliente = clienteRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        Cliente cliente;
+        if (unidadId != null) {
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
+        } else {
+            cliente = clienteRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        }
         cliente.setDeleted(true);
         clienteRepository.save(cliente);
     }
@@ -85,8 +121,15 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public ClienteDTO ajustarSaldo(Long id, BigDecimal monto) {
-        Cliente cliente = clienteRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        Cliente cliente;
+        if (unidadId != null) {
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
+        } else {
+            cliente = clienteRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
+        }
         
         CuentaCorrienteDinero cta = cliente.getCuentaCorrienteDinero();
         if (cta == null) {

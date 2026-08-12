@@ -6,10 +6,12 @@ import DevolucionBandejasModal from '../components/DevolucionBandejasModal';
 import HistorialBandejasModal from '../components/HistorialBandejasModal';
 import AjusteSaldoModal from '../components/AjusteSaldoModal';
 import { useUIStore } from '../store/useUIStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { getErrorMessage } from '../utils/errorMessage';
 
 const Clientes = () => {
   const { pushToast, askConfirm } = useUIStore();
+  const { unidadNegocioActiva } = useAuthStore();
   const [clientes, setClientes] = useState([]);
   const [filteredClientes, setFilteredClientes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -168,11 +170,13 @@ const Clientes = () => {
                 }`}>
                   $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
                 </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {cliente.balanceBandejas || 0} bandejas
-                </span>
+                {unidadNegocioActiva !== '2' && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {cliente.balanceBandejas || 0} bandejas
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex gap-2 pt-2 border-t border-gray-50">
@@ -195,20 +199,22 @@ const Clientes = () => {
                 <Trash2 className="w-4 h-4 mr-2" /> Eliminar
               </button>
             </div>
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => handleOpenDevolucion(cliente)}
-                className="flex-1 flex justify-center items-center py-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg font-medium transition-colors cursor-pointer"
-              >
-                Devolver B.
-              </button>
-              <button
-                onClick={() => handleOpenHistorial(cliente)}
-                className="flex-1 flex justify-center items-center py-2 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg font-medium transition-colors cursor-pointer"
-              >
-                Historial B.
-              </button>
-            </div>
+            {unidadNegocioActiva !== '2' && (
+              <div className="flex gap-2 pt-2 border-t border-gray-50">
+                <button
+                  onClick={() => handleOpenDevolucion(cliente)}
+                  className="flex-1 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  Devolver Bandejas
+                </button>
+                <button
+                  onClick={() => handleOpenHistorial(cliente)}
+                  className="flex-1 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                >
+                  Historial Bandejas
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {filteredClientes.length === 0 && (
@@ -226,7 +232,7 @@ const Clientes = () => {
               <th className="p-4 font-semibold">Nombre / Razón Social</th>
               <th className="p-4 font-semibold">Teléfono</th>
               <th className="p-4 font-semibold text-right">Saldo Dinero</th>
-              <th className="p-4 font-semibold text-right">Saldo Bandejas</th>
+              {unidadNegocioActiva !== '2' && <th className="p-4 font-semibold text-right">Saldo Bandejas</th>}
               <th className="p-4 font-semibold text-right">Acciones</th>
             </tr>
           </thead>
@@ -249,13 +255,15 @@ const Clientes = () => {
                     $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
                   </span>
                 </td>
-                <td className="p-4 text-right">
-                  <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${
-                    cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {cliente.balanceBandejas || 0}
-                  </span>
-                </td>
+                {unidadNegocioActiva !== '2' && (
+                  <td className="p-4 text-right">
+                    <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${
+                      cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {cliente.balanceBandejas || 0}
+                    </span>
+                  </td>
+                )}
                 <td className="p-4">
                   <div className="flex justify-end gap-2">
                     <button
@@ -280,20 +288,24 @@ const Clientes = () => {
                     >
                       <DollarSign className="w-5 h-5" />
                     </button>
-                    <button
-                      onClick={() => handleOpenDevolucion(cliente)}
-                      className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
-                      title="Devolver Bandejas"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line><line x1="8" y1="14.5" x2="12" y2="12"></line></svg>
-                    </button>
-                    <button
-                      onClick={() => handleOpenHistorial(cliente)}
-                      className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
-                      title="Historial de Bandejas"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </button>
+                    {unidadNegocioActiva !== '2' && (
+                      <>
+                        <button
+                          onClick={() => handleOpenDevolucion(cliente)}
+                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
+                          title="Devolver Bandejas"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line><line x1="8" y1="14.5" x2="12" y2="12"></line></svg>
+                        </button>
+                        <button
+                          onClick={() => handleOpenHistorial(cliente)}
+                          className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
+                          title="Historial de Bandejas"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

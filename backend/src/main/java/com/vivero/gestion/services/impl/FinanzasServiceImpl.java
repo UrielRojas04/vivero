@@ -8,6 +8,8 @@ import com.vivero.gestion.repositories.PagoRepository;
 import com.vivero.gestion.repositories.VentaDetalleRepository;
 import com.vivero.gestion.repositories.VentaRepository;
 import com.vivero.gestion.repositories.ChequeRepository;
+import com.vivero.gestion.repositories.ProductoRepository;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import com.vivero.gestion.models.Gasto;
 import com.vivero.gestion.services.FinanzasService;
 import org.springframework.data.domain.Page;
@@ -33,28 +35,47 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final PagoRepository pagoRepository;
     private final GastoRepository gastoRepository;
     private final ChequeRepository chequeRepository;
+    private final ProductoRepository productoRepository;
 
     public FinanzasServiceImpl(VentaRepository ventaRepository,
                                VentaDetalleRepository ventaDetalleRepository,
                                InsumoRepository insumoRepository,
                                PagoRepository pagoRepository,
                                GastoRepository gastoRepository,
-                               ChequeRepository chequeRepository) {
+                               ChequeRepository chequeRepository,
+                               ProductoRepository productoRepository) {
         this.ventaRepository = ventaRepository;
         this.ventaDetalleRepository = ventaDetalleRepository;
         this.insumoRepository = insumoRepository;
         this.pagoRepository = pagoRepository;
         this.gastoRepository = gastoRepository;
         this.chequeRepository = chequeRepository;
+        this.productoRepository = productoRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta) {
-        BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta);
-        BigDecimal gastosInsumos = insumoRepository.sumarGastosInsumos(desde, hasta);
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta, unidadId);
         
-        List<Gasto> gastos = gastoRepository.findByFechaBetween(desde, hasta);
+        BigDecimal gastosInsumos = BigDecimal.ZERO;
+        if (unidadId == null || unidadId == 1L) {
+            BigDecimal sum = insumoRepository.sumarGastosInsumos(desde, hasta);
+            if (sum != null) gastosInsumos = sum;
+        }
+
+        if (unidadId != null && unidadId == 2L) {
+            BigDecimal sum = productoRepository.sumarCostoInventario(unidadId);
+            if (sum != null) gastosInsumos = gastosInsumos.add(sum);
+        }
+
+        List<Gasto> gastos;
+        if (unidadId != null) {
+            gastos = gastoRepository.findByUnidadNegocioIdAndFechaBetween(unidadId, desde, hasta);
+        } else {
+            gastos = gastoRepository.findByFechaBetween(desde, hasta);
+        }
         BigDecimal totalGastos = gastos.stream()
                 .map(Gasto::getMonto)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -62,7 +83,13 @@ public class FinanzasServiceImpl implements FinanzasService {
         BigDecimal totalCostos = gastosInsumos.add(totalGastos);
         BigDecimal gananciaNeta = totalVentas.subtract(totalCostos);
         BigDecimal margen = calcularMargen(gananciaNeta, totalVentas);
-        BigDecimal chequesEnCartera = chequeRepository.sumarChequesEnCartera();
+        
+        BigDecimal chequesEnCartera;
+        if (unidadId != null) {
+            chequesEnCartera = chequeRepository.sumarChequesEnCarteraByUnidadNegocioId(unidadId);
+        } else {
+            chequesEnCartera = chequeRepository.sumarChequesEnCartera();
+        }
 
         DashboardResumenDTO dto = new DashboardResumenDTO();
         dto.setTotalVentas(totalVentas);
@@ -76,7 +103,8 @@ public class FinanzasServiceImpl implements FinanzasService {
     @Override
     @Transactional(readOnly = true)
     public Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Pageable pageable) {
-        Page<VentaLiteDTO> ventas = ventaRepository.listarVentasPorRango(desde, hasta, q, pageable);
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        Page<VentaLiteDTO> ventas = ventaRepository.listarVentasPorRango(desde, hasta, q, unidadId, pageable);
         if (ventas.isEmpty()) {
             return ventas;
         }

@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
 
 @Entity
 @Table(name = "productos")
@@ -37,14 +39,34 @@ public class Producto {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
+    @Column(length = 100)
+    private String lote;
+
+    @Column(length = 100)
+    private String dueno;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal costoProducto;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal descuentoProveedor = BigDecimal.ZERO;
+
+    @ManyToOne
+    @JoinColumn(name = "unidad_negocio_id")
+    private UnidadNegocio unidadNegocio;
+
 
     public Producto() {}
 
-    public Producto(String nombre, String descripcion, BigDecimal precio, Integer stock) {
+    public Producto(String nombre, String descripcion, BigDecimal precio, BigDecimal costoProducto, Integer stock, String lote, String dueno) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
+        this.costoProducto = costoProducto;
+        this.descuentoProveedor = BigDecimal.ZERO;
         this.stock = stock;
+        this.lote = lote;
+        this.dueno = dueno;
     }
 
     public Long getId() { return id; }
@@ -62,5 +84,21 @@ public class Producto {
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
 
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 
+    public String getLote() { return lote; }
+    public void setLote(String lote) { this.lote = lote; }
+
+    public String getDueno() { return dueno; }
+    public void setDueno(String dueno) { this.dueno = dueno; }
+    
+    public BigDecimal getCostoProducto() { return costoProducto; }
+    public void setCostoProducto(BigDecimal costoProducto) { this.costoProducto = costoProducto; }
+    
+    public BigDecimal getDescuentoProveedor() { return descuentoProveedor; }
+    public void setDescuentoProveedor(BigDecimal descuentoProveedor) { this.descuentoProveedor = descuentoProveedor; }
+    
+    public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
 }

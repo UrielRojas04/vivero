@@ -3,9 +3,10 @@ import { Leaf, LayoutDashboard, Settings, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import VariedadesPlantas from './VariedadesPlantas';
 import VariedadesBandejas from './VariedadesBandejas';
+import ConfiguracionHerramientas from '../components/ConfiguracionHerramientas';
 
 export default function Configuracion() {
-  const { hasPermission } = useAuthStore();
+  const { hasPermission, unidadNegocioActiva } = useAuthStore();
   const [activeSection, setActiveSection] = useState(null);
 
   return (
@@ -22,55 +23,85 @@ export default function Configuracion() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {hasPermission('ADMIN_DB') && (
           <>
-            <button
-              onClick={() => setActiveSection('plantas')}
-              className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
-                activeSection === 'plantas' 
-                  ? 'border-emerald-500 ring-2 ring-emerald-500/20' 
-                  : 'border-gray-100 hover:border-emerald-500 hover:shadow-md'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                activeSection === 'plantas' ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
-              }`}>
-                <Leaf className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className={`text-lg font-bold transition-colors mb-1 ${
-                  activeSection === 'plantas' ? 'text-emerald-700' : 'text-gray-900 group-hover:text-emerald-700'
+            {unidadNegocioActiva !== '2' && (
+              <button
+                onClick={() => setActiveSection('plantas')}
+                className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+                  activeSection === 'plantas' 
+                    ? 'border-emerald-500 ring-2 ring-emerald-500/20' 
+                    : 'border-gray-100 hover:border-emerald-500 hover:shadow-md'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  activeSection === 'plantas' ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
                 }`}>
-                  Variedades de Plantas
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Gestión del catálogo de plantas y crecimiento
-                </p>
-              </div>
-            </button>
+                  <Leaf className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                    activeSection === 'plantas' ? 'text-emerald-700' : 'text-gray-900 group-hover:text-emerald-700'
+                  }`}>
+                    Variedades de Plantas
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Gestión del catálogo de plantas y crecimiento
+                  </p>
+                </div>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('bandejas')}
-              className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
-                activeSection === 'bandejas' 
-                  ? 'border-purple-500 ring-2 ring-purple-500/20' 
-                  : 'border-gray-100 hover:border-purple-500 hover:shadow-md'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                activeSection === 'bandejas' ? 'bg-purple-100 text-purple-700' : 'bg-purple-50 text-purple-600 group-hover:bg-purple-100'
-              }`}>
-                <LayoutDashboard className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className={`text-lg font-bold transition-colors mb-1 ${
-                  activeSection === 'bandejas' ? 'text-purple-700' : 'text-gray-900 group-hover:text-purple-700'
+            {unidadNegocioActiva !== '2' && (
+              <button
+                onClick={() => setActiveSection('bandejas')}
+                className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+                  activeSection === 'bandejas' 
+                    ? 'border-purple-500 ring-2 ring-purple-500/20' 
+                    : 'border-gray-100 hover:border-purple-500 hover:shadow-md'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  activeSection === 'bandejas' ? 'bg-purple-100 text-purple-700' : 'bg-purple-50 text-purple-600 group-hover:bg-purple-100'
                 }`}>
-                  Tipos de Bandejas
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Modelos de bandejas y cantidades de celdas
-                </p>
-              </div>
-            </button>
+                  <LayoutDashboard className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                    activeSection === 'bandejas' ? 'text-purple-700' : 'text-gray-900 group-hover:text-purple-700'
+                  }`}>
+                    Tipos de Bandejas
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Modelos de bandejas y cantidades de celdas
+                  </p>
+                </div>
+              </button>
+            )}
+            {unidadNegocioActiva === '2' && (
+              <button
+                onClick={() => setActiveSection('herramientas')}
+                className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+                  activeSection === 'herramientas' 
+                    ? 'border-orange-500 ring-2 ring-orange-500/20' 
+                    : 'border-gray-100 hover:border-orange-500 hover:shadow-md'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  activeSection === 'herramientas' ? 'bg-orange-100 text-orange-700' : 'bg-orange-50 text-orange-600 group-hover:bg-orange-100'
+                }`}>
+                  <Settings className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                    activeSection === 'herramientas' ? 'text-orange-700' : 'text-gray-900 group-hover:text-orange-700'
+                  }`}>
+                    Costos de Envío
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Configuración de recargos para herramientas
+                  </p>
+                </div>
+              </button>
+            )}
           </>
         )}
       </div>
@@ -79,6 +110,7 @@ export default function Configuracion() {
         <div className="pt-4 animate-fadeIn">
           {activeSection === 'plantas' && <VariedadesPlantas />}
           {activeSection === 'bandejas' && <VariedadesBandejas />}
+          {activeSection === 'herramientas' && <ConfiguracionHerramientas />}
         </div>
       )}
     </div>

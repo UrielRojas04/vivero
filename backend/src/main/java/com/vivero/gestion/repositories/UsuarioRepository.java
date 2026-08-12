@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.Modifying;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     
     @Query("SELECT u FROM Usuario u WHERE u.username = :username")
-    @EntityGraph(attributePaths = {"roles", "roles.permisos"})
+    @EntityGraph(attributePaths = {"roles", "roles.permisos", "unidadesNegocio"})
     Optional<Usuario> findByUsername(@Param("username") String username);
 
     @Modifying

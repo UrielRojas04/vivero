@@ -26,7 +26,8 @@ const Login = () => {
           authorities: response.data.authorities,
           roles: response.data.roles
         };
-        login(response.data.token, user);
+        const negocios = response.data.negociosDisponibles || [];
+        login(response.data.token, user, negocios);
         navigate('/dashboard');
       } else {
         setError('Respuesta inválida del servidor.');

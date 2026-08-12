@@ -5,7 +5,8 @@ import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { siembrasApi } from '../api/siembras.api';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2 } from 'lucide-react';
 
 const navGroups = [
   {
@@ -40,9 +41,23 @@ const navGroups = [
 ];
 
 const DashboardLayout = () => {
-  const { logout, user, hasPermission } = useAuthStore();
+  const { logout, user, hasPermission, negociosDisponibles, unidadNegocioActiva, setNegociosDisponibles, setUnidadNegocioActiva } = useAuthStore();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+  // Alertas state
+  const [alertas, setAlertas] = useState([]);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      if (hasPermission('LEER_STOCK')) {
+        siembrasApi.getAlertas()
+          .then(res => setAlertas(res.data || []))
+          .catch(err => console.error("Error fetching alertas", err));
+      }
+    }
+  }, [user]);
 
   // Inicializar conexión SSE globalmente
   useStockEvents();
@@ -64,9 +79,22 @@ const DashboardLayout = () => {
         <nav className="flex-1 p-4 overflow-y-auto space-y-6">
           {navGroups.map((group, idx) => {
             // Filtrar los items del grupo según permisos
-            const visibleItems = group.items.filter(
-              (item) => !item.permission || hasPermission(item.permission)
-            );
+            const activeBusinessId = parseInt(unidadNegocioActiva);
+            const isHerramientas = activeBusinessId === 2; // Assuming ID 2 is Herramientas
+
+            const visibleItems = group.items.filter((item) => {
+              if (item.permission && !hasPermission(item.permission)) return false;
+              if (isHerramientas && (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Productos (Plantas)')) {
+                // Rename Productos to just Productos for Herramientas, or hide Siembras/Insumos
+                if (item.label === 'Siembras' || item.label === 'Insumos') return false;
+              }
+              return true;
+            }).map(item => {
+              if (isHerramientas && item.label === 'Productos (Plantas)') {
+                return { ...item, label: 'Productos (Herramientas)' };
+              }
+              return item;
+            });
 
             // Si ningún item del grupo es visible, no mostramos el grupo
             if (visibleItems.length === 0) return null;
@@ -138,6 +166,25 @@ const DashboardLayout = () => {
                       <Settings className="w-4 h-4 mr-3" />
                       Configuración
                     </NavLink>
+
+                    {negociosDisponibles.length > 0 && (
+                      <div className="px-4 py-2">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Negocio Activo</p>
+                        <select 
+                          value={unidadNegocioActiva || ''} 
+                          onChange={(e) => {
+                            setUnidadNegocioActiva(e.target.value);
+                            setIsProfileMenuOpen(false);
+                            window.location.reload(); 
+                          }}
+                          className="w-full bg-gray-50 border border-gray-200 text-sm font-medium text-gray-800 rounded-lg p-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                        >
+                          {negociosDisponibles.map(n => (
+                            <option key={n.id} value={n.id}>{n.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     
                     <div className="h-px bg-gray-100 my-2"></div>
                     
@@ -157,8 +204,81 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
-        <Outlet />
+      <main className="flex-1 flex flex-col min-h-screen max-w-full">
+        {/* Topbar for notifications */}
+        <header className="h-16 flex items-center justify-end px-8 border-b border-gray-200 bg-white/50 backdrop-blur-sm sticky top-0 z-30">
+          <div className="relative">
+            <button
+              onClick={() => setIsAlertsOpen(!isAlertsOpen)}
+              className="relative p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <Bell className="w-5 h-5" />
+              {alertas.length > 0 && (
+                <span className="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
+              )}
+            </button>
+
+            {isAlertsOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsAlertsOpen(false)} />
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-800">Notificaciones</h3>
+                    <span className="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{alertas.length}</span>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {alertas.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                        No hay notificaciones nuevas
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {alertas.map(alerta => (
+                          <div key={alerta.id} className="p-4 hover:bg-emerald-50/50 transition-colors">
+                            <div className="flex gap-3">
+                              <div className="mt-0.5">
+                                {alerta.estado === 'FINALIZADA' ? (
+                                  <Package className="w-4 h-4 text-emerald-500" />
+                                ) : (
+                                  <Clock className="w-4 h-4 text-amber-500" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {alerta.variedadPlanta?.nombre} (Lote {alerta.numeroLote})
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {alerta.estado === 'FINALIZADA' 
+                                    ? 'Lista para pasar a stock' 
+                                    : 'Próxima a finalizar (en 5 días o menos)'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2 bg-gray-50 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        setIsAlertsOpen(false);
+                        navigate('/siembras');
+                      }}
+                      className="w-full py-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                    >
+                      Ver todas las siembras
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </header>
+
+        <div className="flex-1 p-8">
+          <Outlet />
+        </div>
       </main>
 
       {/* Global UI Feedback */}

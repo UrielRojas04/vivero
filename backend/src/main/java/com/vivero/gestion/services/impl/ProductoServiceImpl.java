@@ -5,6 +5,9 @@ import com.vivero.gestion.models.Producto;
 import com.vivero.gestion.repositories.ProductoRepository;
 import com.vivero.gestion.services.ProductoService;
 import com.vivero.gestion.services.SseService;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.models.UnidadNegocio;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +19,13 @@ import java.util.stream.Collectors;
 public class ProductoServiceImpl implements ProductoService {
 
     private final ProductoRepository productoRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
     private final SseService sseService;
 
     @Autowired
-    public ProductoServiceImpl(ProductoRepository productoRepository, SseService sseService) {
+    public ProductoServiceImpl(ProductoRepository productoRepository, UnidadNegocioRepository unidadNegocioRepository, SseService sseService) {
         this.productoRepository = productoRepository;
+        this.unidadNegocioRepository = unidadNegocioRepository;
         this.sseService = sseService;
     }
 
@@ -31,7 +36,17 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
+        producto.setCostoProducto(dto.getCostoProducto());
+        producto.setDescuentoProveedor(dto.getDescuentoProveedor() != null ? dto.getDescuentoProveedor() : java.math.BigDecimal.ZERO);
         producto.setStock(dto.getStock() != null ? dto.getStock() : 0);
+        producto.setLote(dto.getLote());
+        producto.setDueno(dto.getDueno());
+
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
+            producto.setUnidadNegocio(unidad);
+        }
 
         Producto guardado = productoRepository.save(producto);
         sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(guardado.getId(), guardado.getStock()));
@@ -49,7 +64,12 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductoDTO> obtenerTodosLosProductos() {
-        return productoRepository.findAll().stream()
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Producto> productos = (unidadId != null) 
+            ? productoRepository.findAllByUnidadNegocioId(unidadId) 
+            : productoRepository.findAll();
+
+        return productos.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -63,10 +83,17 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
+        producto.setCostoProducto(dto.getCostoProducto());
+        if (dto.getDescuentoProveedor() != null) {
+            producto.setDescuentoProveedor(dto.getDescuentoProveedor());
+        }
         
         if (dto.getStock() != null) {
             producto.setStock(dto.getStock());
         }
+        
+        producto.setLote(dto.getLote());
+        producto.setDueno(dto.getDueno());
 
 
         Producto actualizado = productoRepository.save(producto);
@@ -83,12 +110,16 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     private ProductoDTO mapToDTO(Producto producto) {
-        return new ProductoDTO(
-                producto.getId(),
-                producto.getNombre(),
-                producto.getDescripcion(),
-                producto.getPrecio(),
-                producto.getStock()
-        );
+        ProductoDTO dto = new ProductoDTO();
+        dto.setId(producto.getId());
+        dto.setNombre(producto.getNombre());
+        dto.setDescripcion(producto.getDescripcion());
+        dto.setPrecio(producto.getPrecio());
+        dto.setCostoProducto(producto.getCostoProducto());
+        dto.setDescuentoProveedor(producto.getDescuentoProveedor());
+        dto.setStock(producto.getStock());
+        dto.setLote(producto.getLote());
+        dto.setDueno(producto.getDueno());
+        return dto;
     }
 }

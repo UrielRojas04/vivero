@@ -24,7 +24,9 @@ import { finanzasApi } from '../api/finanzas.api';
 import { chequesApi } from '../api/cheques.api';
 import { getGastos, createGasto, deleteGasto } from '../api/gastos.api';
 import { productosApi } from '../api/productos.api';
+import { negociosApi } from '../api/negocios.api';
 import { useUIStore } from '../store/useUIStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import FormattedNumberInput from '../components/FormattedNumberInput';
@@ -39,6 +41,7 @@ const formatMoney = (value) =>
 
 const Finanzas = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
+  const { unidadNegocioActiva } = useAuthStore();
   const liveStocks = useStockStore(state => state.liveStocks);
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -106,6 +109,11 @@ const Finanzas = () => {
   const productosQuery = useQuery({
     queryKey: ['productos', 'all'],
     queryFn: () => productosApi.getAll(),
+  });
+
+  const negociosQuery = useQuery({
+    queryKey: ['negocios'],
+    queryFn: () => negociosApi.getAll(),
   });
 
   const chequesCarteraQuery = useQuery({
@@ -374,7 +382,7 @@ const Finanzas = () => {
                   <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Buscar por concepto o insumo..."
+                    placeholder={unidadNegocioActiva === '2' ? "Buscar por concepto o producto..." : "Buscar por concepto o insumo..."}
                     value={searchGastos}
                     onChange={(e) => setSearchGastos(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
@@ -461,6 +469,75 @@ const Finanzas = () => {
                   </ul>
                 )}
               </div>
+              
+              {/* Costos de Inventario (Solo Herramientas) */}
+              {unidadNegocioActiva === '2' && productos.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-sm font-bold text-gray-900 mb-3 border-b border-gray-100 pb-2">Costos de Inventario (Productos)</h3>
+                  <ul className="space-y-3">
+                    {productos
+                      .filter(p => p.nombre.toLowerCase().includes(searchGastos.toLowerCase()))
+                      .map(p => {
+                      const costoBase = p.costoProducto || 0;
+                      const descProv = p.descuentoProveedor || 0;
+                      const costoReal = costoBase * (1 - descProv / 100);
+                      const herrConfig = negociosQuery.data?.find(n => n.id === 2);
+                      const costoEnvio = herrConfig?.costoEnvioPorcentaje || 0;
+                      const costoFinal = costoReal * (1 + costoEnvio / 100);
+                      
+                      const costoTotal = costoFinal * (p.stock || 0);
+                      
+                      if (costoTotal <= 0) return null;
+                      return (
+                        <li key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 flex items-center">
+                              {p.nombre}
+                              <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">PRODUCTO</span>
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Stock</span>
+                                <span className="text-xs font-semibold text-gray-700">{p.stock}</span>
+                              </div>
+                              <div className="w-px h-3 bg-gray-200"></div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Base</span>
+                                <span className="text-xs font-semibold text-gray-700">{formatMoney(costoBase)}</span>
+                              </div>
+                              
+                              {(descProv > 0 || costoEnvio > 0) && <div className="w-px h-3 bg-gray-200"></div>}
+                              
+                              {descProv > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Desc.</span>
+                                  <span className="text-xs font-semibold text-gray-700">-{descProv}%</span>
+                                </div>
+                              )}
+                              
+                              {costoEnvio > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Envío</span>
+                                  <span className="text-xs font-semibold text-gray-700">+{costoEnvio}%</span>
+                                </div>
+                              )}
+                              
+                              <div className="w-px h-3 bg-gray-200"></div>
+                              <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/60">
+                                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Unitario</span>
+                                <span className="text-xs font-bold text-gray-900">{formatMoney(costoFinal)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="font-bold text-red-600">{formatMoney(costoTotal)}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
               
               {/* Paginación Gastos */}
               {gastosTotalPages > 0 && (

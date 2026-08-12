@@ -29,7 +29,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> getAll() {
+        Long unidadId = com.vivero.gestion.security.UnidadNegocioContextHolder.getUnidadNegocioId();
         return usuarioRepository.findAll().stream()
+                .filter(u -> unidadId == null || "jefe@vivero.com".equalsIgnoreCase(u.getUsername()) || u.getUnidadesNegocio().stream().anyMatch(un -> un.getId().equals(unidadId)))
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -59,6 +61,14 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
         
         updateRoles(usuario, dto.getRoleIds());
+        
+        usuario.setUnidadesNegocio(new java.util.HashSet<>());
+        Long unidadId = com.vivero.gestion.security.UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            com.vivero.gestion.models.UnidadNegocio un = new com.vivero.gestion.models.UnidadNegocio();
+            un.setId(unidadId);
+            usuario.getUnidadesNegocio().add(un);
+        }
         
         Usuario saved = usuarioRepository.save(usuario);
         return mapToDTO(saved);

@@ -66,4 +66,16 @@ public class SiembraController {
         }
         return ResponseEntity.ok(siembraService.finalizarSiembra(id, idProducto, cantidad, usuarioId));
     }
+
+    @PostMapping("/{id}/pasar-a-stock")
+    public ResponseEntity<SiembraDTO> pasarAStock(
+            @PathVariable Long id,
+            @RequestBody com.vivero.gestion.dto.PasarStockRequestDTO request) {
+        return ResponseEntity.ok(siembraService.pasarAStock(id, request));
+    }
+
+    @GetMapping("/alertas")
+    public ResponseEntity<List<SiembraDTO>> obtenerAlertas() {
+        return ResponseEntity.ok(siembraService.obtenerAlertas());
+    }
 }

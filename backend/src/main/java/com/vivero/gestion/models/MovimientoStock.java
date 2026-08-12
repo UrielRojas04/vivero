@@ -20,6 +20,10 @@ public class MovimientoStock {
     @JoinColumn(name = "venta_id")
     private Venta venta;
 
+    @ManyToOne
+    @JoinColumn(name = "unidad_negocio_id")
+    private UnidadNegocio unidadNegocio;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
@@ -41,6 +45,8 @@ public class MovimientoStock {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
     public Producto getProducto() { return producto; }
     public void setProducto(Producto producto) { this.producto = producto; }
     public Integer getCantidad() { return cantidad; }

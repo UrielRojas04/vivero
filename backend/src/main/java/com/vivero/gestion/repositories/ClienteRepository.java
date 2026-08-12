@@ -12,4 +12,9 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     
     @EntityGraph(attributePaths = {"cuentaCorrienteDinero", "cuentaCorrienteBandejas"})
     List<Cliente> findAll();
+
+    @EntityGraph(attributePaths = {"cuentaCorrienteDinero", "cuentaCorrienteBandejas"})
+    List<Cliente> findAllByUnidadNegocioId(Long unidadNegocioId);
+
+    java.util.Optional<Cliente> findByIdAndUnidadNegocioId(Long id, Long unidadNegocioId);
 }

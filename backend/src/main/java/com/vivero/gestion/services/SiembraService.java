@@ -11,4 +11,6 @@ public interface SiembraService {
     SiembraDTO actualizarSiembra(Long id, SiembraDTO siembraDTO);
     void eliminarSiembra(Long id);
     SiembraDTO finalizarSiembra(Long idSiembra, Long idProducto, Integer cantidadLograda, Long usuarioId);
+    SiembraDTO pasarAStock(Long id, com.vivero.gestion.dto.PasarStockRequestDTO request);
+    List<SiembraDTO> obtenerAlertas();
 }

@@ -56,6 +56,10 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
     @Override
     @Transactional
     public VariedadPlantaDTO actualizar(Long id, VariedadPlantaDTO dto) {
+        if (siembraRepository.existsByVariedadPlantaId(id)) {
+            throw new RuntimeException("No se puede editar una variedad de planta que ya está en uso en siembras registradas.");
+        }
+
         VariedadPlanta model = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("VariedadPlanta no encontrada"));
         model.setNombre(dto.getNombre());

@@ -7,5 +7,7 @@ export const siembrasApi = {
   update: (id, data) => api.put(`/siembras/${id}`, data),
   delete: (id) => api.delete(`/siembras/${id}`),
   finalizar: (id, idProducto, cantidad) => 
-    api.post(`/siembras/${id}/finalizar`, null, { params: { idProducto, cantidad } })
+    api.post(`/siembras/${id}/finalizar`, null, { params: { idProducto, cantidad } }),
+  pasarAStock: (id, data) => api.post(`/siembras/${id}/pasar-a-stock`, data),
+  getAlertas: () => api.get('/siembras/alertas')
 };

@@ -32,6 +32,14 @@ public class Usuario implements UserDetails {
     )
     private Set<Rol> roles = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "usuario_unidad_negocio",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "unidad_negocio_id")
+    )
+    private Set<UnidadNegocio> unidadesNegocio = new HashSet<>();
+
     public Usuario() {}
 
     public Usuario(String username, String password) {
@@ -47,6 +55,9 @@ public class Usuario implements UserDetails {
 
     public Set<Rol> getRoles() { return roles; }
     public void setRoles(Set<Rol> roles) { this.roles = roles; }
+
+    public Set<UnidadNegocio> getUnidadesNegocio() { return unidadesNegocio; }
+    public void setUnidadesNegocio(Set<UnidadNegocio> unidadesNegocio) { this.unidadesNegocio = unidadesNegocio; }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

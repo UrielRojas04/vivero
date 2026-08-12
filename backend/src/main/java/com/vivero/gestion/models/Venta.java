@@ -27,6 +27,10 @@ public class Venta {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario; // Quien registra la venta
 
+    @ManyToOne
+    @JoinColumn(name = "unidad_negocio_id")
+    private UnidadNegocio unidadNegocio;
+
     private BigDecimal subtotal;
     private BigDecimal porcentajeDescuento;
     private BigDecimal descuento;
@@ -53,6 +57,8 @@ public class Venta {
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+    public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
     public BigDecimal getPorcentajeDescuento() { return porcentajeDescuento; }

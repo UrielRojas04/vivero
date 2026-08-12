@@ -29,6 +29,10 @@ public class Gasto {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_negocio_id")
+    private UnidadNegocio unidadNegocio;
+
     public Gasto() {
     }
 
@@ -70,5 +74,13 @@ public class Gasto {
 
     public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
+    }
+
+    public UnidadNegocio getUnidadNegocio() {
+        return unidadNegocio;
+    }
+
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) {
+        this.unidadNegocio = unidadNegocio;
     }
 }

@@ -3,7 +3,9 @@ package com.vivero.gestion.services;
 import com.vivero.gestion.dto.GastoDTO;
 import com.vivero.gestion.models.Gasto;
 import com.vivero.gestion.repositories.GastoRepository;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.repositories.projections.GastoUnificadoView;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,9 +22,13 @@ public class GastoService {
     @Autowired
     private GastoRepository gastoRepository;
 
+    @Autowired
+    private UnidadNegocioRepository unidadNegocioRepository;
+
     @Transactional(readOnly = true)
     public Page<GastoDTO> listarGastos(String q, Pageable pageable) {
-        return gastoRepository.listarGastosUnificados(q, pageable)
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        return gastoRepository.listarGastosUnificados(q, unidadId, pageable)
                 .map(this::mapUnificadoToDTO);
     }
 
@@ -32,6 +38,11 @@ public class GastoService {
         gasto.setConcepto(dto.getConcepto());
         gasto.setMonto(dto.getMonto());
         gasto.setFecha(dto.getFecha() != null ? dto.getFecha() : LocalDateTime.now());
+        
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            gasto.setUnidadNegocio(unidadNegocioRepository.getReferenceById(unidadId));
+        }
         
         Gasto guardado = gastoRepository.save(gasto);
         return mapToDTO(guardado);
@@ -47,7 +58,14 @@ public class GastoService {
 
     @Transactional(readOnly = true)
     public List<GastoDTO> listarGastosPorRango(LocalDateTime start, LocalDateTime end) {
-        return gastoRepository.findByFechaBetween(start, end).stream()
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Gasto> gastos;
+        if (unidadId != null) {
+            gastos = gastoRepository.findByUnidadNegocioIdAndFechaBetween(unidadId, start, end);
+        } else {
+            gastos = gastoRepository.findByFechaBetween(start, end);
+        }
+        return gastos.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }

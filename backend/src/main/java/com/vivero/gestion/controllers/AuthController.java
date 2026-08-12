@@ -48,11 +48,22 @@ public class AuthController {
                 .map(com.vivero.gestion.models.Rol::getNombre)
                 .collect(Collectors.toList());
 
+        List<Map<String, Object>> negocios = usuario.getUnidadesNegocio().stream()
+                .map(un -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", un.getId());
+                    map.put("nombre", un.getNombre());
+                    map.put("descripcion", un.getDescripcion());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
         response.put("authorities", authorities);
         response.put("roles", roles);
         response.put("username", usuario.getUsername());
+        response.put("negociosDisponibles", negocios);
         return ResponseEntity.ok(response);
     }
 }

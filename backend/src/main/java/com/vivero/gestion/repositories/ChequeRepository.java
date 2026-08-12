@@ -11,7 +11,12 @@ import java.math.BigDecimal;
 @Repository
 public interface ChequeRepository extends JpaRepository<Cheque, Long> {
     Page<Cheque> findAllByOrderByFechaRecepcionDesc(Pageable pageable);
+    
+    Page<Cheque> findAllByUnidadNegocioIdOrderByFechaRecepcionDesc(Long unidadNegocioId, Pageable pageable);
 
     @Query("SELECT COALESCE(SUM(c.monto), 0) FROM Cheque c WHERE c.estado = 'EN_CARTERA' AND c.esEmisionPropia = false")
     BigDecimal sumarChequesEnCartera();
+
+    @Query("SELECT COALESCE(SUM(c.monto), 0) FROM Cheque c WHERE c.estado = 'EN_CARTERA' AND c.esEmisionPropia = false AND c.unidadNegocio.id = :unidadId")
+    BigDecimal sumarChequesEnCarteraByUnidadNegocioId(@org.springframework.data.repository.query.Param("unidadId") Long unidadId);
 }

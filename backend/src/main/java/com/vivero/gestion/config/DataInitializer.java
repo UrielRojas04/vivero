@@ -6,6 +6,8 @@ import com.vivero.gestion.models.Usuario;
 import com.vivero.gestion.repositories.PermisoRepository;
 import com.vivero.gestion.repositories.RolRepository;
 import com.vivero.gestion.repositories.UsuarioRepository;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.models.UnidadNegocio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,22 +24,31 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public DataInitializer(UsuarioRepository usuarioRepository, 
                            RolRepository rolRepository, 
                            PermisoRepository permisoRepository,
+                           UnidadNegocioRepository unidadNegocioRepository,
                            PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
+        this.unidadNegocioRepository = unidadNegocioRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+
+        // 0. Crear Unidades de Negocio Base
+        if (unidadNegocioRepository.count() == 0) {
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, true));
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, true));
+        }
 
         // 1. Crear Permisos
         Permiso pLeerStock = crearPermiso("LEER_STOCK");
@@ -72,21 +83,24 @@ public class DataInitializer implements CommandLineRunner {
         rolEmpleado.setPermisos(permisosEmpleado);
         rolRepository.save(rolEmpleado);
 
-        // 3. Crear Usuario Jefe si no existe
-        if (usuarioRepository.findByUsername("jefe@vivero.com").isEmpty()) {
-            Usuario jefe = new Usuario();
+        // 3. Crear o actualizar Usuario Jefe
+        Usuario jefe = usuarioRepository.findByUsername("jefe@vivero.com").orElse(new Usuario());
+        if (jefe.getId() == null) {
             jefe.setUsername("jefe@vivero.com");
             jefe.setPassword(passwordEncoder.encode("jefe123")); // Password seguro
             
             // Mapear Usuario a su Rol
             Set<Rol> rolesJefe = new HashSet<>();
             rolesJefe.add(rolJefe);
-            
             jefe.setRoles(rolesJefe);
-            
-            usuarioRepository.save(jefe);
-            System.out.println("Base de datos inicializada con roles y usuario jefe.");
         }
+        
+        // Asignar SIEMPRE todas las unidades de negocio al jefe
+        Set<UnidadNegocio> negocios = new HashSet<>(unidadNegocioRepository.findAll());
+        jefe.setUnidadesNegocio(negocios);
+        
+        usuarioRepository.save(jefe);    
+        System.out.println("Base de datos inicializada con roles y usuario jefe.");
     }
 
     private Permiso crearPermiso(String nombre) {

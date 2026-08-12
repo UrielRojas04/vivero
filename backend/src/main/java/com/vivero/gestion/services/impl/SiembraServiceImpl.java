@@ -137,6 +137,50 @@ public class SiembraServiceImpl implements SiembraService {
         return mapToDTO(saved);
     }
 
+    @Override
+    @Transactional
+    public SiembraDTO pasarAStock(Long id, com.vivero.gestion.dto.PasarStockRequestDTO request) {
+        Siembra siembra = siembraRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Siembra no encontrada con ID: " + id));
+
+        if (siembra.getEstado() != EstadoSiembra.FINALIZADA && siembra.getEstado() != EstadoSiembra.EN_PROCESO) {
+            throw new RuntimeException("La siembra no puede pasarse a stock en estado: " + siembra.getEstado());
+        }
+
+        // Crear el nuevo producto
+        Producto producto = new Producto();
+        producto.setNombre(siembra.getVariedadPlanta() != null ? siembra.getVariedadPlanta().getNombre() : "Siembra Lote " + siembra.getNumeroLote());
+        producto.setDescripcion("Siembra pasada a stock. Bandeja: " + 
+            (siembra.getVariedadBandeja() != null ? siembra.getVariedadBandeja().getNombre() : "N/A"));
+        producto.setPrecio(request.getPrecioVenta());
+        producto.setStock(request.getStock());
+        producto.setLote(siembra.getNumeroLote());
+        producto.setDueno(siembra.getDueno());
+        
+        com.vivero.gestion.models.UnidadNegocio un = new com.vivero.gestion.models.UnidadNegocio();
+        un.setId(1L);
+        producto.setUnidadNegocio(un);
+
+        productoRepository.save(producto);
+
+        // Actualizar siembra
+        siembra.setEstado(EstadoSiembra.EN_STOCK);
+        Siembra saved = siembraRepository.save(siembra);
+
+        return mapToDTO(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SiembraDTO> obtenerAlertas() {
+        java.time.LocalDate limit = java.time.LocalDate.now().plusDays(5);
+        return siembraRepository.findAll().stream()
+                .filter(s -> s.getEstado() == EstadoSiembra.FINALIZADA || 
+                            (s.getEstado() == EstadoSiembra.EN_PROCESO && s.getFechaEstimada() != null && !s.getFechaEstimada().isAfter(limit)))
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
     private SiembraDTO mapToDTO(Siembra siembra) {
         SiembraDTO dto = new SiembraDTO();
         dto.setId(siembra.getId());

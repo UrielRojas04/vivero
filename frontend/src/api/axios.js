@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: `http://${window.location.hostname}:8080/api`,
 });
 
 // Interceptor para inyectar el JWT en cada request
@@ -12,6 +12,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    const unidadNegocioActiva = useAuthStore.getState().unidadNegocioActiva;
+    if (unidadNegocioActiva) {
+      config.headers['X-Unidad-Negocio'] = unidadNegocioActiva;
+    }
+    
     return config;
   },
   (error) => {

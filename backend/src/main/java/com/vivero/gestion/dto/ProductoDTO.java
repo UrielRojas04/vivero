@@ -9,15 +9,22 @@ public class ProductoDTO {
     private String descripcion;
     private BigDecimal precio;
     private Integer stock;
+    private String lote;
+    private String dueno;
+    private BigDecimal costoProducto;
+    private BigDecimal descuentoProveedor;
 
     public ProductoDTO() {}
 
-    public ProductoDTO(Long id, String nombre, String descripcion, BigDecimal precio, Integer stock) {
+    public ProductoDTO(Long id, String nombre, String descripcion, BigDecimal precio, BigDecimal costoProducto, Integer stock, String lote, String dueno) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
+        this.costoProducto = costoProducto;
         this.stock = stock;
+        this.lote = lote;
+        this.dueno = dueno;
     }
 
     public Long getId() { return id; }
@@ -35,5 +42,15 @@ public class ProductoDTO {
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
 
+    public String getLote() { return lote; }
+    public void setLote(String lote) { this.lote = lote; }
 
+    public String getDueno() { return dueno; }
+    public void setDueno(String dueno) { this.dueno = dueno; }
+
+    public BigDecimal getCostoProducto() { return costoProducto; }
+    public void setCostoProducto(BigDecimal costoProducto) { this.costoProducto = costoProducto; }
+
+    public BigDecimal getDescuentoProveedor() { return descuentoProveedor; }
+    public void setDescuentoProveedor(BigDecimal descuentoProveedor) { this.descuentoProveedor = descuentoProveedor; }
 }

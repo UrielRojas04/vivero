@@ -12,6 +12,7 @@ import com.vivero.gestion.repositories.*;
 import com.vivero.gestion.services.BandejasService;
 import com.vivero.gestion.services.SseService;
 import com.vivero.gestion.services.VentaService;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class VentaServiceImpl implements VentaService {
     private final BandejasService bandejasService;
     private final SseService sseService;
     private final ChequeRepository chequeRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
@@ -44,7 +46,8 @@ public class VentaServiceImpl implements VentaService {
                             CuentaCorrienteDineroRepository ccdRepository,
                             BandejasService bandejasService,
                             SseService sseService,
-                            ChequeRepository chequeRepository) {
+                            ChequeRepository chequeRepository,
+                            UnidadNegocioRepository unidadNegocioRepository) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
@@ -54,6 +57,7 @@ public class VentaServiceImpl implements VentaService {
         this.bandejasService = bandejasService;
         this.sseService = sseService;
         this.chequeRepository = chequeRepository;
+        this.unidadNegocioRepository = unidadNegocioRepository;
     }
 
     @Override
@@ -76,6 +80,12 @@ public class VentaServiceImpl implements VentaService {
         
         BigDecimal porcentajeDescuento = request.getPorcentajeDescuento() != null ? request.getPorcentajeDescuento() : BigDecimal.ZERO;
         venta.setPorcentajeDescuento(porcentajeDescuento);
+
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
+            venta.setUnidadNegocio(unidad);
+        }
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
@@ -103,6 +113,9 @@ public class VentaServiceImpl implements VentaService {
             mov.setMotivo("Venta");
             mov.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
             mov.setUsuario(usuario);
+            if (unidadId != null) {
+                mov.setUnidadNegocio(venta.getUnidadNegocio());
+            }
             movimientoStockRepository.save(mov);
 
             // 3. Crear detalle de venta (precio histórico copiado)
@@ -183,6 +196,9 @@ public class VentaServiceImpl implements VentaService {
         // Guardar cheques ahora que la venta ya tiene ID
         for (Cheque c : chequesAInsertar) {
             c.setVenta(ventaGuardada);
+            if (ventaGuardada.getUnidadNegocio() != null) {
+                c.setUnidadNegocio(ventaGuardada.getUnidadNegocio());
+            }
             chequeRepository.save(c);
         }
         
@@ -197,7 +213,12 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional(readOnly = true)
     public List<VentaResponseDTO> listarVentas() {
-        return ventaRepository.findAllByOrderByFechaDesc().stream()
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Venta> ventas = (unidadId != null) 
+            ? ventaRepository.findAllByUnidadNegocioIdOrderByFechaDesc(unidadId) 
+            : ventaRepository.findAllByOrderByFechaDesc();
+
+        return ventas.stream()
                 .map(this::mapearAVentaResponseDTO)
                 .collect(Collectors.toList());
     }

@@ -6,6 +6,8 @@ import com.vivero.gestion.models.Cliente;
 import com.vivero.gestion.models.EstadoCheque;
 import com.vivero.gestion.repositories.ChequeRepository;
 import com.vivero.gestion.repositories.ClienteRepository;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import com.vivero.gestion.services.ChequeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,9 +27,16 @@ public class ChequeServiceImpl implements ChequeService {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private UnidadNegocioRepository unidadNegocioRepository;
+
     @Override
     @Transactional(readOnly = true)
     public Page<ChequeDTO> listarCheques(Pageable pageable) {
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            return chequeRepository.findAllByUnidadNegocioIdOrderByFechaRecepcionDesc(unidadId, pageable).map(this::toDTO);
+        }
         return chequeRepository.findAllByOrderByFechaRecepcionDesc(pageable).map(this::toDTO);
     }
 
@@ -52,18 +61,27 @@ public class ChequeServiceImpl implements ChequeService {
         cheque.setEstado(EstadoCheque.EN_CARTERA);
         cheque.setEsEmisionPropia(dto.getEsEmisionPropia() != null ? dto.getEsEmisionPropia() : false);
         
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null) {
+            cheque.setUnidadNegocio(unidadNegocioRepository.getReferenceById(unidadId));
+        }
+        
         if (dto.getClienteId() != null) {
             Cliente cliente = clienteRepository.findById(dto.getClienteId())
                     .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
             cheque.setCliente(cliente);
-            if (cliente.getCuentaCorrienteDinero() != null) {
-                if (Boolean.TRUE.equals(dto.getEsEmisionPropia())) {
-                    cliente.getCuentaCorrienteDinero().agregarDeuda(dto.getMonto());
-                } else {
-                    cliente.getCuentaCorrienteDinero().agregarSaldoAFavor(dto.getMonto());
-                }
-                clienteRepository.save(cliente);
+            if (cliente.getCuentaCorrienteDinero() == null) {
+                com.vivero.gestion.models.CuentaCorrienteDinero nuevaCcd = new com.vivero.gestion.models.CuentaCorrienteDinero();
+                nuevaCcd.setCliente(cliente);
+                nuevaCcd.setBalancePesos(java.math.BigDecimal.ZERO);
+                cliente.setCuentaCorrienteDinero(nuevaCcd);
             }
+            if (Boolean.TRUE.equals(dto.getEsEmisionPropia())) {
+                cliente.getCuentaCorrienteDinero().agregarDeuda(dto.getMonto());
+            } else {
+                cliente.getCuentaCorrienteDinero().agregarSaldoAFavor(dto.getMonto());
+            }
+            clienteRepository.save(cliente);
         }
         
         Cheque guardado = chequeRepository.save(cheque);
@@ -84,13 +102,20 @@ public class ChequeServiceImpl implements ChequeService {
             EstadoCheque nuevoEstado = EstadoCheque.valueOf(dto.getEstado());
 
             if (nuevoEstado == EstadoCheque.RECHAZADO && cheque.getEstado() != EstadoCheque.RECHAZADO) {
-                if (cheque.getCliente() != null && cheque.getCliente().getCuentaCorrienteDinero() != null) {
-                    if (Boolean.TRUE.equals(cheque.getEsEmisionPropia())) {
-                        cheque.getCliente().getCuentaCorrienteDinero().agregarSaldoAFavor(cheque.getMonto());
-                    } else {
-                        cheque.getCliente().getCuentaCorrienteDinero().agregarDeuda(cheque.getMonto());
+                if (cheque.getCliente() != null) {
+                    Cliente cliente = cheque.getCliente();
+                    if (cliente.getCuentaCorrienteDinero() == null) {
+                        com.vivero.gestion.models.CuentaCorrienteDinero nuevaCcd = new com.vivero.gestion.models.CuentaCorrienteDinero();
+                        nuevaCcd.setCliente(cliente);
+                        nuevaCcd.setBalancePesos(java.math.BigDecimal.ZERO);
+                        cliente.setCuentaCorrienteDinero(nuevaCcd);
                     }
-                    clienteRepository.save(cheque.getCliente());
+                    if (Boolean.TRUE.equals(cheque.getEsEmisionPropia())) {
+                        cliente.getCuentaCorrienteDinero().agregarSaldoAFavor(cheque.getMonto());
+                    } else {
+                        cliente.getCuentaCorrienteDinero().agregarDeuda(cheque.getMonto());
+                    }
+                    clienteRepository.save(cliente);
                 }
             }
 
@@ -100,10 +125,14 @@ public class ChequeServiceImpl implements ChequeService {
                 if (dto.getEndosadoAClienteId() != null) {
                     Cliente cliente = clienteRepository.findById(dto.getEndosadoAClienteId())
                             .orElseThrow(() -> new RuntimeException("Cliente a endosar no encontrado"));
-                    if (cliente.getCuentaCorrienteDinero() != null) {
-                        cliente.getCuentaCorrienteDinero().agregarDeuda(cheque.getMonto());
-                        clienteRepository.save(cliente);
+                    if (cliente.getCuentaCorrienteDinero() == null) {
+                        com.vivero.gestion.models.CuentaCorrienteDinero nuevaCcd = new com.vivero.gestion.models.CuentaCorrienteDinero();
+                        nuevaCcd.setCliente(cliente);
+                        nuevaCcd.setBalancePesos(java.math.BigDecimal.ZERO);
+                        cliente.setCuentaCorrienteDinero(nuevaCcd);
                     }
+                    cliente.getCuentaCorrienteDinero().agregarDeuda(cheque.getMonto());
+                    clienteRepository.save(cliente);
                     cheque.setEntregadoA(cliente.getNombreRazonSocial());
                 } else {
                     cheque.setEntregadoA(dto.getEntregadoA());

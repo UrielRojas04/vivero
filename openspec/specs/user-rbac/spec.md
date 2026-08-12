@@ -24,11 +24,11 @@ El frontend MUST enviar las credenciales (username y password) al backend y, de 
 - **THEN** la UI muestra un mensaje de error y no modifica la sesión global
 
 ### Requirement: Authorization Model is Independent of Business Units (us-012-flat-rbac)
-The system SHALL evaluate user permissions globally without filtering or scoping by `UnidadNegocio`.
+The system SHALL evaluate user permissions globally (via Roles), but the system SHALL ALSO evaluate the user's access to a specific `UnidadNegocio`. A user can only act within a `UnidadNegocio` if they are explicitly linked to it via the many-to-many relationship `usuario_unidad_negocio`.
 
 #### Scenario: User performs action in any business unit
-- **WHEN** a user attempts an action (e.g. creating a product) anywhere in the application
-- **THEN** the system only checks if the user's role contains the required permission (e.g. `ESCRIBIR_STOCK`), ignoring business units completely
+- **WHEN** a user attempts an action (e.g. creating a product) within a specific `UnidadNegocio`
+- **THEN** the system checks if the user's role contains the required permission (e.g. `ESCRIBIR_STOCK`), AND checks if the user has access to that `UnidadNegocio`.
 
 ### Requirement: User Role Assignment (us-012-flat-rbac)
 The system SHALL allow assigning one or multiple roles to a user directly, without specifying a business unit context.
@@ -55,3 +55,9 @@ The application SHALL protect specific UI routes from unauthorized access, redir
 - **WHEN** a user navigates directly to `/admin` via URL but does not have `ADMIN_DB`
 - **THEN** they are redirected to a default authorized view or shown an "Access Denied" message
 
+### Requirement: Login Response Context
+El sistema SHALL devolver en el response del login (junto con el token y permisos) la lista de `UnidadNegocio` a las que el usuario tiene acceso, para poblar el selector del frontend.
+
+#### Scenario: Login Exitoso con Múltiples Negocios
+- **WHEN** un usuario hace login exitoso
+- **THEN** la UI recibe el JWT y un array `negociosDisponibles` (ej. Vivero y Herramientas), y redirige al Dashboard.

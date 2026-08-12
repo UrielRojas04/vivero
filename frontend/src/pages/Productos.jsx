@@ -5,9 +5,11 @@ import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, Leaf } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Productos = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
+  const { unidadNegocioActiva } = useAuthStore();
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -185,6 +187,11 @@ const Productos = () => {
                 <tr className="bg-gray-50/75 border-b border-gray-200">
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Planta</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Descripción</th>
+                  {unidadNegocioActiva === '2' ? (
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Costo</th>
+                  ) : (
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Lote / Dueño</th>
+                  )}
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Precio</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
@@ -206,6 +213,24 @@ const Productos = () => {
                         {producto.descripcion || <span className="text-gray-300 italic">Sin descripción</span>}
                       </p>
                     </td>
+                    {unidadNegocioActiva === '2' ? (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-900">
+                          ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
+                        </span>
+                      </td>
+                    ) : (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {producto.lote ? `Lote ${producto.lote}` : <span className="text-gray-300 italic">Sin lote</span>}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {producto.dueno ? producto.dueno : <span className="text-gray-300 italic">Manual</span>}
+                          </span>
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-gray-900">
                         ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}

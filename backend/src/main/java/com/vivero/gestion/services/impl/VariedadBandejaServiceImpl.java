@@ -44,6 +44,10 @@ public class VariedadBandejaServiceImpl implements VariedadBandejaService {
     @Override
     @Transactional
     public VariedadBandejaDTO actualizar(Long id, VariedadBandejaDTO dto) {
+        if (siembraRepository.existsByVariedadBandejaId(id)) {
+            throw new RuntimeException("No se puede editar una variedad de bandeja que ya está en uso en siembras registradas.");
+        }
+
         VariedadBandeja model = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("VariedadBandeja no encontrada"));
         model.setNombre(dto.getNombre());

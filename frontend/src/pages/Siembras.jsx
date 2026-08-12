@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { siembrasApi } from '../api/siembras.api';
 import SiembraForm from '../components/SiembraForm';
 import FinalizarSiembraModal from '../components/FinalizarSiembraModal';
+import PaseStockModal from '../components/PaseStockModal';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus } from 'lucide-react';
 
 const Siembras = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
@@ -17,9 +18,13 @@ const Siembras = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedSiembra, setSelectedSiembra] = useState(null);
   
-  // Finalizar Modal states
+  // Finalizar Modal states (Old workflow)
   const [isFinalizarOpen, setIsFinalizarOpen] = useState(false);
   const [siembraToFinalizar, setSiembraToFinalizar] = useState(null);
+
+  // Pasar a Stock Modal states (New workflow)
+  const [isPaseStockOpen, setIsPaseStockOpen] = useState(false);
+  const [siembraToPaseStock, setSiembraToPaseStock] = useState(null);
 
   const fetchSiembras = async () => {
     setLoading(true);
@@ -78,21 +83,39 @@ const Siembras = () => {
       setIsFinalizarOpen(false);
       setSiembraToFinalizar(null);
       fetchSiembras();
-      pushToast('success', 'Siembra finalizada y stock ingresado al catálogo.');
+      pushToast('success', 'Siembra finalizada y stock agregado al catálogo.');
     } catch (err) {
       console.error(err);
       pushToast('error', getErrorMessage(err, 'Ocurrió un error al finalizar la siembra.'));
     }
   };
 
-  const filteredSiembras = siembras.filter((s) =>
-    (s.variedadPlanta?.nombre && s.variedadPlanta.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (s.dueno && s.dueno.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (s.numeroLote && s.numeroLote.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handlePaseStock = async (requestData) => {
+    if (!siembraToPaseStock) return;
+    try {
+      await siembrasApi.pasarAStock(siembraToPaseStock.id, requestData);
+      setIsPaseStockOpen(false);
+      setSiembraToPaseStock(null);
+      fetchSiembras();
+      pushToast('success', 'Siembra convertida en producto e ingresada al stock.');
+    } catch (err) {
+      console.error(err);
+      pushToast('error', getErrorMessage(err, 'Ocurrió un error al pasar la siembra a stock.'));
+    }
+  };
+
+  const filteredSiembras = siembras.filter((s) => {
+    if (s.estado === 'EN_STOCK') return false; // Ocultar las que ya pasaron a stock
+    const matchSearch = (s.variedadPlanta?.nombre && s.variedadPlanta.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.dueno && s.dueno.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.numeroLote && s.numeroLote.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchSearch;
+  });
 
   const getStatusBadge = (estado) => {
     switch (estado) {
+      case 'EN_STOCK':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">En Stock</span>;
       case 'FINALIZADA':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Finalizada</span>;
       case 'EN_PROCESO':
@@ -190,23 +213,49 @@ const Siembras = () => {
                       {siembra.cantidad} u.
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {siembra.fechaEstimada ? new Date(siembra.fechaEstimada).toLocaleDateString('es-AR') : '-'}
+                      {(() => {
+                        if (!siembra.fechaEstimada) return '-';
+                        const est = new Date(siembra.fechaEstimada);
+                        const now = new Date();
+                        const diffTime = est - now;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        let progress = 0;
+                        if (diffDays <= 0) progress = 100;
+                        else if (diffDays > 30) progress = 10;
+                        else progress = Math.max(10, 100 - (diffDays * 3));
+
+                        return (
+                          <div className="flex flex-col gap-1 w-32">
+                            <span className="text-xs text-gray-600">
+                              {est.toLocaleDateString('es-AR')} 
+                              {diffDays > 0 ? ` (en ${diffDays} d)` : ' (Lista)'}
+                            </span>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                              <div 
+                                className={`h-1.5 rounded-full ${progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                                style={{ width: `${progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(siembra.estado)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                        {siembra.estado === 'EN_PROCESO' && (
+                        {(siembra.estado === 'FINALIZADA' || siembra.estado === 'EN_PROCESO') && (
                           <button
                             onClick={() => {
-                              setSiembraToFinalizar(siembra);
-                              setIsFinalizarOpen(true);
+                              setSiembraToPaseStock(siembra);
+                              setIsPaseStockOpen(true);
                             }}
-                            className="p-1.5 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors cursor-pointer"
-                            title="Lista para entregar"
+                            className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors cursor-pointer"
+                            title="Pasar a Stock"
                           >
-                            <CheckCircle2 className="w-4.5 h-4.5" />
+                            <PackagePlus className="w-4.5 h-4.5" />
                           </button>
                         )}
                         <button
@@ -265,6 +314,18 @@ const Siembras = () => {
             setIsFinalizarOpen(false);
             setSiembraToFinalizar(null);
           }}
+        />
+      )}
+
+      {isPaseStockOpen && (
+        <PaseStockModal
+          isOpen={isPaseStockOpen}
+          siembra={siembraToPaseStock}
+          onClose={() => {
+            setIsPaseStockOpen(false);
+            setSiembraToPaseStock(null);
+          }}
+          onConfirm={handlePaseStock}
         />
       )}
     </div>

@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
+import { useAuthStore } from '../store/useAuthStore';
 
 const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
+  const { unidadNegocioActiva } = useAuthStore();
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precio, setPrecio] = useState('');
+  const [costoProducto, setCostoProducto] = useState('');
+  const [descuentoProveedor, setDescuentoProveedor] = useState('');
   const [stock, setStock] = useState('');
+  const [lote, setLote] = useState('');
+  const [dueno, setDueno] = useState('');
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -14,12 +20,20 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setNombre(producto.nombre || '');
       setDescripcion(producto.descripcion || '');
       setPrecio(producto.precio || '');
+      setCostoProducto(producto.costoProducto || '');
+      setDescuentoProveedor(producto.descuentoProveedor || '');
       setStock(producto.stock || '');
+      setLote(producto.lote || '');
+      setDueno(producto.dueno || '');
     } else {
       setNombre('');
       setDescripcion('');
       setPrecio('');
+      setCostoProducto('');
+      setDescuentoProveedor('');
       setStock('');
+      setLote('');
+      setDueno('');
     }
     setErrors({});
   }, [producto, isOpen]);
@@ -48,7 +62,11 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         nombre,
         descripcion,
         precio: parseFloat(precio),
-        stock: parseInt(stock, 10)
+        costoProducto: costoProducto ? parseFloat(costoProducto) : null,
+        descuentoProveedor: descuentoProveedor ? parseFloat(descuentoProveedor) : null,
+        stock: parseInt(stock, 10),
+        lote: lote.trim() || null,
+        dueno: dueno.trim() || null
       });
     }
   };
@@ -162,7 +180,67 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 <p className="mt-1 text-xs text-red-500 font-medium">{errors.stock}</p>
               )}
             </div>
+            
+            {unidadNegocioActiva === '2' && (
+              <>
+                <div className="col-span-2 sm:col-span-1">
+                  <label htmlFor="costoProducto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    Costo Producto (ARS)
+                  </label>
+                  <FormattedNumberInput
+                    id="costoProducto"
+                    value={costoProducto}
+                    onChange={(val) => setCostoProducto(val)}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label htmlFor="descuentoProveedor" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    Descuento Prov. (%)
+                  </label>
+                  <FormattedNumberInput
+                    id="descuentoProveedor"
+                    value={descuentoProveedor}
+                    onChange={(val) => setDescuentoProveedor(val)}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
+                    placeholder="Ej: 10"
+                  />
+                </div>
+              </>
+            )}
           </div>
+
+          {unidadNegocioActiva !== '2' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="lote" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  Lote (Opcional)
+                </label>
+                <input
+                  type="text"
+                  id="lote"
+                  value={lote}
+                  onChange={(e) => setLote(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  placeholder="Ej. L-2026-A"
+                />
+              </div>
+              <div>
+                <label htmlFor="dueno" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  Dueño (Opcional)
+                </label>
+                <input
+                  type="text"
+                  id="dueno"
+                  value={dueno}
+                  onChange={(e) => setDueno(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  placeholder="Dueño del lote"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">

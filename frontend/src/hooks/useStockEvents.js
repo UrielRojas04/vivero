@@ -9,7 +9,7 @@ export const useStockEvents = () => {
   useEffect(() => {
     if (!token) return;
 
-    const eventSourceUrl = `http://localhost:8080/api/events/stock?token=${token}`;
+    const eventSourceUrl = `http://${window.location.hostname}:8080/api/events/stock?token=${token}`;
     const eventSource = new EventSource(eventSourceUrl);
 
     eventSource.addEventListener('STOCK_UPDATE', (event) => {

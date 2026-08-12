@@ -7,6 +7,7 @@ import { ventasApi } from '../api/ventas.api';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { useCartStore } from '../store/useCartStore';
+import { useAuthStore } from '../store/useAuthStore';
 import FormattedNumberInput from '../components/FormattedNumberInput';
 
 // Utilidades para guardar "últimos usados" en LocalStorage
@@ -27,6 +28,7 @@ export default function NuevaVenta() {
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { unidadNegocioActiva } = useAuthStore();
 
   const liveStocks = useStockStore(state => state.liveStocks);
 
@@ -520,20 +522,21 @@ export default function NuevaVenta() {
                     </div>
                   </div>
 
-              {/* Bandejas */}
-              <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Bandejas prestadas (opcional)</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500 font-medium">Cant:</span>
-                  <FormattedNumberInput
-                    id="bandejasEntregadas"
-                    placeholder="0"
-                    value={bandejasEntregadas}
-                    onChange={(val) => setBandejasEntregadas(val)}
-                    className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right font-semibold"
-                  />
+              {unidadNegocioActiva !== '2' && (
+                <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
+                  <span className="text-gray-600 font-medium">Bandejas prestadas (opcional)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 font-medium">Cant:</span>
+                    <FormattedNumberInput
+                      id="bandejasEntregadas"
+                      placeholder="0"
+                      value={bandejasEntregadas}
+                      onChange={(val) => setBandejasEntregadas(val)}
+                      className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right font-semibold"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-lg">
                 <span className="font-bold text-gray-900">Total a Pagar</span>

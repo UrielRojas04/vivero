@@ -28,6 +28,10 @@ public class Cheque {
     @JoinColumn(name = "venta_id")
     private Venta venta;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_negocio_id")
+    private UnidadNegocio unidadNegocio;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
@@ -89,6 +93,14 @@ public class Cheque {
 
     public void setVenta(Venta venta) {
         this.venta = venta;
+    }
+
+    public UnidadNegocio getUnidadNegocio() {
+        return unidadNegocio;
+    }
+
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) {
+        this.unidadNegocio = unidadNegocio;
     }
 
     public String getNumeroInterno() {
