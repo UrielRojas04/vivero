@@ -15,15 +15,20 @@ import {
   TrendingDown,
   Search,
   ArrowLeft,
-  Trash2
+  Trash2,
+  CreditCard,
+  X,
+  Edit3
 } from 'lucide-react';
 import { finanzasApi } from '../api/finanzas.api';
+import { chequesApi } from '../api/cheques.api';
 import { getGastos, createGasto, deleteGasto } from '../api/gastos.api';
 import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import FormattedNumberInput from '../components/FormattedNumberInput';
+import ChequeEstadoModal from '../components/ChequeEstadoModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const currentYear = new Date().getFullYear();
@@ -41,6 +46,7 @@ const Finanzas = () => {
   // Drill-down states
   const [showVentas, setShowVentas] = useState(false);
   const [showGastos, setShowGastos] = useState(false);
+  const [showCheques, setShowCheques] = useState(false);
 
   // Search and Pagination
   const [page, setPage] = useState(0);
@@ -52,6 +58,8 @@ const Finanzas = () => {
   const [debouncedSearchGastos, setDebouncedSearchGastos] = useState('');
 
   const [nuevoGasto, setNuevoGasto] = useState({ concepto: '', monto: '' });
+  const [selectedCheque, setSelectedCheque] = useState(null);
+  const [isChequeModalOpen, setIsChequeModalOpen] = useState(false);
 
   const desde = `${selectedYear}-01-01`;
   const hasta = `${selectedYear}-12-31`;
@@ -98,6 +106,12 @@ const Finanzas = () => {
   const productosQuery = useQuery({
     queryKey: ['productos', 'all'],
     queryFn: () => productosApi.getAll(),
+  });
+
+  const chequesCarteraQuery = useQuery({
+    queryKey: ['cheques', 'cartera'],
+    queryFn: () => chequesApi.getAll(0, 1000),
+    enabled: showCheques,
   });
 
   const createGastoMutation = useMutation({
@@ -162,6 +176,7 @@ const Finanzas = () => {
   const totalPages = ventasQuery.data?.totalPages || 0;
   const totalElements = ventasQuery.data?.totalElements || 0;
   const gastosTotalPages = gastosQuery.data?.totalPages || 0;
+  const chequesEnCarteraList = chequesCarteraQuery.data?.content?.filter(c => c.estado === 'EN_CARTERA') || [];
 
   const loadingResumen = resumenQuery.isPending;
   const loadingVentas = ventasQuery.isFetching;
@@ -173,6 +188,7 @@ const Finanzas = () => {
   const totalCostos = resumen?.totalCostos ?? 0;
   const gananciaNeta = resumen?.gananciaNeta ?? 0;
   const margen = resumen?.margen ?? 0;
+  const chequesEnCartera = resumen?.chequesEnCartera ?? 0;
 
   const kpis = [
     { 
@@ -181,7 +197,7 @@ const Finanzas = () => {
       icon: Wallet, 
       iconClass: 'bg-emerald-50 text-emerald-600',
       active: showVentas,
-      onClick: () => { setShowVentas(!showVentas); setShowGastos(false); }
+      onClick: () => { setShowVentas(!showVentas); setShowGastos(false); setShowCheques(false); }
     },
     { 
       label: 'Total Costos', 
@@ -189,10 +205,18 @@ const Finanzas = () => {
       icon: Coins, 
       iconClass: 'bg-red-50 text-red-500',
       active: showGastos,
-      onClick: () => { setShowGastos(!showGastos); setShowVentas(false); }
+      onClick: () => { setShowGastos(!showGastos); setShowVentas(false); setShowCheques(false); }
     },
     { label: 'Ganancia Neta', value: formatMoney(gananciaNeta), icon: HandCoins, iconClass: 'bg-blue-50 text-blue-600' },
     { label: 'Margen de Ganancia', value: `${margen.toLocaleString('es-AR')} %`, icon: Percent, iconClass: 'bg-violet-50 text-violet-600' },
+    { 
+      label: 'Valores a Depositar (Cheques)', 
+      value: formatMoney(chequesEnCartera), 
+      icon: CreditCard, 
+      iconClass: 'bg-amber-50 text-amber-600',
+      active: showCheques,
+      onClick: () => { setShowCheques(!showCheques); setShowVentas(false); setShowGastos(false); }
+    },
   ];
 
   const estadoBadgeClass = (estado) => {
@@ -261,7 +285,7 @@ const Finanzas = () => {
       ) : (
         <>
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {kpis.map((kpi) => (
               <div 
                 key={kpi.label} 
@@ -280,7 +304,7 @@ const Finanzas = () => {
           </div>
 
           {/* Gráficos Estadísticos */}
-          {!showVentas && !showGastos && chartData.length > 0 && (
+          {!showVentas && !showGastos && !showCheques && chartData.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col items-center">
                 <h2 className="text-base font-bold text-gray-900 w-full mb-2">Distribución Financiera</h2>
@@ -577,6 +601,104 @@ const Finanzas = () => {
           )}
         </div>
       )}
+
+      {/* Detalle de Cheques en Cartera */}
+      {!loadingResumen && showCheques && (
+        <div className="bg-white rounded-2xl border border-gray-900 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowCheques(false)} 
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors"
+                title="Volver"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-600" />
+                Cheques en Cartera
+              </h2>
+            </div>
+          </div>
+            
+          <div className="p-0">
+            {chequesCarteraQuery.isFetching ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+                <p className="text-sm font-medium text-gray-500">Cargando cheques...</p>
+              </div>
+            ) : chequesEnCarteraList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <ReceiptText className="w-12 h-12 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500">No hay cheques en cartera.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50/75 border-b border-gray-200">
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Recepción</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Cobro</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Banco</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Emisor</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Monto</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Tipo</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {chequesEnCarteraList.map((cheque) => (
+                      <tr key={cheque.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Date(cheque.fechaCobro).toLocaleDateString('es-AR')}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{cheque.banco}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{cheque.emisor}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-emerald-700 text-right">
+                          {formatMoney(cheque.monto)}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {cheque.esEmisionPropia ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                              Propio
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                              Tercero
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => {
+                              setSelectedCheque(cheque);
+                              setIsChequeModalOpen(true);
+                            }}
+                            className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                            title="Editar estado"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edición de Cheque */}
+      <ChequeEstadoModal
+        isOpen={isChequeModalOpen}
+        onClose={() => setIsChequeModalOpen(false)}
+        cheque={selectedCheque}
+      />
     </div>
   );
 };

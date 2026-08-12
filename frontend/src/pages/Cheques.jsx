@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUIStore } from '../store/useUIStore';
 import { chequesApi } from '../api/cheques.api';
-import { Briefcase, CreditCard, ChevronLeft, ChevronRight, Edit3, X, Check } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { clientesApi } from '../api/clientes.api';
+import { Briefcase, CreditCard, ChevronLeft, ChevronRight, Edit3, X, Check, Plus, Search } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import NuevoChequeModal from '../components/NuevoChequeModal';
+import ChequeEstadoModal from '../components/ChequeEstadoModal';
 
 export default function Cheques() {
-  const { pushToast, denyAccess } = useUIStore();
+  const { pushToast, denyAccess, askConfirm } = useUIStore();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const size = 10;
@@ -13,9 +16,7 @@ export default function Cheques() {
   // Modal state
   const [selectedCheque, setSelectedCheque] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [estadoEdit, setEstadoEdit] = useState('');
-  const [entregadoAEdit, setEntregadoAEdit] = useState('');
-  const [fechaEntregaEdit, setFechaEntregaEdit] = useState('');
+  const [isNuevoModalOpen, setIsNuevoModalOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cheques', { page, size }],
@@ -29,38 +30,10 @@ export default function Cheques() {
     }
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }) => chequesApi.update(id, payload),
-    onSuccess: () => {
-      pushToast('success', 'Cheque actualizado exitosamente');
-      queryClient.invalidateQueries(['cheques']);
-      setIsModalOpen(false);
-    },
-    onError: () => {
-      pushToast('error', 'Error al actualizar el cheque');
-    }
-  });
 
   const openModal = (cheque) => {
     setSelectedCheque(cheque);
-    setEstadoEdit(cheque.estado);
-    setEntregadoAEdit(cheque.entregadoA || '');
-    setFechaEntregaEdit(cheque.fechaEntrega || '');
     setIsModalOpen(true);
-  };
-
-  const handleUpdate = () => {
-    if (estadoEdit === 'ENTREGADO' && !entregadoAEdit) {
-      return pushToast('error', 'Debe indicar a quién fue entregado el cheque.');
-    }
-
-    const payload = {
-      estado: estadoEdit,
-      entregadoA: estadoEdit === 'ENTREGADO' ? entregadoAEdit : null,
-      fechaEntrega: estadoEdit === 'ENTREGADO' ? fechaEntregaEdit : null
-    };
-
-    updateMutation.mutate({ id: selectedCheque.id, payload });
   };
 
   if (error && !data) return null;
@@ -72,6 +45,13 @@ export default function Cheques() {
           <CreditCard className="w-8 h-8 text-emerald-600" />
           Cartera de Cheques
         </h1>
+        <button
+          onClick={() => setIsNuevoModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
+        >
+          <Plus className="w-5 h-5" />
+          Nuevo Cheque
+        </button>
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -98,8 +78,15 @@ export default function Cheques() {
                   {data?.content?.map((cheque) => (
                     <tr key={cheque.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 font-semibold">{cheque.clienteNombre || 'Suelto'}</div>
-                        <div className="text-xs text-gray-500">{new Date(cheque.fechaRecepcion).toLocaleDateString()}</div>
+                        <div className="text-sm text-gray-900 font-semibold flex items-center gap-2">
+                          {cheque.clienteNombre || 'Suelto'}
+                          {cheque.esEmisionPropia ? (
+                            <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full uppercase tracking-wide font-bold">Para Cliente</span>
+                          ) : (
+                            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase tracking-wide font-bold">Propios</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{new Date(cheque.fechaRecepcion).toLocaleDateString()}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{cheque.banco || '-'}</div>
@@ -109,30 +96,37 @@ export default function Cheques() {
                         {cheque.fechaCobro ? new Date(cheque.fechaCobro).toLocaleDateString() : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600 text-right">
-                        ${cheque.monto.toFixed(2)}
+                        {cheque.monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full uppercase ${
                           cheque.estado === 'EN_CARTERA' ? 'bg-amber-100 text-amber-800' : 
                           cheque.estado === 'COBRADO' ? 'bg-blue-100 text-blue-800' :
                           cheque.estado === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {cheque.estado.replace('_', ' ')}
+                          {cheque.esEmisionPropia && cheque.estado === 'EN_CARTERA' ? 'EMITIDO' :
+                           cheque.esEmisionPropia && cheque.estado === 'COBRADO' ? 'DEBITADO' :
+                           cheque.estado.replace('_', ' ')}
                         </span>
                         {cheque.estado === 'ENTREGADO' && cheque.entregadoA && (
-                          <div className="text-[10px] text-gray-500 mt-1 uppercase truncate max-w-[100px] mx-auto">
+                          <div className="text-[10px] text-gray-500 mt-1 uppercase truncate max-w-[150px] mx-auto font-medium" title={cheque.entregadoA}>
                             a: {cheque.entregadoA}
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <button
-                          onClick={() => openModal(cheque)}
-                          className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
+                        {['RECHAZADO', 'ENTREGADO', 'COBRADO'].includes(cheque.estado) ? (
+                          <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wide">Bloqueado</span>
+                        ) : (
+                          <button
+                            onClick={() => openModal(cheque)}
+                            className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                            title="Editar estado"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -176,81 +170,17 @@ export default function Cheques() {
       </div>
 
       {/* Modal Edición de Cheque */}
-      {isModalOpen && selectedCheque && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Actualizar Cheque</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <ChequeEstadoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        cheque={selectedCheque}
+      />
 
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 space-y-2 text-sm">
-              <p><span className="text-gray-500">Banco:</span> <span className="font-semibold text-gray-900">{selectedCheque.banco || '-'}</span></p>
-              <p><span className="text-gray-500">Monto:</span> <span className="font-bold text-emerald-700">${selectedCheque.monto.toFixed(2)}</span></p>
-              <p><span className="text-gray-500">Cliente:</span> <span className="font-semibold text-gray-900">{selectedCheque.clienteNombre}</span></p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
-                <select
-                  value={estadoEdit}
-                  onChange={(e) => setEstadoEdit(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-shadow"
-                >
-                  <option value="EN_CARTERA">EN CARTERA</option>
-                  <option value="COBRADO">COBRADO</option>
-                  <option value="ENTREGADO">ENTREGADO (Endosado)</option>
-                  <option value="RECHAZADO">RECHAZADO</option>
-                </select>
-              </div>
-
-              {estadoEdit === 'ENTREGADO' && (
-                <div className="space-y-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Entregado A (Proveedor/Tercero)</label>
-                    <input
-                      type="text"
-                      value={entregadoAEdit}
-                      onChange={(e) => setEntregadoAEdit(e.target.value)}
-                      placeholder="Ej: Macetas Plásticas S.A."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha de Entrega</label>
-                    <input
-                      type="date"
-                      value={fechaEntregaEdit}
-                      onChange={(e) => setFechaEntregaEdit(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-100">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-5 py-2 text-gray-600 hover:bg-gray-50 font-semibold rounded-xl border border-transparent transition-colors"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleUpdate}
-                disabled={updateMutation.isPending}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                {updateMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Nuevo Cheque */}
+      <NuevoChequeModal
+        isOpen={isNuevoModalOpen}
+        onClose={() => setIsNuevoModalOpen(false)}
+      />
 
     </div>
   );

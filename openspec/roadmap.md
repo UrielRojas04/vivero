@@ -32,7 +32,9 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 | 21| ✅ `us-015-realtime-sse` | Endpoints SSE para notificar cambios de stock | Épica 3 | `us-013-ventas-core` | Requiere que existan eventos de stock para emitir |
 | 22| ✅ `ui-cart-persistence` | Carrito de ventas persistente en UI (Zustand + sessionStorage) | Épica 3 | `us-013-ventas-core` | Evita perder el carrito al navegar/refrescar |
 | 23| ✅ `us-016-remitos-pdf` | Remito PDF/Imagen + WhatsApp | Épica 3 | `us-013-ventas-core` | Comprobante client-side con envío por WhatsApp |
-| 24| 🚀 `us-017-finanzas-ui` | Reportes de rentabilidad (Ventas vs Costos) | Épica 5 | `us-013-ventas-core`, `us-008-frontend-insumos` | **PRÓXIMO CHANGE** — Tablero financiero final |
+| 24| ✅ `us-021-registrar-cheque-manual` | Registro de cheques manual independiente de ventas | Épica 4 | `us-010-cuentas-ctes` | Permite agregar saldos a favor por cheques |
+| 25| ✅ `us-021-reversa-cheques` | Reversa de saldos contables y bloqueo de estados (RECHAZADO/ENTREGADO) | Épica 4 | `us-021-registrar-cheque-manual` | Manejo contable robusto de cheques |
+| 26| 🚀 `us-017-finanzas-ui` | Reportes de rentabilidad (Ventas vs Costos) | Épica 5 | `us-013-ventas-core`, `us-008-frontend-insumos` | **PRÓXIMO CHANGE** — Tablero financiero final |
 
 
 ## Detalle por change
@@ -138,6 +140,16 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 **Depende de**: `us-013-ventas-core`.
 **Justificación**: Necesidad crítica de UX/UI final de la transacción comercial.
 **Archivo**: `openspec/changes/archive/2026-08-10-us-016-remitos-pdf/`
+
+### `us-021-registrar-cheque-manual`
+**(COMPLETADO — archivado en OPSX al 2026-08-12)**.
+**Funcionalidad**: Permite cargar un cheque suelto al sistema y que impacte sumando saldo a favor en la cuenta del cliente seleccionado (registro sin venta).
+**Archivo**: `openspec/changes/archive/2026-08-12-us-021-registrar-cheque-manual/`
+
+### `us-021-reversa-cheques`
+**(COMPLETADO — archivado en OPSX al 2026-08-12)**.
+**Funcionalidad**: Al pasar un cheque a estado RECHAZADO, el sistema automáticamente revierte los saldos generados (suma o resta deuda según el emisor original). Bloquea la edición de cheques en estado RECHAZADO, ENTREGADO o COBRADO por seguridad contable.
+**Archivo**: `openspec/changes/archive/2026-08-12-us-021-reversa-cheques/`
 
 ### `us-017-finanzas-ui`
 **Funcionalidad**: Dashboards y agregaciones. Cruce de totales de ventas vs costos de insumos y plantas.
