@@ -13,16 +13,19 @@ public class VentaLiteDTO {
     private String estadoDePago;
     private String metodoPago;
     private BigDecimal gananciaNeta;
+    private String vendedorNombre;
+    private Long vendedorId;
+    private String resumenProductos;
 
     public VentaLiteDTO() {}
 
     public VentaLiteDTO(Long id, Long nroVenta, LocalDateTime fecha, String clienteNombre,
-                        BigDecimal totalFinal, String estadoDePago, BigDecimal gananciaNeta) {
-        this(id, nroVenta, fecha, clienteNombre, totalFinal, estadoDePago, null, gananciaNeta);
+                        BigDecimal totalFinal, String estadoDePago, BigDecimal gananciaNeta, String vendedorNombre, Long vendedorId) {
+        this(id, nroVenta, fecha, clienteNombre, totalFinal, estadoDePago, null, gananciaNeta, vendedorNombre, vendedorId);
     }
 
     public VentaLiteDTO(Long id, Long nroVenta, LocalDateTime fecha, String clienteNombre,
-                        BigDecimal totalFinal, String estadoDePago, String metodoPago, BigDecimal gananciaNeta) {
+                        BigDecimal totalFinal, String estadoDePago, String metodoPago, BigDecimal gananciaNeta, String vendedorNombre, Long vendedorId) {
         this.id = id;
         this.nroVenta = nroVenta;
         this.fecha = fecha;
@@ -31,6 +34,8 @@ public class VentaLiteDTO {
         this.estadoDePago = estadoDePago;
         this.metodoPago = metodoPago;
         this.gananciaNeta = gananciaNeta;
+        this.vendedorNombre = vendedorNombre;
+        this.vendedorId = vendedorId;
     }
 
     public Long getId() { return id; }
@@ -49,4 +54,10 @@ public class VentaLiteDTO {
     public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
     public BigDecimal getGananciaNeta() { return gananciaNeta; }
     public void setGananciaNeta(BigDecimal gananciaNeta) { this.gananciaNeta = gananciaNeta; }
+    public String getVendedorNombre() { return vendedorNombre; }
+    public void setVendedorNombre(String vendedorNombre) { this.vendedorNombre = vendedorNombre; }
+    public Long getVendedorId() { return vendedorId; }
+    public void setVendedorId(Long vendedorId) { this.vendedorId = vendedorId; }
+    public String getResumenProductos() { return resumenProductos; }
+    public void setResumenProductos(String resumenProductos) { this.resumenProductos = resumenProductos; }
 }

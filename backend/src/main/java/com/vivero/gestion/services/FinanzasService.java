@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface FinanzasService {
-    DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta);
-    Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Pageable pageable);
+    DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta, Long usuarioId);
+    Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Long usuarioId, Pageable pageable);
     List<com.vivero.gestion.dto.VentaDetalleResponseDTO> listarDetalleCogs(LocalDateTime desde, LocalDateTime hasta);
 }

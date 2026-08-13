@@ -33,8 +33,8 @@ const navGroups = [
     title: 'Gestión',
     items: [
       { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES' },
-      { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'ADMIN_DB' },
-      { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'ADMIN_DB' },
+      { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS' },
+      { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS' },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
     ]
   }
@@ -91,7 +91,7 @@ const DashboardLayout = () => {
               return true;
             }).map(item => {
               if (isHerramientas && item.label === 'Productos (Plantas)') {
-                return { ...item, label: 'Productos (Herramientas)' };
+                return { ...item, label: 'Productos' };
               }
               return item;
             });
@@ -167,7 +167,7 @@ const DashboardLayout = () => {
                       Configuración
                     </NavLink>
 
-                    {negociosDisponibles.length > 0 && (
+                    {negociosDisponibles.length > 0 && user?.username === 'jefe@vivero.com' && (
                       <div className="px-4 py-2">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Negocio Activo</p>
                         <select 

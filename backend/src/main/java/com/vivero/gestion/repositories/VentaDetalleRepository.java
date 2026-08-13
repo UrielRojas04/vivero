@@ -17,10 +17,12 @@ public interface VentaDetalleRepository extends JpaRepository<VentaDetalle, Long
 
     @Query("SELECT SUM(vd.cantidad * vd.costoUnitarioHistorico) FROM VentaDetalle vd " +
            "WHERE vd.venta.fecha BETWEEN :desde AND :hasta " +
-           "AND (:unidadId IS NULL OR vd.venta.unidadNegocio.id = :unidadId)")
+           "AND (:unidadId IS NULL OR vd.venta.unidadNegocio.id = :unidadId) " +
+           "AND (:usuarioId IS NULL OR vd.venta.usuario.id = :usuarioId)")
     BigDecimal sumarCostoMercaderiaVendida(@Param("desde") LocalDateTime desde, 
                                            @Param("hasta") LocalDateTime hasta, 
-                                           @Param("unidadId") Long unidadId);
+                                           @Param("unidadId") Long unidadId,
+                                           @Param("usuarioId") Long usuarioId);
 
     List<VentaDetalle> findByVentaFechaBetween(LocalDateTime desde, LocalDateTime hasta);
     List<VentaDetalle> findByVentaFechaBetweenAndVentaUnidadNegocioId(LocalDateTime desde, LocalDateTime hasta, Long unidadId);

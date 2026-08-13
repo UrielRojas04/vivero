@@ -1,5 +1,6 @@
-## ADDED Requirements
-
+## Purpose
+Define requirements for the financial dashboard and reporting user interface.
+## Requirements
 ### Requirement: Resumen de rentabilidad del período
 El sistema SHALL proveer un endpoint de agregación financiera que devuelva, para un período (fecha desde/hasta con hoy como límite por defecto), los totales de ventas, el total de costos (únicamente provenientes de gastos e insumos registrados en el período) y la ganancia neta, junto al margen de ganancia porcentual. El endpoint SHALL exponer los datos vía DTO de agregado (nunca entidades JPA) y SHALL requerir el permiso `ADMIN_DB`. Adicionalmente, el cálculo de ganancia neta SHALL descontar también el total de gastos del período obtenidos.
 
@@ -48,3 +49,19 @@ El sistema SHALL exponer la sección "Finanzas" en la navegación principal del 
 #### Scenario: Búsqueda en los listados
 - **WHEN** el usuario ingresa texto en el buscador de la tabla (Ventas o Gastos)
 - **THEN** el frontend dispara la consulta paginada al backend con el parámetro de búsqueda y el backend devuelve únicamente los registros que coinciden con dicho criterio en su nombre/cliente/concepto.
+
+### Requirement: Filtro y Resumen por Usuario (Vendedor) en Finanzas
+El sistema MUST permitir visualizar las ventas realizadas por cada vendedor en la sección de Finanzas, filtradas por los períodos "esta semana" o "este mes". 
+
+#### Scenario: Visualización del Vendedor en el listado
+- **WHEN** el usuario con permisos de Finanzas consulta el listado de ventas
+- **THEN** cada fila de venta en la tabla debe indicar claramente el nombre del usuario (vendedor) que la registró.
+
+#### Scenario: Filtro de ventas por usuario
+- **WHEN** el usuario hace click sobre el nombre de un vendedor específico en el panel de Finanzas
+- **THEN** la vista de ventas se filtra mostrando únicamente las operaciones realizadas por ese vendedor en el período activo (semana o mes).
+
+#### Scenario: Totales por vendedor
+- **WHEN** el usuario selecciona un vendedor y un período (ej. "este mes")
+- **THEN** el tablero actualiza las tarjetas de KPIs (Total Ventas, Ganancia) para reflejar exclusivamente la actividad de ese usuario en ese lapso de tiempo.
+

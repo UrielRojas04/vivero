@@ -32,12 +32,17 @@ export default function UsuariosAdmin() {
     const [selectedPermisos, setSelectedPermisos] = useState([]);
     const [assignmentMode, setAssignmentMode] = useState('permisos'); // 'secciones' | 'permisos'
     const [selectedSections, setSelectedSections] = useState([]);
+    const { unidadNegocioActiva } = useAuthStore();
+    const isHerramientas = parseInt(unidadNegocioActiva) === 2;
 
     const SECTIONS = [
         { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES', 'LEER_STOCK'] },
-        { id: 'productos', name: 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
-        { id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] },
+        { id: 'productos', name: isHerramientas ? 'Productos' : 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
+        ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_STOCK'] }] : []),
+        ...(!isHerramientas ? [{ id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] }] : []),
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
+        ...(isHerramientas ? [{ id: 'finanzas', name: 'Finanzas', permNames: ['LEER_FINANZAS'] }] : []),
+        ...(isHerramientas ? [{ id: 'cheques', name: 'Cheques', permNames: ['LEER_FINANZAS'] }] : []),
         { id: 'admin', name: 'Usuarios (Admin)', permNames: ['ADMIN_DB'] }
     ];
 
@@ -239,16 +244,24 @@ export default function UsuariosAdmin() {
                                         )}
                                     </td>
                                     <td className="p-4 text-right">
-                                        <button onClick={() => openUserModal(u)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
-                                        <button
-                                            onClick={() => askConfirm({
-                                                title: 'Eliminar Usuario',
-                                                message: '¿Seguro que desea eliminar este usuario?',
-                                                variant: 'danger',
-                                                confirmLabel: 'Eliminar',
-                                                onConfirm: () => handleDeleteUser(u.id),
-                                            })}
-                                            className="text-red-600 hover:text-red-800 font-medium cursor-pointer">Eliminar</button>
+                                        {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
+                                            <span className="text-gray-400 italic text-sm" title="Este usuario está protegido y no se puede editar ni eliminar">
+                                                Usuario protegido
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => openUserModal(u)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
+                                                <button
+                                                    onClick={() => askConfirm({
+                                                        title: 'Eliminar Usuario',
+                                                        message: '¿Seguro que desea eliminar este usuario?',
+                                                        variant: 'danger',
+                                                        confirmLabel: 'Eliminar',
+                                                        onConfirm: () => handleDeleteUser(u.id),
+                                                    })}
+                                                    className="text-red-600 hover:text-red-800 font-medium cursor-pointer">Eliminar</button>
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

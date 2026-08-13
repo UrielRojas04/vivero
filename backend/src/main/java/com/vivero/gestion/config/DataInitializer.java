@@ -73,6 +73,7 @@ public class DataInitializer implements CommandLineRunner {
         Permiso pEscribirClientes = crearPermiso("ESCRIBIR_CLIENTES");
         Permiso pLeerInsumos = crearPermiso("LEER_INSUMOS");
         Permiso pEscribirInsumos = crearPermiso("ESCRIBIR_INSUMOS");
+        Permiso pLeerFinanzas = crearPermiso("LEER_FINANZAS");
 
         // 2. Crear Roles y asignar permisos
         Set<Permiso> permisosJefe = new HashSet<>();
@@ -84,8 +85,10 @@ public class DataInitializer implements CommandLineRunner {
         permisosJefe.add(pEscribirClientes);
         permisosJefe.add(pLeerInsumos);
         permisosJefe.add(pEscribirInsumos);
+        permisosJefe.add(pLeerFinanzas);
         
         Rol rolJefe = crearRol("JEFE", permisosJefe);
+        // Asegurar que el jefe siempre tenga todos los permisos, incluso si el rol ya existía
         rolJefe.setPermisos(permisosJefe);
         rolRepository.save(rolJefe);
 

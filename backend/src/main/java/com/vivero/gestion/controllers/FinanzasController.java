@@ -31,31 +31,34 @@ public class FinanzasController {
 
     /**
      * Resumen de rentabilidad del período (totales de ventas, costos, ganancia neta y margen %).
-     * Requiere permiso ADMIN_DB. Fechas en formato ISO (yyyy-MM-dd).
+     * Requiere permiso LEER_FINANZAS. Fechas en formato ISO (yyyy-MM-dd).
      */
     @GetMapping("/resumen")
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<DashboardResumenDTO> resumen(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(required = false) Long usuarioId) {
         LocalDate desdeEfectivo = desde != null ? desde : LocalDate.now().withDayOfMonth(1);
         LocalDate hastaEfectivo = hasta != null ? hasta : LocalDate.now();
         DashboardResumenDTO resumen = finanzasService.resumen(
                 desdeEfectivo.atStartOfDay(),
-                hastaEfectivo.atTime(LocalTime.MAX));
+                hastaEfectivo.atTime(LocalTime.MAX),
+                usuarioId);
         return ResponseEntity.ok(resumen);
     }
 
     /**
      * Listado paginado de ventas del período (DTO compacto, sin entidades JPA).
-     * Requiere permiso ADMIN_DB. Fechas en formato ISO (yyyy-MM-dd).
+     * Requiere permiso LEER_FINANZAS. Fechas en formato ISO (yyyy-MM-dd).
      */
     @GetMapping("/ventas")
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<Page<VentaLiteDTO>> listarVentas(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) Long usuarioId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         LocalDate desdeEfectivo = desde != null ? desde : LocalDate.now().withDayOfMonth(1);
@@ -65,16 +68,17 @@ public class FinanzasController {
                 desdeEfectivo.atStartOfDay(),
                 hastaEfectivo.atTime(LocalTime.MAX),
                 q,
+                usuarioId,
                 pageable);
         return ResponseEntity.ok(ventas);
     }
 
     /**
      * Listado detallado de COGS para el período (componentes de costo de cada producto vendido).
-     * Requiere permiso ADMIN_DB. Fechas en formato ISO (yyyy-MM-dd).
+     * Requiere permiso LEER_FINANZAS. Fechas en formato ISO (yyyy-MM-dd).
      */
     @GetMapping("/cogs-detalle")
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<java.util.List<com.vivero.gestion.dto.VentaDetalleResponseDTO>> listarDetalleCogs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {

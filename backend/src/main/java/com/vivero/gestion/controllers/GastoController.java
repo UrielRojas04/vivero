@@ -19,7 +19,7 @@ public class GastoController {
     private GastoService gastoService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<Page<GastoDTO>> listarGastos(
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
@@ -28,13 +28,13 @@ public class GastoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<GastoDTO> crearGasto(@RequestBody GastoDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(gastoService.crearGasto(dto));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<Void> eliminarGasto(@PathVariable Long id) {
         gastoService.eliminarGasto(id);
         return ResponseEntity.noContent().build();

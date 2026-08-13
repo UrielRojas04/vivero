@@ -25,6 +25,7 @@ import { chequesApi } from '../api/cheques.api';
 import { getGastos, createGasto, deleteGasto } from '../api/gastos.api';
 import { productosApi } from '../api/productos.api';
 import { negociosApi } from '../api/negocios.api';
+import { usuariosApi } from '../api/usuarios.api';
 import { useUIStore } from '../store/useUIStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStockStore } from '../store/useStockStore';
@@ -45,6 +46,7 @@ const Finanzas = () => {
   const liveStocks = useStockStore(state => state.liveStocks);
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedVendedorId, setSelectedVendedorId] = useState(null);
   
   // Drill-down states
   const [showVentas, setShowVentas] = useState(false);
@@ -89,13 +91,13 @@ const Finanzas = () => {
   }, [searchGastos]);
 
   const resumenQuery = useQuery({
-    queryKey: ['finanzas', 'resumen', { desde, hasta }],
-    queryFn: () => finanzasApi.fetchResumenFinanzas(desde, hasta),
+    queryKey: ['finanzas', 'resumen', { desde, hasta, selectedVendedorId }],
+    queryFn: () => finanzasApi.fetchResumenFinanzas(desde, hasta, selectedVendedorId),
   });
 
   const ventasQuery = useQuery({
-    queryKey: ['finanzas', 'ventas', { desde, hasta, q: debouncedSearchVentas, page, size }],
-    queryFn: () => finanzasApi.fetchVentasFinanzas(desde, hasta, debouncedSearchVentas, page, size),
+    queryKey: ['finanzas', 'ventas', { desde, hasta, q: debouncedSearchVentas, selectedVendedorId, page, size }],
+    queryFn: () => finanzasApi.fetchVentasFinanzas(desde, hasta, debouncedSearchVentas, selectedVendedorId, page, size),
     placeholderData: keepPreviousData,
     enabled: showVentas,
   });
@@ -121,6 +123,11 @@ const Finanzas = () => {
   const negociosQuery = useQuery({
     queryKey: ['negocios'],
     queryFn: () => negociosApi.getAll(),
+  });
+
+  const usuariosQuery = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: () => usuariosApi.getAll(),
   });
 
   const chequesCarteraQuery = useQuery({
@@ -279,11 +286,12 @@ const Finanzas = () => {
           <PieChartIcon className="w-5 h-5 text-emerald-500" />
         </div>
 
-        {/* Selector de Año */}
-        <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-2.5 shadow-sm">
-          <Calendar className="w-5 h-5 text-gray-400" />
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Año Fiscal</label>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Selector de Año */}
+          <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-2.5 shadow-sm">
+            <Calendar className="w-5 h-5 text-gray-400" />
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Año Fiscal</label>
             <select
               value={selectedYear}
               onChange={handleYearChange}
@@ -294,6 +302,7 @@ const Finanzas = () => {
               ))}
             </select>
           </div>
+        </div>
         </div>
       </div>
 
@@ -580,16 +589,40 @@ const Finanzas = () => {
                 <span className="text-sm text-gray-500 font-medium">{totalElements} ventas en total</span>
               </div>
             </div>
-            
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre de cliente..."
-                value={searchVentas}
-                onChange={(e) => setSearchVentas(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-              />
+            <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+              {/* Selector de Vendedor (Solo Herramientas) dentro del detalle */}
+              {unidadNegocioActiva === '2' && (
+                <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-1.5 shadow-sm">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:block">Vendedor</label>
+                  <select
+                    value={selectedVendedorId || ''}
+                    onChange={(e) => setSelectedVendedorId(e.target.value ? parseInt(e.target.value) : null)}
+                    className="text-sm focus:outline-none focus:ring-0 cursor-pointer bg-transparent w-full md:min-w-[120px]"
+                  >
+                    <option value="">Todos</option>
+                    {(usuariosQuery.data || []).map(u => (
+                      <option key={u.id} value={u.id}>{u.username}</option>
+                    ))}
+                  </select>
+                  {selectedVendedorId && (
+                    <div className="flex items-center gap-1.5 ml-2 border-l border-gray-200 pl-2">
+                      <span className="text-xs text-gray-500 hidden md:block">Total:</span>
+                      <span className="text-sm font-bold text-emerald-600">{formatMoney(totalVentas)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="relative w-full sm:w-64 xl:w-72">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  value={searchVentas}
+                  onChange={(e) => setSearchVentas(e.target.value)}
+                  className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                />
+              </div>
             </div>
           </div>
 
@@ -608,39 +641,52 @@ const Finanzas = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/75 border-b border-gray-200">
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">N° Venta</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">N°</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Productos</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendedor</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
                     {unidadNegocioActiva === '2' && (
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Ganancia Neta</th>
+                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">G. Neta</th>
                     )}
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado de Pago</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método de Pago</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {ventas.map((venta) => (
                     <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {new Date(venta.fecha).toLocaleString('es-AR')}
+                      <td className="px-4 py-3 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {new Date(venta.fecha).toLocaleDateString('es-AR')}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-900">{venta.clienteNombre}</td>
-                      <td className="px-6 py-4 text-right font-bold text-emerald-700">
+                      <td className="px-4 py-3 font-medium text-gray-900">{venta.clienteNombre}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={venta.resumenProductos}>
+                        {venta.resumenProductos}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer hover:text-emerald-600 transition-colors" 
+                          onClick={() => {
+                            if (venta.vendedorId) setSelectedVendedorId(venta.vendedorId);
+                          }}
+                          title="Filtrar por este vendedor"
+                      >
+                        {venta.vendedorNombre}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-700">
                         {formatMoney(venta.totalFinal)}
                       </td>
                       {unidadNegocioActiva === '2' && (
-                        <td className="px-6 py-4 text-right font-bold text-blue-600">
+                        <td className="px-4 py-3 text-right font-bold text-blue-600">
                           {formatMoney(venta.gananciaNeta)}
                         </td>
                       )}
-                      <td className="px-6 py-4 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
                           {venta.estadoDePago}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-600">
+                      <td className="px-4 py-3 text-center text-xs text-gray-600">
                         {venta.metodoPago || '—'}
                       </td>
                     </tr>

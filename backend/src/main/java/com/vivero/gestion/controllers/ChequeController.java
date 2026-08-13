@@ -19,7 +19,7 @@ public class ChequeController {
     private ChequeService chequeService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<Page<ChequeDTO>> listarCheques(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -27,19 +27,19 @@ public class ChequeController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<ChequeDTO> obtenerCheque(@PathVariable Long id) {
         return ResponseEntity.ok(chequeService.obtenerPorId(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<ChequeDTO> crearCheque(@RequestBody ChequeDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(chequeService.crearCheque(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
     public ResponseEntity<ChequeDTO> actualizarCheque(@PathVariable Long id, @RequestBody ChequeDTO dto) {
         return ResponseEntity.ok(chequeService.actualizarEstado(id, dto));
     }

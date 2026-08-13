@@ -80,6 +80,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id " + id));
 
+        if ("jefe@vivero.com".equalsIgnoreCase(usuario.getUsername()) || "admin2".equalsIgnoreCase(usuario.getUsername())) {
+            throw new RuntimeException("El usuario " + usuario.getUsername() + " está protegido y no puede ser modificado desde la interfaz");
+        }
+
         // Check unique username if changed
         if (!usuario.getUsername().equals(dto.getUsername()) &&
             usuarioRepository.findByUsername(dto.getUsername()).isPresent()) {
@@ -106,8 +110,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id " + id));
 
-        if ("jefe@vivero.com".equalsIgnoreCase(usuario.getUsername())) {
-            throw new RuntimeException("El usuario JEFE no puede ser eliminado");
+        if ("jefe@vivero.com".equalsIgnoreCase(usuario.getUsername()) || "admin2".equalsIgnoreCase(usuario.getUsername())) {
+            throw new RuntimeException("El usuario " + usuario.getUsername() + " está protegido y no puede ser eliminado desde la interfaz");
         }
 
         usuarioRepository.deleteUsuarioRolAssociations(id);

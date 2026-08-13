@@ -236,16 +236,30 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cantidad Inicial *
+                  Cantidad Inicial (Bandejas) *
                 </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={formData.cantidad}
-                  onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={formData.cantidad}
+                    onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  />
+                  {formData.cantidad && formData.variedadBandejaId && (
+                    <div className="absolute right-0 top-full mt-1 text-xs text-emerald-600 font-medium">
+                      {
+                        (() => {
+                          const bandeja = bandejas.find(b => b.id.toString() === formData.variedadBandejaId);
+                          const celdas = bandeja?.cantidadCeldas || 0;
+                          const total = Math.round(parseFloat(formData.cantidad) * celdas);
+                          return total.toLocaleString('es-AR');
+                        })()
+                      } semillas
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

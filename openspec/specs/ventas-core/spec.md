@@ -1,3 +1,6 @@
+## Purpose
+Define core requirements for the sales process and inventory adjustments.
+
 ## Requirements
 
 ### Requirement: Registrar una nueva venta

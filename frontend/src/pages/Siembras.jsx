@@ -3,6 +3,7 @@ import { siembrasApi } from '../api/siembras.api';
 import SiembraForm from '../components/SiembraForm';
 import FinalizarSiembraModal from '../components/FinalizarSiembraModal';
 import PaseStockModal from '../components/PaseStockModal';
+import ConversorBandejas from '../components/ConversorBandejas';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus } from 'lucide-react';
@@ -13,6 +14,7 @@ const Siembras = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showConversor, setShowConversor] = useState(false);
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -136,16 +138,31 @@ const Siembras = () => {
           <p className="mt-1 text-sm text-gray-500">Administra los lotes en cultivo y su traspaso al catálogo.</p>
         </div>
         
-        <button
-          onClick={() => {
-            setSelectedSiembra(null);
-            setIsFormOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all cursor-pointer"
-        >
-          <Plus className="w-5 h-5" />
-          Nueva Siembra
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 relative">
+          <button
+            onClick={() => setShowConversor(!showConversor)}
+            className="flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+          >
+            Conversor
+          </button>
+          
+          {showConversor && (
+            <div className="absolute top-full right-0 mt-2 z-20">
+              <ConversorBandejas />
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              setSelectedSiembra(null);
+              setIsFormOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <Plus className="w-5 h-5" />
+            Nueva Siembra
+          </button>
+        </div>
       </div>
 
       {/* Search */}

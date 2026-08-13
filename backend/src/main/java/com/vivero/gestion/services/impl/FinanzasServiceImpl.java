@@ -55,9 +55,9 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     @Transactional(readOnly = true)
-    public DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta) {
+    public DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta, Long usuarioId) {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
-        BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta, unidadId);
+        BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta, unidadId, usuarioId);
         
         BigDecimal gastosInsumos = BigDecimal.ZERO;
         if (unidadId == null || unidadId == 1L) {
@@ -66,7 +66,7 @@ public class FinanzasServiceImpl implements FinanzasService {
         }
 
         if (unidadId != null && unidadId == 2L) {
-            BigDecimal cogs = ventaDetalleRepository.sumarCostoMercaderiaVendida(desde, hasta, unidadId);
+            BigDecimal cogs = ventaDetalleRepository.sumarCostoMercaderiaVendida(desde, hasta, unidadId, usuarioId);
             if (cogs != null) gastosInsumos = gastosInsumos.add(cogs);
         }
 
@@ -103,9 +103,9 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Pageable pageable) {
+    public Page<VentaLiteDTO> listarVentas(LocalDateTime desde, LocalDateTime hasta, String q, Long usuarioId, Pageable pageable) {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
-        Page<VentaLiteDTO> ventas = ventaRepository.listarVentasPorRango(desde, hasta, q, unidadId, pageable);
+        Page<VentaLiteDTO> ventas = ventaRepository.listarVentasPorRango(desde, hasta, q, unidadId, usuarioId, pageable);
         if (ventas.isEmpty()) {
             return ventas;
         }
@@ -126,8 +126,26 @@ public class FinanzasServiceImpl implements FinanzasService {
                         v.getTotalFinal(),
                         v.getEstadoDePago(),
                         metodosDePago.get(v.getId()),
-                        v.getGananciaNeta()))
+                        v.getGananciaNeta(),
+                        v.getVendedorNombre(),
+                        v.getVendedorId()))
                 .collect(Collectors.toList());
+
+        List<Long> ventaIds = contenido.stream().map(VentaLiteDTO::getId).collect(Collectors.toList());
+        if (!ventaIds.isEmpty()) {
+            List<Object[]> detalles = ventaRepository.obtenerDetallesBasicosPorVentas(ventaIds);
+            Map<Long, String> resumenes = detalles.stream()
+                .collect(Collectors.groupingBy(
+                    d -> (Long) d[0],
+                    Collectors.mapping(
+                        d -> d[2] + "x " + d[1],
+                        Collectors.joining(", ")
+                    )
+                ));
+            for (VentaLiteDTO v : contenido) {
+                v.setResumenProductos(resumenes.getOrDefault(v.getId(), "Sin productos"));
+            }
+        }
 
         return new PageImpl<>(contenido, ventas.getPageable(), ventas.getTotalElements());
     }

@@ -53,14 +53,19 @@ function App() {
               </Route>
             </Route>
 
-            <Route element={<ProtectedRoute requiredPermission="ADMIN_DB" />}>
-              <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
+            <Route element={<ProtectedRoute requiredPermission="LEER_FINANZAS" />}>
               <Route path="/finanzas" element={<Finanzas />} />
               <Route path="/cheques" element={<Cheques />} />
+            </Route>
+
+            <Route element={<ProtectedRoute requiredPermission="ADMIN_DB" />}>
+              <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
               <Route path="/variedades-plantas" element={<VariedadesPlantas />} />
               <Route path="/variedades-bandejas" element={<VariedadesBandejas />} />
-              <Route path="/configuracion" element={<Configuracion />} />
             </Route>
+
+            {/* Configuración es accesible, pero dentro valida los permisos por sección */}
+            <Route path="/configuracion" element={<Configuracion />} />
           </Route>
         </Route>
 
