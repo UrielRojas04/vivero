@@ -5,6 +5,9 @@ import com.vivero.gestion.models.Producto;
 import com.vivero.gestion.repositories.ProductoRepository;
 import com.vivero.gestion.services.ProductoService;
 import com.vivero.gestion.services.SseService;
+import com.vivero.gestion.services.MovimientoStockService;
+import com.vivero.gestion.models.TipoMovimientoStock;
+import com.vivero.gestion.repositories.UsuarioRepository;
 import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.models.UnidadNegocio;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
@@ -21,12 +24,20 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
     private final UnidadNegocioRepository unidadNegocioRepository;
     private final SseService sseService;
+    private final MovimientoStockService movimientoStockService;
+    private final UsuarioRepository usuarioRepository;
 
     @Autowired
-    public ProductoServiceImpl(ProductoRepository productoRepository, UnidadNegocioRepository unidadNegocioRepository, SseService sseService) {
+    public ProductoServiceImpl(ProductoRepository productoRepository, 
+                               UnidadNegocioRepository unidadNegocioRepository, 
+                               SseService sseService,
+                               MovimientoStockService movimientoStockService,
+                               UsuarioRepository usuarioRepository) {
         this.productoRepository = productoRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
         this.sseService = sseService;
+        this.movimientoStockService = movimientoStockService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -38,6 +49,7 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setPrecio(dto.getPrecio());
         producto.setCostoProducto(dto.getCostoProducto());
         producto.setDescuentoProveedor(dto.getDescuentoProveedor() != null ? dto.getDescuentoProveedor() : java.math.BigDecimal.ZERO);
+        producto.setPorcentajeGanancia(dto.getPorcentajeGanancia());
         producto.setStock(dto.getStock() != null ? dto.getStock() : 0);
         producto.setLote(dto.getLote());
         producto.setDueno(dto.getDueno());
@@ -48,7 +60,18 @@ public class ProductoServiceImpl implements ProductoService {
             producto.setUnidadNegocio(unidad);
         }
 
+        calcularPrecioSiAplica(producto);
+
         Producto guardado = productoRepository.save(producto);
+        
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        com.vivero.gestion.models.Usuario usuario = null;
+        if (username != null && !username.equals("anonymousUser")) {
+            usuario = usuarioRepository.findByUsername(username).orElse(null);
+        }
+        movimientoStockService.registrarMovimiento(guardado, guardado.getStock() != null ? guardado.getStock() : 0, TipoMovimientoStock.AJUSTE_INICIAL, usuario);
+        
         sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(guardado.getId(), guardado.getStock()));
         return mapToDTO(guardado);
     }
@@ -80,21 +103,41 @@ public class ProductoServiceImpl implements ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
+        boolean stockChanged = dto.getStock() != null && !dto.getStock().equals(producto.getStock());
+        boolean costChanged = dto.getCostoProducto() != null && !dto.getCostoProducto().equals(producto.getCostoProducto());
+        boolean discountChanged = dto.getDescuentoProveedor() != null && !dto.getDescuentoProveedor().equals(producto.getDescuentoProveedor());
+
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
-        producto.setCostoProducto(dto.getCostoProducto());
-        if (dto.getDescuentoProveedor() != null) {
-            producto.setDescuentoProveedor(dto.getDescuentoProveedor());
-        }
+        if (dto.getCostoProducto() != null) producto.setCostoProducto(dto.getCostoProducto());
+        if (dto.getDescuentoProveedor() != null) producto.setDescuentoProveedor(dto.getDescuentoProveedor());
+        if (dto.getPorcentajeGanancia() != null) producto.setPorcentajeGanancia(dto.getPorcentajeGanancia());
         
-        if (dto.getStock() != null) {
-            producto.setStock(dto.getStock());
+        int oldStock = producto.getStock() == null ? 0 : producto.getStock();
+        int newStock = dto.getStock() != null ? dto.getStock() : oldStock;
+        int diff = newStock - oldStock;
+        producto.setStock(newStock);
+
+        if (stockChanged || costChanged || discountChanged) {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            String username = auth != null ? auth.getName() : null;
+            com.vivero.gestion.models.Usuario usuario = null;
+            if (username != null && !username.equals("anonymousUser")) {
+                usuario = usuarioRepository.findByUsername(username).orElse(null);
+            }
+            
+            TipoMovimientoStock tipo = (diff > 0) ? TipoMovimientoStock.INGRESO 
+                                     : (diff < 0) ? TipoMovimientoStock.EGRESO 
+                                     : TipoMovimientoStock.AJUSTE_INICIAL;
+                                     
+            movimientoStockService.registrarMovimiento(producto, Math.abs(diff), tipo, usuario);
         }
         
         producto.setLote(dto.getLote());
         producto.setDueno(dto.getDueno());
 
+        calcularPrecioSiAplica(producto);
 
         Producto actualizado = productoRepository.save(producto);
         sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(actualizado.getId(), actualizado.getStock()));
@@ -117,9 +160,28 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setPrecio(producto.getPrecio());
         dto.setCostoProducto(producto.getCostoProducto());
         dto.setDescuentoProveedor(producto.getDescuentoProveedor());
+        dto.setPorcentajeGanancia(producto.getPorcentajeGanancia());
+        dto.setCostoUnitarioHistorico(producto.getCostoUnitarioHistorico() != null ? producto.getCostoUnitarioHistorico() : producto.getCostoProducto());
         dto.setStock(producto.getStock());
         dto.setLote(producto.getLote());
         dto.setDueno(producto.getDueno());
         return dto;
+    }
+
+    private void calcularPrecioSiAplica(Producto producto) {
+        if (producto.getPorcentajeGanancia() != null && producto.getPorcentajeGanancia().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            java.math.BigDecimal costoBase = producto.getCostoProducto() != null ? producto.getCostoProducto() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal descuentoPerc = producto.getDescuentoProveedor() != null ? producto.getDescuentoProveedor() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal costoEnvioPerc = producto.getUnidadNegocio() != null && producto.getUnidadNegocio().getCostoEnvioPorcentaje() != null 
+                    ? producto.getUnidadNegocio().getCostoEnvioPorcentaje() : java.math.BigDecimal.ZERO;
+
+            java.math.BigDecimal descuentoMonto = costoBase.multiply(descuentoPerc).divide(new java.math.BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            java.math.BigDecimal costoConDescuento = costoBase.subtract(descuentoMonto);
+            java.math.BigDecimal envioMonto = costoConDescuento.multiply(costoEnvioPerc).divide(new java.math.BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            java.math.BigDecimal costoFinal = costoConDescuento.add(envioMonto);
+
+            java.math.BigDecimal gananciaMonto = costoFinal.multiply(producto.getPorcentajeGanancia()).divide(new java.math.BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            producto.setPrecio(costoFinal.add(gananciaMonto));
+        }
     }
 }

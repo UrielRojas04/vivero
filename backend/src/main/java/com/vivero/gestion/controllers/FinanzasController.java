@@ -68,4 +68,20 @@ public class FinanzasController {
                 pageable);
         return ResponseEntity.ok(ventas);
     }
+
+    /**
+     * Listado detallado de COGS para el período (componentes de costo de cada producto vendido).
+     * Requiere permiso ADMIN_DB. Fechas en formato ISO (yyyy-MM-dd).
+     */
+    @GetMapping("/cogs-detalle")
+    @PreAuthorize("hasAuthority('ADMIN_DB')")
+    public ResponseEntity<java.util.List<com.vivero.gestion.dto.VentaDetalleResponseDTO>> listarDetalleCogs(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        LocalDate desdeEfectivo = desde != null ? desde : LocalDate.now().withDayOfMonth(1);
+        LocalDate hastaEfectivo = hasta != null ? hasta : LocalDate.now();
+        return ResponseEntity.ok(finanzasService.listarDetalleCogs(
+                desdeEfectivo.atStartOfDay(),
+                hastaEfectivo.atTime(LocalTime.MAX)));
+    }
 }

@@ -188,7 +188,10 @@ const Productos = () => {
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Planta</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Descripción</th>
                   {unidadNegocioActiva === '2' ? (
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Costo</th>
+                    <>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Costo</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">% Gan.</th>
+                    </>
                   ) : (
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Lote / Dueño</th>
                   )}
@@ -214,11 +217,18 @@ const Productos = () => {
                       </p>
                     </td>
                     {unidadNegocioActiva === '2' ? (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">
-                          ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
-                        </span>
-                      </td>
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-gray-900">
+                            ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                            {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}
+                          </span>
+                        </td>
+                      </>
                     ) : (
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">

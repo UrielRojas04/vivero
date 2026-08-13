@@ -6,8 +6,16 @@ export const finanzasApi = {
     return data;
   },
 
-  fetchVentasFinanzas: async (desde, hasta, q, page = 0, size = 10) => {
-    const { data } = await axiosInstance.get('/finanzas/ventas', { params: { desde, hasta, q, page, size } });
-    return data;
+  fetchVentasFinanzas: async (desde, hasta, q = '', page = 0, size = 10) => {
+    const params = new URLSearchParams({ desde, hasta, page, size });
+    if (q) params.append('q', q);
+    const response = await axiosInstance.get('/finanzas/ventas', { params });
+    return response.data;
+  },
+
+  fetchCogsDetalle: async (desde, hasta) => {
+    const params = new URLSearchParams({ desde, hasta });
+    const response = await axiosInstance.get('/finanzas/cogs-detalle', { params });
+    return response.data;
   }
 };

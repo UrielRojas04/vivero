@@ -26,6 +26,17 @@ public class VentaDetalle {
 
     private Integer cantidad;
     private BigDecimal precioUnitarioHistorico;
+    @Column(name = "costo_unitario_historico", precision = 12, scale = 2)
+    private BigDecimal costoUnitarioHistorico = BigDecimal.ZERO;
+
+    @Column(name = "costo_base_historico", precision = 12, scale = 2)
+    private BigDecimal costoBaseHistorico = BigDecimal.ZERO;
+
+    @Column(name = "descuento_porc_historico", precision = 5, scale = 2)
+    private BigDecimal descuentoPorcentajeHistorico = BigDecimal.ZERO;
+
+    @Column(name = "envio_porc_historico", precision = 5, scale = 2)
+    private BigDecimal envioPorcentajeHistorico = BigDecimal.ZERO;
 
     private BigDecimal subtotal;
 
@@ -44,6 +55,14 @@ public class VentaDetalle {
     public void setCantidad(Integer cantidad) { this.cantidad = cantidad; }
     public BigDecimal getPrecioUnitarioHistorico() { return precioUnitarioHistorico; }
     public void setPrecioUnitarioHistorico(BigDecimal precioUnitarioHistorico) { this.precioUnitarioHistorico = precioUnitarioHistorico; }
+    public BigDecimal getCostoUnitarioHistorico() { return costoUnitarioHistorico; }
+    public void setCostoUnitarioHistorico(BigDecimal costoUnitarioHistorico) { this.costoUnitarioHistorico = costoUnitarioHistorico; }
+    public BigDecimal getCostoBaseHistorico() { return costoBaseHistorico; }
+    public void setCostoBaseHistorico(BigDecimal costoBaseHistorico) { this.costoBaseHistorico = costoBaseHistorico; }
+    public BigDecimal getDescuentoPorcentajeHistorico() { return descuentoPorcentajeHistorico; }
+    public void setDescuentoPorcentajeHistorico(BigDecimal descuentoPorcentajeHistorico) { this.descuentoPorcentajeHistorico = descuentoPorcentajeHistorico; }
+    public BigDecimal getEnvioPorcentajeHistorico() { return envioPorcentajeHistorico; }
+    public void setEnvioPorcentajeHistorico(BigDecimal envioPorcentajeHistorico) { this.envioPorcentajeHistorico = envioPorcentajeHistorico; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
 }

@@ -12,6 +12,7 @@ import com.vivero.gestion.repositories.*;
 import com.vivero.gestion.services.BandejasService;
 import com.vivero.gestion.services.SseService;
 import com.vivero.gestion.services.VentaService;
+import com.vivero.gestion.services.MovimientoStockService;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,7 @@ public class VentaServiceImpl implements VentaService {
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
-    private final MovimientoStockRepository movimientoStockRepository;
+    private final MovimientoStockService movimientoStockService;
     private final CuentaCorrienteDineroRepository ccdRepository;
     private final BandejasService bandejasService;
     private final SseService sseService;
@@ -42,7 +43,7 @@ public class VentaServiceImpl implements VentaService {
                             ClienteRepository clienteRepository,
                             UsuarioRepository usuarioRepository,
                             ProductoRepository productoRepository,
-                            MovimientoStockRepository movimientoStockRepository,
+                            MovimientoStockService movimientoStockService,
                             CuentaCorrienteDineroRepository ccdRepository,
                             BandejasService bandejasService,
                             SseService sseService,
@@ -52,7 +53,7 @@ public class VentaServiceImpl implements VentaService {
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
-        this.movimientoStockRepository = movimientoStockRepository;
+        this.movimientoStockService = movimientoStockService;
         this.ccdRepository = ccdRepository;
         this.bandejasService = bandejasService;
         this.sseService = sseService;
@@ -105,25 +106,19 @@ public class VentaServiceImpl implements VentaService {
             productoRepository.save(producto); // actualiza stock
             sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(producto.getId(), producto.getStock()));
 
-            // 2. Crear movimiento de stock para la traza
-            MovimientoStock mov = new MovimientoStock();
-            mov.setProducto(producto);
-            mov.setCantidad(detReq.getCantidad());
-            mov.setTipo("OUT");
-            mov.setMotivo("Venta");
-            mov.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
-            mov.setUsuario(usuario);
-            if (unidadId != null) {
-                mov.setUnidadNegocio(venta.getUnidadNegocio());
-            }
-            movimientoStockRepository.save(mov);
+            // 2. Crear movimiento de stock para la traza (con costo congelado)
+            MovimientoStock mov = movimientoStockService.registrarMovimiento(producto, detReq.getCantidad(), TipoMovimientoStock.VENTA, usuario);
 
-            // 3. Crear detalle de venta (precio histórico copiado)
+            // 3. Crear detalle de venta (precio y costo histórico copiados)
             VentaDetalle detalle = new VentaDetalle();
             detalle.setProducto(producto);
             detalle.setCantidad(detReq.getCantidad());
             BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
             detalle.setPrecioUnitarioHistorico(precioHist);
+            detalle.setCostoUnitarioHistorico(mov.getCostoUnitario());
+            detalle.setCostoBaseHistorico(mov.getCostoBase());
+            detalle.setDescuentoPorcentajeHistorico(mov.getDescuentoPorcentaje());
+            detalle.setEnvioPorcentajeHistorico(mov.getEnvioPorcentaje());
             BigDecimal subtotalLine = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
             detalle.setSubtotal(subtotalLine);
             
@@ -275,6 +270,10 @@ public class VentaServiceImpl implements VentaService {
                 }
                 dDto.setCantidad(d.getCantidad());
                 dDto.setPrecioUnitarioHistorico(d.getPrecioUnitarioHistorico());
+                dDto.setCostoUnitarioHistorico(d.getCostoUnitarioHistorico());
+                dDto.setCostoBaseHistorico(d.getCostoBaseHistorico());
+                dDto.setDescuentoPorcentajeHistorico(d.getDescuentoPorcentajeHistorico());
+                dDto.setEnvioPorcentajeHistorico(d.getEnvioPorcentajeHistorico());
                 dDto.setSubtotal(d.getSubtotal());
                 return dDto;
             }).collect(Collectors.toList());

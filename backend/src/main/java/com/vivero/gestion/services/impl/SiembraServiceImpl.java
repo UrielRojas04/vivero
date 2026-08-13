@@ -124,8 +124,8 @@ public class SiembraServiceImpl implements SiembraService {
         MovimientoStock mov = new MovimientoStock();
         mov.setProducto(producto);
         mov.setCantidad(cantidadLograda);
-        mov.setTipo("IN");
-        mov.setMotivo("INGRESO_SIEMBRA LOTE " + siembra.getNumeroLote());
+        mov.setTipoMovimiento(com.vivero.gestion.models.TipoMovimientoStock.INGRESO);
+        mov.setCostoUnitario(producto.getCostoProducto() != null ? producto.getCostoProducto() : java.math.BigDecimal.ZERO);
         mov.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
         mov.setUsuario(usuario);
         movimientoStockRepository.save(mov);

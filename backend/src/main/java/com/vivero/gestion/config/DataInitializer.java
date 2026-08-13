@@ -7,7 +7,12 @@ import com.vivero.gestion.repositories.PermisoRepository;
 import com.vivero.gestion.repositories.RolRepository;
 import com.vivero.gestion.repositories.UsuarioRepository;
 import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.repositories.ProductoRepository;
+import com.vivero.gestion.repositories.MovimientoStockRepository;
+import com.vivero.gestion.services.MovimientoStockService;
 import com.vivero.gestion.models.UnidadNegocio;
+import com.vivero.gestion.models.Producto;
+import com.vivero.gestion.models.TipoMovimientoStock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +30,9 @@ public class DataInitializer implements CommandLineRunner {
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final UnidadNegocioRepository unidadNegocioRepository;
+    private final ProductoRepository productoRepository;
+    private final MovimientoStockRepository movimientoStockRepository;
+    private final MovimientoStockService movimientoStockService;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -32,11 +40,17 @@ public class DataInitializer implements CommandLineRunner {
                            RolRepository rolRepository, 
                            PermisoRepository permisoRepository,
                            UnidadNegocioRepository unidadNegocioRepository,
+                           ProductoRepository productoRepository,
+                           MovimientoStockRepository movimientoStockRepository,
+                           MovimientoStockService movimientoStockService,
                            PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
+        this.productoRepository = productoRepository;
+        this.movimientoStockRepository = movimientoStockRepository;
+        this.movimientoStockService = movimientoStockService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -100,6 +114,18 @@ public class DataInitializer implements CommandLineRunner {
         jefe.setUnidadesNegocio(negocios);
         
         usuarioRepository.save(jefe);    
+        
+        // 4. Inicializar Movimientos de Stock para productos existentes
+        if (movimientoStockRepository.count() == 0) {
+            java.util.List<Producto> productos = productoRepository.findAll();
+            for (Producto p : productos) {
+                if (p.getStock() != null && p.getStock() > 0) {
+                    movimientoStockService.registrarMovimiento(p, p.getStock(), TipoMovimientoStock.AJUSTE_INICIAL, jefe);
+                }
+            }
+            System.out.println("Se inicializaron movimientos de stock históricos.");
+        }
+
         System.out.println("Base de datos inicializada con roles y usuario jefe.");
     }
 

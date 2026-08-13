@@ -66,8 +66,8 @@ public class FinanzasServiceImpl implements FinanzasService {
         }
 
         if (unidadId != null && unidadId == 2L) {
-            BigDecimal sum = productoRepository.sumarCostoInventario(unidadId);
-            if (sum != null) gastosInsumos = gastosInsumos.add(sum);
+            BigDecimal cogs = ventaDetalleRepository.sumarCostoMercaderiaVendida(desde, hasta, unidadId);
+            if (cogs != null) gastosInsumos = gastosInsumos.add(cogs);
         }
 
         List<Gasto> gastos;
@@ -97,6 +97,7 @@ public class FinanzasServiceImpl implements FinanzasService {
         dto.setGananciaNeta(gananciaNeta);
         dto.setMargen(margen);
         dto.setChequesEnCartera(chequesEnCartera);
+        dto.setCostoMercaderiaVendida(gastosInsumos);
         return dto;
     }
 
@@ -136,5 +137,31 @@ public class FinanzasServiceImpl implements FinanzasService {
         }
         return gananciaNeta.multiply(BigDecimal.valueOf(100))
                 .divide(totalVentas, 2, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.vivero.gestion.dto.VentaDetalleResponseDTO> listarDetalleCogs(LocalDateTime desde, LocalDateTime hasta) {
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<com.vivero.gestion.models.VentaDetalle> detalles = (unidadId != null)
+                ? ventaDetalleRepository.findByVentaFechaBetweenAndVentaUnidadNegocioId(desde, hasta, unidadId)
+                : ventaDetalleRepository.findByVentaFechaBetween(desde, hasta);
+
+        return detalles.stream().map(d -> {
+            com.vivero.gestion.dto.VentaDetalleResponseDTO dDto = new com.vivero.gestion.dto.VentaDetalleResponseDTO();
+            dDto.setId(d.getId());
+            if (d.getProducto() != null) {
+                dDto.setProductoId(d.getProducto().getId());
+                dDto.setProductoNombre(d.getProducto().getNombre());
+            }
+            dDto.setCantidad(d.getCantidad());
+            dDto.setPrecioUnitarioHistorico(d.getPrecioUnitarioHistorico());
+            dDto.setCostoUnitarioHistorico(d.getCostoUnitarioHistorico());
+            dDto.setCostoBaseHistorico(d.getCostoBaseHistorico());
+            dDto.setDescuentoPorcentajeHistorico(d.getDescuentoPorcentajeHistorico());
+            dDto.setEnvioPorcentajeHistorico(d.getEnvioPorcentajeHistorico());
+            dDto.setSubtotal(d.getSubtotal());
+            return dDto;
+        }).collect(Collectors.toList());
     }
 }

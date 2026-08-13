@@ -13,6 +13,6 @@ import java.util.List;
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findAllByUnidadNegocioId(Long unidadNegocioId);
 
-    @Query("SELECT COALESCE(SUM( (p.costoProducto * (1 - COALESCE(p.descuentoProveedor, 0) / 100)) * (1 + COALESCE(p.unidadNegocio.costoEnvioPorcentaje, 0) / 100) * p.stock ), 0) FROM Producto p WHERE p.unidadNegocio.id = :unidadId")
+    @Query(value = "SELECT COALESCE(SUM(p.stock * COALESCE((SELECT m.costo_unitario FROM movimientos_stock m WHERE m.producto_id = p.id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1), 0)), 0) FROM productos p WHERE p.unidad_negocio_id = :unidadId AND p.deleted = false", nativeQuery = true)
     BigDecimal sumarCostoInventario(@Param("unidadId") Long unidadId);
 }

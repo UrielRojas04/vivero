@@ -50,6 +50,7 @@ const Finanzas = () => {
   const [showVentas, setShowVentas] = useState(false);
   const [showGastos, setShowGastos] = useState(false);
   const [showCheques, setShowCheques] = useState(false);
+  const [showCogsDetalle, setShowCogsDetalle] = useState(false);
 
   // Search and Pagination
   const [page, setPage] = useState(0);
@@ -104,6 +105,12 @@ const Finanzas = () => {
     queryFn: () => getGastos({ q: debouncedSearchGastos, page: gastosPage, size: 5 }),
     placeholderData: keepPreviousData,
     enabled: showGastos,
+  });
+
+  const cogsDetalleQuery = useQuery({
+    queryKey: ['finanzas', 'cogs', { desde, hasta }],
+    queryFn: () => finanzasApi.fetchCogsDetalle(desde, hasta),
+    enabled: showGastos && unidadNegocioActiva === '2',
   });
 
   const productosQuery = useQuery({
@@ -425,12 +432,50 @@ const Finanzas = () => {
                   <div className="py-8 flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
                   </div>
-                ) : gastos.length === 0 ? (
+                ) : gastos.length === 0 && !(resumen?.costoMercaderiaVendida > 0 && page === 0 && searchGastos === '') ? (
                   <div className="py-8 text-center text-sm text-gray-500">
                     No hay gastos o costos que coincidan con la búsqueda.
                   </div>
                 ) : (
                   <ul className="space-y-3">
+                    {/* Costos de Mercadería individuales (en la primera página de gastos, si no hay búsqueda) */}
+                    {unidadNegocioActiva === '2' && gastosPage === 0 && searchGastos === '' && cogsDetalleQuery.data?.map(d => (
+                      <li key={`cogs-${d.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 transition-colors shadow-sm gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                            {d.cantidad}x {d.productoNombre}
+                            <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200">AUTOMÁTICO</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Base: {formatMoney(d.costoBaseHistorico)} 
+                            {d.descuentoPorcentajeHistorico > 0 ? ` - Desc: ${d.descuentoPorcentajeHistorico}%` : ''} 
+                            {d.envioPorcentajeHistorico > 0 ? ` + Envío: ${d.envioPorcentajeHistorico}%` : ''} 
+                            = {formatMoney(d.costoUnitarioHistorico)} c/u
+                          </p>
+                        </div>
+                        <div className="flex items-center sm:justify-end">
+                          <span className="font-bold text-red-600">{formatMoney(d.costoUnitarioHistorico * d.cantidad)}</span>
+                        </div>
+                      </li>
+                    ))}
+                    
+                    {/* Fila sintética para Costo de Producción en Vivero */}
+                    {unidadNegocioActiva === '1' && resumen?.costoMercaderiaVendida > 0 && gastosPage === 0 && searchGastos === '' && (
+                      <li className="flex items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/50 hover:border-blue-200 transition-colors shadow-sm">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 flex items-center">
+                            Costo de Producción (Insumos)
+                            <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200">AUTOMÁTICO</span>
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Costo total de insumos registrados en este período.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="font-bold text-red-600">{formatMoney(resumen.costoMercaderiaVendida)}</span>
+                        </div>
+                      </li>
+                    )}
                     {gastos.map(gasto => (
                       <li key={gasto.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm">
                         <div>
@@ -470,72 +515,12 @@ const Finanzas = () => {
                 )}
               </div>
               
-              {/* Costos de Inventario (Solo Herramientas) */}
-              {unidadNegocioActiva === '2' && productos.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-sm font-bold text-gray-900 mb-3 border-b border-gray-100 pb-2">Costos de Inventario (Productos)</h3>
-                  <ul className="space-y-3">
-                    {productos
-                      .filter(p => p.nombre.toLowerCase().includes(searchGastos.toLowerCase()))
-                      .map(p => {
-                      const costoBase = p.costoProducto || 0;
-                      const descProv = p.descuentoProveedor || 0;
-                      const costoReal = costoBase * (1 - descProv / 100);
-                      const herrConfig = negociosQuery.data?.find(n => n.id === 2);
-                      const costoEnvio = herrConfig?.costoEnvioPorcentaje || 0;
-                      const costoFinal = costoReal * (1 + costoEnvio / 100);
-                      
-                      const costoTotal = costoFinal * (p.stock || 0);
-                      
-                      if (costoTotal <= 0) return null;
-                      return (
-                        <li key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900 flex items-center">
-                              {p.nombre}
-                              <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">PRODUCTO</span>
-                            </p>
-                            <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Stock</span>
-                                <span className="text-xs font-semibold text-gray-700">{p.stock}</span>
-                              </div>
-                              <div className="w-px h-3 bg-gray-200"></div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Base</span>
-                                <span className="text-xs font-semibold text-gray-700">{formatMoney(costoBase)}</span>
-                              </div>
-                              
-                              {(descProv > 0 || costoEnvio > 0) && <div className="w-px h-3 bg-gray-200"></div>}
-                              
-                              {descProv > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Desc.</span>
-                                  <span className="text-xs font-semibold text-gray-700">-{descProv}%</span>
-                                </div>
-                              )}
-                              
-                              {costoEnvio > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Envío</span>
-                                  <span className="text-xs font-semibold text-gray-700">+{costoEnvio}%</span>
-                                </div>
-                              )}
-                              
-                              <div className="w-px h-3 bg-gray-200"></div>
-                              <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/60">
-                                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Unitario</span>
-                                <span className="text-xs font-bold text-gray-900">{formatMoney(costoFinal)}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className="font-bold text-red-600">{formatMoney(costoTotal)}</span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+              {/* Costo de Mercadería Vendida (Info) */}
+              {unidadNegocioActiva === '2' && (
+                <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Nota:</strong> En el negocio de Herramientas, el indicador de <strong>Total Costos</strong> incluye el <strong>Costo de Mercadería Vendida</strong> de las ventas realizadas en este período, calculado en base al costo histórico al momento de cada venta.
+                  </p>
                 </div>
               )}
               

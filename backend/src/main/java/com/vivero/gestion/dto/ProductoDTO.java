@@ -12,7 +12,9 @@ public class ProductoDTO {
     private String lote;
     private String dueno;
     private BigDecimal costoProducto;
+    private BigDecimal porcentajeGanancia;
     private BigDecimal descuentoProveedor;
+    private BigDecimal costoUnitarioHistorico;
 
     public ProductoDTO() {}
 
@@ -51,6 +53,12 @@ public class ProductoDTO {
     public BigDecimal getCostoProducto() { return costoProducto; }
     public void setCostoProducto(BigDecimal costoProducto) { this.costoProducto = costoProducto; }
 
+    public BigDecimal getPorcentajeGanancia() { return porcentajeGanancia; }
+    public void setPorcentajeGanancia(BigDecimal porcentajeGanancia) { this.porcentajeGanancia = porcentajeGanancia; }
+
     public BigDecimal getDescuentoProveedor() { return descuentoProveedor; }
     public void setDescuentoProveedor(BigDecimal descuentoProveedor) { this.descuentoProveedor = descuentoProveedor; }
+
+    public BigDecimal getCostoUnitarioHistorico() { return costoUnitarioHistorico; }
+    public void setCostoUnitarioHistorico(BigDecimal costoUnitarioHistorico) { this.costoUnitarioHistorico = costoUnitarioHistorico; }
 }

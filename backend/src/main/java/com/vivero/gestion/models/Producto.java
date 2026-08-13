@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.Formula;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
 
@@ -48,6 +49,9 @@ public class Producto {
     @Column(precision = 10, scale = 2)
     private BigDecimal costoProducto;
 
+    @Column(name = "porcentaje_ganancia")
+    private BigDecimal porcentajeGanancia;
+
     @Column(precision = 5, scale = 2)
     private BigDecimal descuentoProveedor = BigDecimal.ZERO;
 
@@ -55,6 +59,8 @@ public class Producto {
     @JoinColumn(name = "unidad_negocio_id")
     private UnidadNegocio unidadNegocio;
 
+    @Formula("(SELECT COALESCE(m.costo_unitario, p.costo_producto, 0) FROM movimientos_stock m LEFT JOIN productos p ON p.id = m.producto_id WHERE m.producto_id = id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1)")
+    private BigDecimal costoUnitarioHistorico;
 
     public Producto() {}
 
@@ -96,9 +102,15 @@ public class Producto {
     public BigDecimal getCostoProducto() { return costoProducto; }
     public void setCostoProducto(BigDecimal costoProducto) { this.costoProducto = costoProducto; }
     
+    public BigDecimal getPorcentajeGanancia() { return porcentajeGanancia; }
+    public void setPorcentajeGanancia(BigDecimal porcentajeGanancia) { this.porcentajeGanancia = porcentajeGanancia; }
+    
     public BigDecimal getDescuentoProveedor() { return descuentoProveedor; }
     public void setDescuentoProveedor(BigDecimal descuentoProveedor) { this.descuentoProveedor = descuentoProveedor; }
     
     public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
     public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
+    
+    public BigDecimal getCostoUnitarioHistorico() { return costoUnitarioHistorico; }
+    // No setter for @Formula field
 }
