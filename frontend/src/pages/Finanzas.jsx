@@ -193,6 +193,15 @@ const Finanzas = () => {
   const gastosTotalPages = gastosQuery.data?.totalPages || 0;
   const chequesEnCarteraList = chequesCarteraQuery.data?.content?.filter(c => c.estado === 'EN_CARTERA') || [];
 
+  const filteredCogs = (cogsDetalleQuery.data || []).filter(d => 
+    !searchGastos || 
+    (d.productoNombre && d.productoNombre.toLowerCase().includes(searchGastos.toLowerCase()))
+  );
+
+  const hasGastosToShow = gastos.length > 0 || 
+    (unidadNegocioActiva === '2' && gastosPage === 0 && filteredCogs.length > 0) ||
+    (unidadNegocioActiva === '1' && gastosPage === 0 && !searchGastos && resumen?.costoMercaderiaVendida > 0);
+
   const loadingResumen = resumenQuery.isPending;
   const loadingVentas = ventasQuery.isFetching;
   const fetchingVentas = ventasQuery.isFetching;
@@ -432,14 +441,14 @@ const Finanzas = () => {
                   <div className="py-8 flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
                   </div>
-                ) : gastos.length === 0 && !(resumen?.costoMercaderiaVendida > 0 && page === 0 && searchGastos === '') ? (
+                ) : !hasGastosToShow ? (
                   <div className="py-8 text-center text-sm text-gray-500">
                     No hay gastos o costos que coincidan con la búsqueda.
                   </div>
                 ) : (
                   <ul className="space-y-3">
-                    {/* Costos de Mercadería individuales (en la primera página de gastos, si no hay búsqueda) */}
-                    {unidadNegocioActiva === '2' && gastosPage === 0 && searchGastos === '' && cogsDetalleQuery.data?.map(d => (
+                    {/* Costos de Mercadería individuales (en la primera página de gastos) */}
+                    {unidadNegocioActiva === '2' && gastosPage === 0 && filteredCogs.map(d => (
                       <li key={`cogs-${d.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 transition-colors shadow-sm gap-2">
                         <div>
                           <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
@@ -603,6 +612,9 @@ const Finanzas = () => {
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
+                    {unidadNegocioActiva === '2' && (
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Ganancia Neta</th>
+                    )}
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado de Pago</th>
                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método de Pago</th>
                   </tr>
@@ -618,6 +630,11 @@ const Finanzas = () => {
                       <td className="px-6 py-4 text-right font-bold text-emerald-700">
                         {formatMoney(venta.totalFinal)}
                       </td>
+                      {unidadNegocioActiva === '2' && (
+                        <td className="px-6 py-4 text-right font-bold text-blue-600">
+                          {formatMoney(venta.gananciaNeta)}
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
                           {venta.estadoDePago}

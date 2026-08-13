@@ -125,7 +125,8 @@ public class FinanzasServiceImpl implements FinanzasService {
                         v.getClienteNombre(),
                         v.getTotalFinal(),
                         v.getEstadoDePago(),
-                        metodosDePago.get(v.getId())))
+                        metodosDePago.get(v.getId()),
+                        v.getGananciaNeta()))
                 .collect(Collectors.toList());
 
         return new PageImpl<>(contenido, ventas.getPageable(), ventas.getTotalElements());
@@ -147,7 +148,9 @@ public class FinanzasServiceImpl implements FinanzasService {
                 ? ventaDetalleRepository.findByVentaFechaBetweenAndVentaUnidadNegocioId(desde, hasta, unidadId)
                 : ventaDetalleRepository.findByVentaFechaBetween(desde, hasta);
 
-        return detalles.stream().map(d -> {
+        return detalles.stream()
+                .sorted((d1, d2) -> d2.getVenta().getFecha().compareTo(d1.getVenta().getFecha()))
+                .map(d -> {
             com.vivero.gestion.dto.VentaDetalleResponseDTO dDto = new com.vivero.gestion.dto.VentaDetalleResponseDTO();
             dDto.setId(d.getId());
             if (d.getProducto() != null) {

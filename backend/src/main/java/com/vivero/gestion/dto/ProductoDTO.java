@@ -9,6 +9,8 @@ public class ProductoDTO {
     private String descripcion;
     private BigDecimal precio;
     private Integer stock;
+    private Long marcaId;
+    private String marcaNombre;
     private String lote;
     private String dueno;
     private BigDecimal costoProducto;
@@ -43,6 +45,12 @@ public class ProductoDTO {
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
+
+    public Long getMarcaId() { return marcaId; }
+    public void setMarcaId(Long marcaId) { this.marcaId = marcaId; }
+
+    public String getMarcaNombre() { return marcaNombre; }
+    public void setMarcaNombre(String marcaNombre) { this.marcaNombre = marcaNombre; }
 
     public String getLote() { return lote; }
     public void setLote(String lote) { this.lote = lote; }

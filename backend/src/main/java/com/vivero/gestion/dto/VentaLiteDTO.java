@@ -12,16 +12,17 @@ public class VentaLiteDTO {
     private BigDecimal totalFinal;
     private String estadoDePago;
     private String metodoPago;
+    private BigDecimal gananciaNeta;
 
     public VentaLiteDTO() {}
 
     public VentaLiteDTO(Long id, Long nroVenta, LocalDateTime fecha, String clienteNombre,
-                        BigDecimal totalFinal, String estadoDePago) {
-        this(id, nroVenta, fecha, clienteNombre, totalFinal, estadoDePago, null);
+                        BigDecimal totalFinal, String estadoDePago, BigDecimal gananciaNeta) {
+        this(id, nroVenta, fecha, clienteNombre, totalFinal, estadoDePago, null, gananciaNeta);
     }
 
     public VentaLiteDTO(Long id, Long nroVenta, LocalDateTime fecha, String clienteNombre,
-                        BigDecimal totalFinal, String estadoDePago, String metodoPago) {
+                        BigDecimal totalFinal, String estadoDePago, String metodoPago, BigDecimal gananciaNeta) {
         this.id = id;
         this.nroVenta = nroVenta;
         this.fecha = fecha;
@@ -29,6 +30,7 @@ public class VentaLiteDTO {
         this.totalFinal = totalFinal;
         this.estadoDePago = estadoDePago;
         this.metodoPago = metodoPago;
+        this.gananciaNeta = gananciaNeta;
     }
 
     public Long getId() { return id; }
@@ -45,4 +47,6 @@ public class VentaLiteDTO {
     public void setEstadoDePago(String estadoDePago) { this.estadoDePago = estadoDePago; }
     public String getMetodoPago() { return metodoPago; }
     public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+    public BigDecimal getGananciaNeta() { return gananciaNeta; }
+    public void setGananciaNeta(BigDecimal gananciaNeta) { this.gananciaNeta = gananciaNeta; }
 }

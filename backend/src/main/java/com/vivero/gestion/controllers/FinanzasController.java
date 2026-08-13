@@ -60,7 +60,7 @@ public class FinanzasController {
             @RequestParam(defaultValue = "10") int size) {
         LocalDate desdeEfectivo = desde != null ? desde : LocalDate.now().withDayOfMonth(1);
         LocalDate hastaEfectivo = hasta != null ? hasta : LocalDate.now();
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(Sort.Direction.DESC, "fecha"));
         Page<VentaLiteDTO> ventas = finanzasService.listarVentas(
                 desdeEfectivo.atStartOfDay(),
                 hastaEfectivo.atTime(LocalTime.MAX),

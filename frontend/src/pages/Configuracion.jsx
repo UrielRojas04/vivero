@@ -4,6 +4,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import VariedadesPlantas from './VariedadesPlantas';
 import VariedadesBandejas from './VariedadesBandejas';
 import ConfiguracionHerramientas from '../components/ConfiguracionHerramientas';
+import ConfiguracionMarcas from '../components/ConfiguracionMarcas';
+import { Tag } from 'lucide-react';
 
 export default function Configuracion() {
   const { hasPermission, unidadNegocioActiva } = useAuthStore();
@@ -102,6 +104,32 @@ export default function Configuracion() {
                 </div>
               </button>
             )}
+            {unidadNegocioActiva === '2' && (
+              <button
+                onClick={() => setActiveSection('marcas')}
+                className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+                  activeSection === 'marcas' 
+                    ? 'border-emerald-500 ring-2 ring-emerald-500/20' 
+                    : 'border-gray-100 hover:border-emerald-500 hover:shadow-md'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  activeSection === 'marcas' ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
+                }`}>
+                  <Tag className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                    activeSection === 'marcas' ? 'text-emerald-700' : 'text-gray-900 group-hover:text-emerald-700'
+                  }`}>
+                    Gestión de Marcas
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Catálogo de marcas para filtros y productos
+                  </p>
+                </div>
+              </button>
+            )}
           </>
         )}
       </div>
@@ -111,6 +139,7 @@ export default function Configuracion() {
           {activeSection === 'plantas' && <VariedadesPlantas />}
           {activeSection === 'bandejas' && <VariedadesBandejas />}
           {activeSection === 'herramientas' && <ConfiguracionHerramientas />}
+          {activeSection === 'marcas' && <ConfiguracionMarcas />}
         </div>
       )}
     </div>

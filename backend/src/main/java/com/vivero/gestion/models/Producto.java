@@ -37,6 +37,10 @@ public class Producto {
     @Column(nullable = false)
     private Integer stock = 0;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "marca_id")
+    private Marca marca;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
@@ -89,6 +93,9 @@ public class Producto {
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
+
+    public Marca getMarca() { return marca; }
+    public void setMarca(Marca marca) { this.marca = marca; }
 
     public boolean isDeleted() { return deleted; }
     public void setDeleted(boolean deleted) { this.deleted = deleted; }

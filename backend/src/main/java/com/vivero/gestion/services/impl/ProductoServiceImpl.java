@@ -9,7 +9,9 @@ import com.vivero.gestion.services.MovimientoStockService;
 import com.vivero.gestion.models.TipoMovimientoStock;
 import com.vivero.gestion.repositories.UsuarioRepository;
 import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.repositories.MarcaRepository;
 import com.vivero.gestion.models.UnidadNegocio;
+import com.vivero.gestion.models.Marca;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,18 +28,21 @@ public class ProductoServiceImpl implements ProductoService {
     private final SseService sseService;
     private final MovimientoStockService movimientoStockService;
     private final UsuarioRepository usuarioRepository;
+    private final MarcaRepository marcaRepository;
 
     @Autowired
     public ProductoServiceImpl(ProductoRepository productoRepository, 
                                UnidadNegocioRepository unidadNegocioRepository, 
                                SseService sseService,
                                MovimientoStockService movimientoStockService,
-                               UsuarioRepository usuarioRepository) {
+                               UsuarioRepository usuarioRepository,
+                               MarcaRepository marcaRepository) {
         this.productoRepository = productoRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
         this.sseService = sseService;
         this.movimientoStockService = movimientoStockService;
         this.usuarioRepository = usuarioRepository;
+        this.marcaRepository = marcaRepository;
     }
 
     @Override
@@ -47,6 +52,13 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
+        
+        if (dto.getMarcaId() != null) {
+            Marca marca = marcaRepository.findById(dto.getMarcaId()).orElse(null);
+            producto.setMarca(marca);
+        } else {
+            producto.setMarca(null);
+        }
         producto.setCostoProducto(dto.getCostoProducto());
         producto.setDescuentoProveedor(dto.getDescuentoProveedor() != null ? dto.getDescuentoProveedor() : java.math.BigDecimal.ZERO);
         producto.setPorcentajeGanancia(dto.getPorcentajeGanancia());
@@ -110,6 +122,13 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
+        
+        if (dto.getMarcaId() != null) {
+            Marca marca = marcaRepository.findById(dto.getMarcaId()).orElse(null);
+            producto.setMarca(marca);
+        } else {
+            producto.setMarca(null);
+        }
         if (dto.getCostoProducto() != null) producto.setCostoProducto(dto.getCostoProducto());
         if (dto.getDescuentoProveedor() != null) producto.setDescuentoProveedor(dto.getDescuentoProveedor());
         if (dto.getPorcentajeGanancia() != null) producto.setPorcentajeGanancia(dto.getPorcentajeGanancia());
@@ -158,6 +177,10 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setNombre(producto.getNombre());
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecio(producto.getPrecio());
+        if (producto.getMarca() != null) {
+            dto.setMarcaId(producto.getMarca().getId());
+            dto.setMarcaNombre(producto.getMarca().getNombre());
+        }
         dto.setCostoProducto(producto.getCostoProducto());
         dto.setDescuentoProveedor(producto.getDescuentoProveedor());
         dto.setPorcentajeGanancia(producto.getPorcentajeGanancia());

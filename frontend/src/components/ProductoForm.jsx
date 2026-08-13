@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Tag } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
 import { useAuthStore } from '../store/useAuthStore';
 import { useQuery } from '@tanstack/react-query';
 import { negociosApi } from '../api/negocios.api';
+import { marcasApi } from '../api/marcas.api';
 
 const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const { unidadNegocioActiva } = useAuthStore();
@@ -26,7 +27,14 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const [stock, setStock] = useState('');
   const [lote, setLote] = useState('');
   const [dueno, setDueno] = useState('');
+  const [marcaId, setMarcaId] = useState('');
   const [errors, setErrors] = useState({});
+
+  const { data: marcas = [] } = useQuery({
+    queryKey: ['marcas'],
+    queryFn: () => marcasApi.getAll(),
+    enabled: isOpen && unidadNegocioActiva === '2',
+  });
 
   useEffect(() => {
     if (producto) {
@@ -39,6 +47,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setStock(producto.stock || '');
       setLote(producto.lote || '');
       setDueno(producto.dueno || '');
+      setMarcaId(producto.marcaId ? producto.marcaId.toString() : '');
     } else {
       setNombre('');
       setDescripcion('');
@@ -49,6 +58,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setStock('');
       setLote('');
       setDueno('');
+      setMarcaId('');
     }
     setErrors({});
   }, [producto, isOpen]);
@@ -107,7 +117,8 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         descuentoProveedor: descuentoProveedor ? parseFloat(descuentoProveedor) : null,
         stock: parseInt(stock, 10),
         lote: lote.trim() || null,
-        dueno: dueno.trim() || null
+        dueno: dueno.trim() || null,
+        marcaId: marcaId ? parseInt(marcaId, 10) : null
       });
     }
   };
@@ -331,6 +342,26 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                   placeholder="Dueño del lote"
                 />
               </div>
+            </div>
+          )}
+          
+          {unidadNegocioActiva === '2' && (
+            <div>
+              <label htmlFor="marcaId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Tag className="w-3 h-3 text-emerald-600" />
+                Marca (Opcional)
+              </label>
+              <select
+                id="marcaId"
+                value={marcaId}
+                onChange={(e) => setMarcaId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
+              >
+                <option value="">-- Sin Marca --</option>
+                {marcas.map(m => (
+                  <option key={m.id} value={m.id}>{m.nombre}</option>
+                ))}
+              </select>
             </div>
           )}
 

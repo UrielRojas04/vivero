@@ -14,6 +14,7 @@ const Productos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMarca, setSelectedMarca] = useState('Todas');
   
   const liveStocks = useStockStore(state => state.liveStocks);
 
@@ -89,10 +90,23 @@ const Productos = () => {
     }
   };
 
-  const filteredProductos = productos.filter((p) =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const marcasDisponibles = Array.from(new Set(
+    productos
+      .filter(p => p.marcaNombre && p.marcaNombre.trim() !== '')
+      .map(p => p.marcaNombre.trim().toUpperCase())
+  )).sort();
+
+  const filteredProductos = productos.filter((p) => {
+    const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    if (unidadNegocioActiva === '2' && selectedMarca !== 'Todas') {
+      const pMarca = p.marcaNombre ? p.marcaNombre.trim().toUpperCase() : '';
+      return matchSearch && pMarca === selectedMarca;
+    }
+
+    return matchSearch;
+  });
 
   return (
     <div className="space-y-6">
@@ -133,10 +147,39 @@ const Productos = () => {
           />
         </div>
 
-        <div className="text-sm text-gray-500 font-medium">
-          Total: <span className="text-gray-900 font-semibold">{filteredProductos.length}</span> plantas
+        <div className="text-sm text-gray-500 font-medium whitespace-nowrap">
+          Total: <span className="text-gray-900 font-semibold">{filteredProductos.length}</span> {unidadNegocioActiva === '2' ? 'herramientas' : 'plantas'}
         </div>
       </div>
+
+      {/* Marcas Tabs (solo Herramientas) */}
+      {unidadNegocioActiva === '2' && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          <button
+            onClick={() => setSelectedMarca('Todas')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+              selectedMarca === 'Todas' 
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' 
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            Todas las Marcas
+          </button>
+          {marcasDisponibles.map(marca => (
+            <button
+              key={marca}
+              onClick={() => setSelectedMarca(marca)}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+                selectedMarca === marca
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              {marca}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Main Content Area */}
       {error && (
@@ -209,6 +252,11 @@ const Productos = () => {
                           <Leaf className="w-5 h-5" />
                         </div>
                         <span className="font-semibold text-gray-900 text-sm">{producto.nombre}</span>
+                        {unidadNegocioActiva === '2' && producto.marcaNombre && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-1">
+                            {producto.marcaNombre.toUpperCase()}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">

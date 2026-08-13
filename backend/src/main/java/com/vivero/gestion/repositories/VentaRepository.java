@@ -24,7 +24,9 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query("""
             SELECT new com.vivero.gestion.dto.VentaLiteDTO(
-                v.id, v.id, v.fecha, COALESCE(c.nombreRazonSocial, '(eliminado)'), v.totalFinal, v.estadoPago)
+                v.id, v.id, v.fecha, COALESCE(c.nombreRazonSocial, '(eliminado)'), v.totalFinal, v.estadoPago,
+                (SELECT COALESCE(SUM((d.precioUnitarioHistorico - d.costoUnitarioHistorico) * d.cantidad), 0) FROM VentaDetalle d WHERE d.venta.id = v.id)
+            )
             FROM Venta v LEFT JOIN v.cliente c
             WHERE v.fecha BETWEEN :desde AND :hasta
               AND v.unidadNegocio.id = :unidadId
