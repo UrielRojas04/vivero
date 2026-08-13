@@ -19,3 +19,10 @@ El sistema SHALL actualizar el campo `stockActual` del producto de manera transa
 - **WHEN** se descuentan 5 unidades de un producto en una venta
 - **THEN** el `stockActual` del producto disminuye en 5 de forma atómica junto a la creación del MovimientoStock, y se despacha un evento SSE con el nuevo stock hacia el frontend.
 
+### Requirement: Recepción de Stock
+El sistema SHALL permitir ingresar stock a los productos del catálogo mediante diferentes mecanismos.
+
+#### Scenario: Ingreso desde Siembra finalizada
+- **WHEN** el usuario procesa la finalización de un lote de siembra
+- **THEN** el stock del producto seleccionado se incrementa de acuerdo a la cantidad cosechada de la siembra
+- **AND** se registra un movimiento de stock de tipo `INGRESO_SIEMBRA` con referencia al lote de la siembra

@@ -1,11 +1,4 @@
-## Requirements
-
-### Requirement: Movimientos inmutables de stock
-El sistema SHALL generar un registro de MovimientoStock automático tras cada venta.
-
-#### Scenario: Venta generada
-- **WHEN** se registra una venta nueva
-- **THEN** el sistema genera en la misma transacción un MovimientoStock de tipo OUT y motivo "Venta" por cada ítem vendido.
+## ADDED Requirements
 
 ### Requirement: Historial Inmutable de Movimientos de Stock
 The system SHALL log any stock change (in, out, sale, adjustment) into `MovimientoStock`, persisting the unit cost calculation (base + shipping - discount) frozen at the exact time of the operation.
