@@ -82,9 +82,10 @@ const FormattedNumberInput = ({
     const rawNumber = parseRawNumber(inputValue);
 
     // Formatear para mostrar
-    // Si el usuario está tipeando una coma, no queremos que formatValue se la coma.
-    if (inputValue.endsWith(',') || inputValue.endsWith('.')) {
-      // Reemplazamos punto por coma si tipeó punto
+    // Si el usuario está tipeando una coma, punto, o termina en cero después de la coma,
+    // no queremos que formatValue se lo coma (ej. "15,0" o "15,50")
+    if (inputValue.match(/[,.][\d]*0$/) || inputValue.endsWith(',') || inputValue.endsWith('.')) {
+      // Reemplazamos punto por coma para mantener estándar local
       const safeInput = inputValue.replace(/\./g, ',');
       setDisplayValue(safeInput);
       if (onChange && rawNumber !== null) onChange(rawNumber);
@@ -108,6 +109,7 @@ const FormattedNumberInput = ({
   return (
     <input
       type="text"
+      inputMode="decimal"
       id={id}
       value={displayValue}
       onChange={handleChange}

@@ -3,7 +3,7 @@ import api from '../api/axios';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { Lock } from 'lucide-react';
+import { Lock, Edit2, Trash2, UserCircle, Shield } from 'lucide-react';
 
 export default function UsuariosAdmin() {
     const [usuarios, setUsuarios] = useState([]);
@@ -187,7 +187,7 @@ export default function UsuariosAdmin() {
     if (loading) return <div className="p-4 text-gray-500">Cargando...</div>;
 
     return (
-        <div className="p-6">
+        <div className="p-4 sm:p-6">  
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Administración</h1>
                 <button 
@@ -214,117 +214,223 @@ export default function UsuariosAdmin() {
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {activeTab === 'usuarios' && (
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                                <th className="p-4 font-semibold border-b">ID</th>
-                                <th className="p-4 font-semibold border-b">Usuario</th>
-                                <th className="p-4 font-semibold border-b">Accesos</th>
-                                <th className="p-4 font-semibold border-b text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {usuarios.map(u => (
-                                <tr key={u.id} className="hover:bg-gray-50/50">
-                                    <td className="p-4 text-gray-500">#{u.id}</td>
-                                    <td className="p-4 font-medium text-gray-800">{u.username}</td>
-                                    <td className="p-4">
-                                        {!u.roles || u.roles.length === 0 ? (
-                                            <span className="text-gray-400 italic text-sm">Sin roles asignados</span>
-                                        ) : (
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {u.roles.map((r, idx) => (
-                                                    <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200">
-                                                        {r.nombre}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
-                                            <span className="text-gray-400 italic text-sm" title="Este usuario está protegido y no se puede editar ni eliminar">
-                                                Usuario protegido
-                                            </span>
-                                        ) : (
-                                            <>
-                                                <button onClick={() => openUserModal(u)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
-                                                <button
-                                                    onClick={() => askConfirm({
-                                                        title: 'Eliminar Usuario',
-                                                        message: '¿Seguro que desea eliminar este usuario?',
-                                                        variant: 'danger',
-                                                        confirmLabel: 'Eliminar',
-                                                        onConfirm: () => handleDeleteUser(u.id),
-                                                    })}
-                                                    className="text-red-600 hover:text-red-800 font-medium cursor-pointer">Eliminar</button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+            {/* ===== TAB: USUARIOS ===== */}
+            {activeTab === 'usuarios' && (
+              <div className="space-y-3">
+                {/* MOBILE: Cards */}
+                <div className="grid grid-cols-1 gap-3 sm:hidden">
+                  {usuarios.map(u => (
+                    <div key={u.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center shrink-0">
+                            <UserCircle className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-base">{u.username}</h3>
+                            <span className="text-xs text-gray-400">#{u.id}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {!u.roles || u.roles.length === 0 ? (
+                          <span className="text-gray-400 italic text-sm">Sin roles asignados</span>
+                        ) : u.roles.map((r, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200">{r.nombre}</span>
+                        ))}
+                      </div>
+                      {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
+                        <span className="text-gray-400 italic text-sm text-center py-1">Usuario protegido</span>
+                      ) : (
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => openUserModal(u)}
+                            className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            <Edit2 className="w-4 h-4" /> Editar
+                          </button>
+                          <button
+                            onClick={() => askConfirm({
+                              title: 'Eliminar Usuario',
+                              message: '¿Seguro que desea eliminar este usuario?',
+                              variant: 'danger',
+                              confirmLabel: 'Eliminar',
+                              onConfirm: () => handleDeleteUser(u.id),
+                            })}
+                            className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" /> Eliminar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-                {activeTab === 'roles' && (
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                                <th className="p-4 font-semibold border-b">ID</th>
-                                <th className="p-4 font-semibold border-b">Nombre del Rol</th>
-                                <th className="p-4 font-semibold border-b">Permisos Asignados</th>
-                                <th className="p-4 font-semibold border-b text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {roles.map(r => (
-                                <tr key={r.id} className="hover:bg-gray-50/50">
-                                    <td className="p-4 text-gray-500">#{r.id}</td>
-                                    <td className="p-4 font-medium text-gray-800 flex items-center space-x-2">
-                                        <span>{r.nombre}</span>
-                                        {r.enUso && (
-                                            <span className="flex items-center text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200" title="Este rol está asignado a uno o más usuarios">
-                                                <Lock size={12} className="mr-1" />
-                                                En uso
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {(r.permisos || []).map(p => (
-                                                <span key={p.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded border border-gray-200">
-                                                    {p.nombre}
-                                                </span>
-                                            ))}
-                                            {(!r.permisos || r.permisos.length === 0) && <span className="text-gray-400 italic text-sm">Sin permisos</span>}
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <button onClick={() => openRolModal(r)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
-                                        <button 
-                                            onClick={() => askConfirm({
-                                                title: 'Eliminar Rol',
-                                                message: '¿Seguro que desea eliminar este rol? Se desasignará de los usuarios.',
-                                                variant: 'danger',
-                                                confirmLabel: 'Eliminar',
-                                                onConfirm: () => handleDeleteRol(r.id),
-                                            })} 
-                                            disabled={r.enUso}
-                                            className={`font-medium cursor-pointer ${r.enUso ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
-                                            title={r.enUso ? 'No se puede eliminar un rol en uso' : 'Eliminar rol'}
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+                {/* DESKTOP: Table */}
+                <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
+                        <th className="p-4 font-semibold border-b">ID</th>
+                        <th className="p-4 font-semibold border-b">Usuario</th>
+                        <th className="p-4 font-semibold border-b">Accesos</th>
+                        <th className="p-4 font-semibold border-b text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {usuarios.map(u => (
+                        <tr key={u.id} className="hover:bg-gray-50/50">
+                          <td className="p-4 text-gray-500">#{u.id}</td>
+                          <td className="p-4 font-medium text-gray-800">{u.username}</td>
+                          <td className="p-4">
+                            {!u.roles || u.roles.length === 0 ? (
+                              <span className="text-gray-400 italic text-sm">Sin roles asignados</span>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {u.roles.map((r, idx) => (
+                                  <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200">{r.nombre}</span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 text-right">
+                            {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
+                              <span className="text-gray-400 italic text-sm">Usuario protegido</span>
+                            ) : (
+                              <>
+                                <button onClick={() => openUserModal(u)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
+                                <button
+                                  onClick={() => askConfirm({
+                                    title: 'Eliminar Usuario',
+                                    message: '¿Seguro que desea eliminar este usuario?',
+                                    variant: 'danger',
+                                    confirmLabel: 'Eliminar',
+                                    onConfirm: () => handleDeleteUser(u.id),
+                                  })}
+                                  className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                                >Eliminar</button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ===== TAB: ROLES ===== */}
+            {activeTab === 'roles' && (
+              <div className="space-y-3">
+                {/* MOBILE: Cards */}
+                <div className="grid grid-cols-1 gap-3 sm:hidden">
+                  {roles.map(r => (
+                    <div key={r.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                            <Shield className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-base">{r.nombre}</h3>
+                            <span className="text-xs text-gray-400">#{r.id}</span>
+                          </div>
+                        </div>
+                        {r.enUso && (
+                          <span className="flex items-center text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 shrink-0">
+                            <Lock size={12} className="mr-1" /> En uso
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(!r.permisos || r.permisos.length === 0) ? (
+                          <span className="text-gray-400 italic text-sm">Sin permisos</span>
+                        ) : (r.permisos || []).map(p => (
+                          <span key={p.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded border border-gray-200">{p.nombre}</span>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                        <button
+                          onClick={() => openRolModal(r)}
+                          className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Edit2 className="w-4 h-4" /> Editar
+                        </button>
+                        <button
+                          onClick={() => askConfirm({
+                            title: 'Eliminar Rol',
+                            message: '¿Seguro que desea eliminar este rol? Se desasignará de los usuarios.',
+                            variant: 'danger',
+                            confirmLabel: 'Eliminar',
+                            onConfirm: () => handleDeleteRol(r.id),
+                          })}
+                          disabled={r.enUso}
+                          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 ${r.enUso ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-red-50 hover:bg-red-100 text-red-700 cursor-pointer'}`}
+                        >
+                          <Trash2 className="w-4 h-4" /> Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* DESKTOP: Table */}
+                <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
+                        <th className="p-4 font-semibold border-b">ID</th>
+                        <th className="p-4 font-semibold border-b">Nombre del Rol</th>
+                        <th className="p-4 font-semibold border-b">Permisos Asignados</th>
+                        <th className="p-4 font-semibold border-b text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {roles.map(r => (
+                        <tr key={r.id} className="hover:bg-gray-50/50">
+                          <td className="p-4 text-gray-500">#{r.id}</td>
+                          <td className="p-4 font-medium text-gray-800">
+                            <div className="flex items-center space-x-2">
+                              <span>{r.nombre}</span>
+                              {r.enUso && (
+                                <span className="flex items-center text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                  <Lock size={12} className="mr-1" /> En uso
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-wrap gap-1.5">
+                              {(r.permisos || []).map(p => (
+                                <span key={p.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded border border-gray-200">{p.nombre}</span>
+                              ))}
+                              {(!r.permisos || r.permisos.length === 0) && <span className="text-gray-400 italic text-sm">Sin permisos</span>}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button onClick={() => openRolModal(r)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
+                            <button
+                              onClick={() => askConfirm({
+                                title: 'Eliminar Rol',
+                                message: '¿Seguro que desea eliminar este rol? Se desasignará de los usuarios.',
+                                variant: 'danger',
+                                confirmLabel: 'Eliminar',
+                                onConfirm: () => handleDeleteRol(r.id),
+                              })}
+                              disabled={r.enUso}
+                              className={`font-medium cursor-pointer ${r.enUso ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
+                              title={r.enUso ? 'No se puede eliminar un rol en uso' : 'Eliminar rol'}
+                            >Eliminar</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Modal Usuario */}
             {modalUserOpen && (

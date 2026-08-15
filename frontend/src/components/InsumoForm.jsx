@@ -75,13 +75,13 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl border border-white/20 w-full max-w-lg shadow-2xl overflow-hidden scale-100 transition-transform duration-300 animate-scaleIn max-h-[90vh] flex flex-col">
+      <div className="bg-white/95 backdrop-blur-md rounded-none sm:rounded-2xl border border-white/20 w-full h-full sm:h-auto max-w-lg shadow-2xl flex flex-col max-h-screen sm:max-h-[90vh] scale-100 transition-transform duration-300 animate-scaleIn overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-4 border-b border-gray-100 bg-sky-600 text-white shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-4 border-b border-gray-100 bg-sky-600 text-white shrink-0 sm:rounded-t-2xl">
           <h2 className="text-lg font-semibold">
             {insumo ? 'Editar Insumo' : 'Nuevo Insumo'}
           </h2>

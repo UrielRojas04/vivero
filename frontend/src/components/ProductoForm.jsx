@@ -63,17 +63,65 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     setErrors({});
   }, [producto, isOpen]);
 
-  // Cálculos derivados de precios
+  const calcCostoFinal = (costo, desc) => {
+    const cBase = costo ? parseFloat(costo) : 0;
+    const dProv = desc ? parseFloat(desc) : 0;
+    const descMonto = (cBase * dProv) / 100;
+    const cDesc = cBase - descMonto;
+    const envMonto = (cDesc * costoEnvioPorcentaje) / 100;
+    return cDesc + envMonto;
+  };
+
+  const recalcPrecio = (costo, desc, ganancia) => {
+    const cf = calcCostoFinal(costo, desc);
+    const pGan = ganancia ? parseFloat(ganancia) : 0;
+    if (cf > 0) {
+      const ganMonto = (cf * pGan) / 100;
+      setPrecio((cf + ganMonto).toFixed(2));
+    }
+  };
+
+  const recalcGanancia = (costo, desc, prec) => {
+    const cf = calcCostoFinal(costo, desc);
+    const pr = prec ? parseFloat(prec) : 0;
+    if (cf > 0) {
+      const pGan = ((pr - cf) / cf) * 100;
+      setPorcentajeGanancia(pGan.toFixed(2));
+    } else {
+      setPorcentajeGanancia('');
+    }
+  };
+
+  const handleCostoChange = (val) => {
+    setCostoProducto(val);
+    recalcPrecio(val, descuentoProveedor, porcentajeGanancia);
+  };
+  
+  const handleDescChange = (val) => {
+    setDescuentoProveedor(val);
+    recalcPrecio(costoProducto, val, porcentajeGanancia);
+  };
+  
+  const handleGananciaChange = (val) => {
+    setPorcentajeGanancia(val);
+    recalcPrecio(costoProducto, descuentoProveedor, val);
+  };
+  
+  const handlePrecioChange = (val) => {
+    setPrecio(val);
+    recalcGanancia(costoProducto, descuentoProveedor, val);
+  };
+
+  // Cálculos derivados de precios para visualización
   const cBase = costoProducto ? parseFloat(costoProducto) : 0;
   const dProv = descuentoProveedor ? parseFloat(descuentoProveedor) : 0;
-  const pGanancia = porcentajeGanancia ? parseFloat(porcentajeGanancia) : 0;
+  const pVenta = precio ? parseFloat(precio) : 0;
 
   const descuentoMonto = (cBase * dProv) / 100;
   const costoConDescuento = cBase - descuentoMonto;
   const envioMonto = (costoConDescuento * costoEnvioPorcentaje) / 100;
   const costoFinalCalc = costoConDescuento + envioMonto;
-  const gananciaMonto = (costoFinalCalc * pGanancia) / 100;
-  const precioSugerido = costoFinalCalc + gananciaMonto;
+  const gananciaMonto = pVenta - costoFinalCalc;
 
   const isVivero = unidadNegocioActiva !== '2';
   const tituloModal = producto 
@@ -81,12 +129,6 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     : (isVivero ? 'Nuevo Producto (Planta)' : 'Nuevo Producto');
   const labelNombre = isVivero ? 'Nombre de la Planta' : 'Nombre del Producto';
   const placeholderNombre = isVivero ? 'Ej: Lechuga morada, Repollo, Acelga' : 'Ej: Pala ancha, Maceta, Fertilizante';
-
-  useEffect(() => {
-    if (unidadNegocioActiva === '2' && pGanancia > 0) {
-      setPrecio(precioSugerido.toFixed(2));
-    }
-  }, [precioSugerido, unidadNegocioActiva, pGanancia]);
 
   const validate = () => {
     const newErrors = {};
@@ -143,13 +185,13 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-white/20 w-full max-w-2xl shadow-2xl flex flex-col max-h-[95vh] scale-100 transition-transform duration-300 animate-scaleIn">
+      <div className="bg-white/90 backdrop-blur-md rounded-none sm:rounded-2xl border border-white/20 w-full h-full sm:h-auto max-w-2xl shadow-2xl flex flex-col max-h-screen sm:max-h-[95vh] scale-100 transition-transform duration-300 animate-scaleIn">
         
         {/* Header */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-600 text-white rounded-t-2xl">
+        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-600 text-white sm:rounded-t-2xl">
           <h2 className="text-lg font-semibold">
             {tituloModal}
           </h2>
@@ -218,7 +260,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               </div>
             )}
 
-            <div className={unidadNegocioActiva === '2' ? 'col-span-2' : ''}>
+            <div className={unidadNegocioActiva === '2' ? 'col-span-1' : 'col-span-2'}>
               <label htmlFor="stock" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                 Stock (Unidades)
               </label>
@@ -237,8 +279,28 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
             </div>
             
             {unidadNegocioActiva === '2' && (
+              <div className="col-span-1">
+                <label htmlFor="marcaId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Tag className="w-3 h-3 text-emerald-600" />
+                  Marca (Opcional)
+                </label>
+                <select
+                  id="marcaId"
+                  value={marcaId}
+                  onChange={(e) => setMarcaId(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white/70"
+                >
+                  <option value="">-- Sin Marca --</option>
+                  {marcas.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {unidadNegocioActiva === '2' && (
               <div className="col-span-2 mt-2 bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-4 gap-4 mb-4">
                   <div>
                     <label htmlFor="costoProducto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                       Costo Catálogo
@@ -246,7 +308,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                     <FormattedNumberInput
                       id="costoProducto"
                       value={costoProducto}
-                      onChange={(val) => setCostoProducto(val)}
+                      onChange={handleCostoChange}
                       className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
                       placeholder="0.00"
                     />
@@ -258,7 +320,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                     <FormattedNumberInput
                       id="descuentoProveedor"
                       value={descuentoProveedor}
-                      onChange={(val) => setDescuentoProveedor(val)}
+                      onChange={handleDescChange}
                       className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
                       placeholder="0"
                     />
@@ -270,9 +332,21 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                     <FormattedNumberInput
                       id="porcentajeGanancia"
                       value={porcentajeGanancia}
-                      onChange={(val) => setPorcentajeGanancia(val)}
+                      onChange={handleGananciaChange}
                       className="w-full px-4 py-2 rounded-xl border-2 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-emerald-200 focus:border-emerald-500 text-emerald-900 font-bold text-center"
                       placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="precioManual" className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">
+                      Precio Venta
+                    </label>
+                    <FormattedNumberInput
+                      id="precioManual"
+                      value={precio}
+                      onChange={handlePrecioChange}
+                      className="w-full px-4 py-2 rounded-xl border-2 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-emerald-200 focus:border-emerald-500 text-emerald-900 font-bold text-center"
+                      placeholder="0.00"
                     />
                   </div>
                 </div>
@@ -297,8 +371,8 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                       <strong className="text-gray-900">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                     </div>
                     <div className="text-emerald-700 truncate flex justify-between items-center border-t border-gray-100 pt-2">
-                      <span className="font-semibold uppercase tracking-wider text-xs">Precio:</span>
-                      <strong className="text-lg">${precioSugerido.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                      <span className="font-semibold uppercase tracking-wider text-xs">Precio Venta:</span>
+                      <strong className="text-lg">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                     </div>
                     <div className="text-emerald-600/80 truncate flex justify-between items-center text-xs mt-1">
                       <span>Ganancia Neta:</span>
@@ -345,25 +419,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
             </div>
           )}
           
-          {unidadNegocioActiva === '2' && (
-            <div>
-              <label htmlFor="marcaId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Tag className="w-3 h-3 text-emerald-600" />
-                Marca (Opcional)
-              </label>
-              <select
-                id="marcaId"
-                value={marcaId}
-                onChange={(e) => setMarcaId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
-              >
-                <option value="">-- Sin Marca --</option>
-                {marcas.map(m => (
-                  <option key={m.id} value={m.id}>{m.nombre}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* Removed marcaId from here as it was moved up */}
 
           </div>
 

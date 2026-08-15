@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Layout Responsive
 El frontend SHALL adaptar su layout principal (Sidebar, Navbar y Contenedor) y sus vistas de catálogos dinámicamente según el tamaño de la pantalla del dispositivo.

@@ -33,14 +33,14 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
       <div 
         className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" 
         onClick={onCancel}
       />
       
-      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-emerald-50">
+      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-md overflow-hidden shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-emerald-50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
               <CheckCircle2 className="w-5 h-5" />
@@ -57,7 +57,7 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto flex flex-col">
           <p className="text-sm text-gray-600 mb-6">
             Vas a marcar como "Lista para entregar" la variedad <strong>{siembra.variedad}</strong> (Lote: {siembra.numeroLote}). Selecciona a qué producto del catálogo sumar el stock resultante.
           </p>
@@ -91,6 +91,7 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
               </label>
               <input
                 type="number"
+                inputMode="numeric"
                 required
                 min="1"
                 value={cantidadFinal}
@@ -102,7 +103,7 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-100">
+          <div className="mt-auto pt-8 flex justify-end gap-3 border-t border-gray-100">
             <button
               type="button"
               onClick={onCancel}

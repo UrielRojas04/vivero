@@ -223,8 +223,92 @@ const Productos = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <>
+          {/* MOBILE VIEW: Cards Layout */}
+          <div className="grid grid-cols-1 gap-4 sm:hidden">
+            {filteredProductos.map((producto) => (
+              <div key={producto.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-semibold shrink-0">
+                      <Leaf className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-base leading-tight">
+                        {producto.nombre}
+                        {unidadNegocioActiva === '2' && producto.marcaNombre && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-2">
+                            {producto.marcaNombre.toUpperCase()}
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                        ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold shrink-0 ${
+                    producto.stock === 0 
+                      ? 'bg-red-50 text-red-700 border border-red-100' 
+                      : producto.stock <= 5 
+                        ? 'bg-yellow-50 text-yellow-700 border border-yellow-100' 
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                  }`}>
+                    Stock: {producto.stock}
+                  </span>
+                </div>
+                
+                {producto.descripcion && (
+                  <p className="text-sm text-gray-500 line-clamp-2 leading-snug">
+                    {producto.descripcion}
+                  </p>
+                )}
+
+                {unidadNegocioActiva === '2' ? (
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="font-semibold">Costo: ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                    <span>•</span>
+                    <span className="font-semibold text-emerald-600">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-0.5 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="font-medium">Lote: {producto.lote || 'Sin lote'}</span>
+                    <span>Dueño: {producto.dueno || 'Manual'}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 mt-1">
+                  <button
+                    onClick={() => {
+                      setSelectedProducto(producto);
+                      setIsFormOpen(true);
+                    }}
+                    className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Edit2 className="w-4 h-4" /> Editar
+                  </button>
+                  <button
+                    onClick={() =>
+                      askConfirm({
+                        title: '¿Confirmar Eliminación?',
+                        message: 'Esta acción no se puede deshacer. Se removerá la planta de forma permanente.',
+                        variant: 'danger',
+                        confirmLabel: 'Eliminar Planta',
+                        onConfirm: () => handleDelete(producto.id),
+                      })
+                    }
+                    className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP VIEW: Table Layout */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/75 border-b border-gray-200">
@@ -340,6 +424,7 @@ const Productos = () => {
             </table>
           </div>
         </div>
+        </>
       )}
 
       {/* Reuse Form Modal Component */}

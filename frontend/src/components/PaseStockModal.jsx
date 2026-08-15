@@ -45,11 +45,11 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl scale-100 animate-scaleIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-md overflow-hidden shadow-2xl scale-100 animate-scaleIn flex flex-col">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-emerald-600 text-white">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-emerald-600 text-white shrink-0 sm:rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <PackagePlus className="w-5 h-5" />
@@ -68,7 +68,7 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 flex-1 overflow-y-auto">
           <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
             <h4 className="text-sm font-semibold text-emerald-800 mb-1">
               Planta: {siembra.variedadPlanta?.nombre}

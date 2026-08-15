@@ -3,10 +3,14 @@ import { X, Sprout, Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { variedadesPlantasApi } from '../api/variedades-plantas.api';
 import { variedadesBandejasApi } from '../api/variedades-bandejas.api';
+import { clientesApi } from '../api/clientes.api';
 
 const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
   const [busquedaPlanta, setBusquedaPlanta] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [busquedaDueno, setBusquedaDueno] = useState('');
+  const [showDuenoDropdown, setShowDuenoDropdown] = useState(false);
+  const [tipoDueno, setTipoDueno] = useState('jefe');
   const [formData, setFormData] = useState({
     variedadPlantaId: '',
     variedadBandejaId: '',
@@ -34,6 +38,14 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
     enabled: isOpen
   });
 
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes'],
+    queryFn: async () => {
+      return await clientesApi.getAll();
+    },
+    enabled: isOpen
+  });
+
   useEffect(() => {
     if (isOpen) {
       if (siembra) {
@@ -46,24 +58,41 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
           cantidad: siembra.cantidad || ''
         });
         setBusquedaPlanta(siembra.variedadPlanta?.nombre || '');
+        setBusquedaDueno(siembra.dueno || '');
+        setTipoDueno((siembra.dueno && siembra.dueno !== 'Jefe / Vivero propio') ? 'cliente' : 'jefe');
       } else {
         setFormData({
           variedadPlantaId: '',
           variedadBandejaId: '',
           fechaEstimada: '',
-          dueno: '',
+          dueno: 'Jefe / Vivero propio',
           numeroLote: '',
           cantidad: ''
         });
         setBusquedaPlanta('');
+        setBusquedaDueno('');
+        setTipoDueno('jefe');
       }
       setShowDropdown(false);
+      setShowDuenoDropdown(false);
     }
   }, [isOpen, siembra]);
 
   const plantasFiltradas = busquedaPlanta 
     ? plantas.filter(p => p.nombre.toLowerCase().includes(busquedaPlanta.toLowerCase()))
     : plantas;
+
+  const clientesMapeados = clientes.map(c => ({ id: c.id, nombre: c.nombreRazonSocial || `Cliente #${c.id}` }));
+
+  const duenosFiltrados = busquedaDueno 
+    ? clientesMapeados.filter(d => d.nombre.toLowerCase().includes(busquedaDueno.toLowerCase()))
+    : clientesMapeados;
+
+  const seleccionarDueno = (duenoNombre) => {
+    setBusquedaDueno(duenoNombre);
+    setFormData(prev => ({ ...prev, dueno: duenoNombre }));
+    setShowDuenoDropdown(false);
+  };
 
   const obtenerDiasCrecimiento = (planta, date = new Date()) => {
     const mes = date.getMonth(); // 0 a 11
@@ -125,7 +154,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
   const isEditMode = !!siembra;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" 
@@ -133,8 +162,8 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
       />
       
       {/* Modal Content */}
-      <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-w-lg overflow-hidden shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-screen sm:max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
               <Sprout className="w-5 h-5" />
@@ -151,9 +180,9 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto">
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Variedad de Planta *
@@ -241,6 +270,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 <div className="relative">
                   <input
                     type="number"
+                    inputMode="numeric"
                     required
                     min="1"
                     value={formData.cantidad}
@@ -268,14 +298,68 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Dueño *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.dueno}
-                  onChange={(e) => setFormData({ ...formData, dueno: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                  placeholder="Ej: Vivero o Cliente X"
-                />
+                <select
+                  value={tipoDueno}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTipoDueno(val);
+                    if (val === 'jefe') {
+                      setFormData({ ...formData, dueno: 'Jefe / Vivero propio' });
+                    } else {
+                      setFormData({ ...formData, dueno: busquedaDueno });
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white mb-2"
+                >
+                  <option value="jefe">Jefe / Vivero propio</option>
+                  <option value="cliente">Cliente</option>
+                </select>
+
+                {tipoDueno === 'cliente' && (
+                  <div className="relative mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Buscar cliente..."
+                      value={busquedaDueno}
+                      onChange={(e) => {
+                        setBusquedaDueno(e.target.value);
+                        setFormData({ ...formData, dueno: e.target.value });
+                        setShowDuenoDropdown(true);
+                      }}
+                      onFocus={() => setShowDuenoDropdown(true)}
+                      onBlur={() => {
+                        setTimeout(() => setShowDuenoDropdown(false), 200);
+                      }}
+                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    />
+                    {showDuenoDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {duenosFiltrados.length > 0 ? (
+                          duenosFiltrados.map(d => (
+                            <div 
+                              key={d.id} 
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                seleccionarDueno(d.nombre);
+                              }}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                            >
+                              {d.nombre}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-gray-500">
+                            {busquedaDueno ? 'Presione Enter para usar este nombre' : 'No hay clientes'}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -6,7 +6,7 @@ import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import { siembrasApi } from '../api/siembras.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2 } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu } from 'lucide-react';
 
 const navGroups = [
   {
@@ -44,6 +44,7 @@ const DashboardLayout = () => {
   const { logout, user, hasPermission, negociosDisponibles, unidadNegocioActiva, setNegociosDisponibles, setUnidadNegocioActiva } = useAuthStore();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Alertas state
   const [alertas, setAlertas] = useState([]);
@@ -68,12 +69,28 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <Leaf className="w-6 h-6 text-emerald-600 mr-2" />
-          <span className="font-bold text-lg text-gray-900">Vivero ERP</span>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
+          <div className="flex items-center">
+            <Leaf className="w-6 h-6 text-emerald-600 mr-2" />
+            <span className="font-bold text-lg text-gray-900">Vivero ERP</span>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-1 p-4 overflow-y-auto space-y-6">
@@ -109,6 +126,7 @@ const DashboardLayout = () => {
                     <NavLink
                       key={to}
                       to={to}
+                      onClick={() => setIsSidebarOpen(false)}
                       className={({ isActive }) =>
                         `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                           isActive
@@ -204,9 +222,16 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen max-w-full">
+      <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
         {/* Topbar for notifications */}
-        <header className="h-16 flex items-center justify-end px-8 border-b border-gray-200 bg-white/50 backdrop-blur-sm sticky top-0 z-30">
+        <header className="h-16 flex items-center justify-between md:justify-end px-4 md:px-8 border-b border-gray-200 bg-white/50 backdrop-blur-sm sticky top-0 z-20">
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
           <div className="relative">
             <button
               onClick={() => setIsAlertsOpen(!isAlertsOpen)}
@@ -276,7 +301,7 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 md:p-8 overflow-x-hidden">
           <Outlet />
         </div>
       </main>

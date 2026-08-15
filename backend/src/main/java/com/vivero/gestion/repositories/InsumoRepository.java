@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public interface InsumoRepository extends JpaRepository<Insumo, Long> {
 
     @Query("""
-            SELECT COALESCE(SUM(i.precio), 0)
+            SELECT COALESCE(SUM(i.precio * i.stock), 0)
             FROM Insumo i
             WHERE i.fechaCompra BETWEEN :desde AND :hasta
             """)
