@@ -73,7 +73,7 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
               Teléfono (opcional)
             </label>
             <input
-              type="text"
+              type="tel"
               id="telefono"
               name="telefono"
               value={formData.telefono}

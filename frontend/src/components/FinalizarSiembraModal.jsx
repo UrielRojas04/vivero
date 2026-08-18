@@ -92,11 +92,13 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
               <input
                 type="number"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 required
                 min="1"
                 value={cantidadFinal}
                 onChange={(e) => setCantidadFinal(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                style={{ MozAppearance: 'textfield' }}
                 placeholder="Ej: 100"
               />
               <p className="text-xs text-gray-500 mt-1">La cantidad inicial sembrada fue {siembra.cantidad}.</p>

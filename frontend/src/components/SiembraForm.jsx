@@ -271,11 +271,13 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                   <input
                     type="number"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     min="1"
                     value={formData.cantidad}
                     onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    style={{ MozAppearance: 'textfield' }}
                   />
                   {formData.cantidad && formData.variedadBandejaId && (
                     <div className="absolute right-0 top-full mt-1 text-xs text-emerald-600 font-medium">

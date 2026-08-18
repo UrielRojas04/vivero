@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
-import { X, FileDown, FileImage, MessageCircle, Receipt } from 'lucide-react';
+import { X, FileDown, FileImage, MessageCircle, Receipt, Share2 } from 'lucide-react';
 import { useUIStore } from '../store/useUIStore';
 
 const NOMBRE_VIVERO = 'Vivero ERP';
@@ -184,7 +184,12 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
     wrapper.style.position = 'fixed';
     wrapper.style.left = '-99999px';
     wrapper.style.top = '0';
-    wrapper.style.width = `${nodo.offsetWidth}px`;
+    // Forzar un ancho mínimo de 500px para que la imagen no se corte en mobile.
+    // En pantallas chicas el nodo visible puede ser de 320-375px, lo que recorta el contenido.
+    const anchoMinimo = Math.max(nodo.offsetWidth, 500);
+    wrapper.style.width = `${anchoMinimo}px`;
+    clon.style.width = '100%';
+    clon.style.maxWidth = 'none';
     clon.style.height = 'auto';
     clon.style.maxHeight = 'none';
     clon.style.overflow = 'visible';
@@ -210,10 +215,41 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
     }
   };
 
+  // Detecta si es dispositivo táctil (mobile/tablet)
+  const esDispositivoTactil = typeof window !== 'undefined'
+    && window.matchMedia('(pointer: coarse)').matches;
+
+  // Verifica si el navegador soporta compartir archivos via Web Share API
+  const soportaCompartirArchivos = esDispositivoTactil
+    && typeof navigator !== 'undefined'
+    && !!navigator.canShare && !!navigator.share;
+
   const descargarImagen = async () => {
     try {
       const resultado = await generarPngDePreview();
       if (!resultado) return;
+
+      // En mobile: intentar abrir el panel nativo de "Compartir" para que el usuario
+      // elija la app destino (WhatsApp, Telegram, email, guardar, etc.)
+      if (soportaCompartirArchivos) {
+        const archivo = new File([resultado.blob], `remito-${venta.id}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [archivo] })) {
+          try {
+            await navigator.share({
+              files: [archivo],
+              title: `Remito de venta Nº ${venta.id}`,
+            });
+            pushToast('success', 'Comprobante compartido correctamente.');
+            return;
+          } catch (shareErr) {
+            // AbortError = usuario canceló el panel, no es error real
+            if (shareErr?.name === 'AbortError') return;
+            // Si falla Web Share, cae al download tradicional
+          }
+        }
+      }
+
+      // Desktop o fallback: descarga directa
       const enlace = document.createElement('a');
       enlace.href = resultado.dataUrl;
       enlace.download = `remito-${venta.id}.png`;
@@ -244,8 +280,7 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
 
     const telefono = normalizarTelefonoWhatsApp(venta.clienteTelefono || WHATSAPP_CONTACTO);
 
-    const esDispositivoTactil = typeof window !== 'undefined'
-      && window.matchMedia('(pointer: coarse)').matches;
+    // esDispositivoTactil ya definido a nivel del componente
 
     // Móvil/tablet: intenta Web Share con el PNG (abre WhatsApp app con la imagen lista para enviar).
     const puedeCompartirArchivo = esDispositivoTactil
@@ -287,9 +322,17 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
     };
 
     const construirUrl = (conTexto) => {
-      // Con teléfono: web.whatsapp.com/send navega DIRECTAMENTE al chat del número si hay sesión de WhatsApp Web
-      // (wa.me redirige con pantallas intermedias). Sin teléfono: wa.me sin número para que el usuario elija —
-      // web.whatsapp.com/send con `phone=` vacío NO navega.
+      // En mobile: usar api.whatsapp.com que invoca el deep link a la app nativa de WhatsApp.
+      // En desktop: usar web.whatsapp.com/send que navega directamente al chat si hay sesión abierta.
+      // wa.me redirige con pantallas intermedias, y en mobile a veces no abre la app.
+      if (esDispositivoTactil) {
+        const base = telefono
+          ? `https://api.whatsapp.com/send?phone=${telefono}`
+          : 'https://api.whatsapp.com/send';
+        if (!conTexto) return base;
+        return `${base}${telefono ? '&' : '?'}text=${encodeURIComponent(resumen)}`;
+      }
+      // Desktop
       const base = telefono
         ? `https://web.whatsapp.com/send?phone=${telefono}`
         : 'https://wa.me/';
@@ -392,31 +435,33 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
               </div>
             </div>
 
-            <table className="w-full mt-5 text-sm">
-              <thead>
-                <tr className="bg-emerald-50 text-left text-xs uppercase tracking-wider text-emerald-700">
-                  <th className="py-2 pr-2 font-semibold">Producto</th>
-                  <th className="py-2 px-2 text-right font-semibold">Cant.</th>
-                  <th className="py-2 px-2 text-right font-semibold">P. Unitario</th>
-                  <th className="py-2 pl-2 text-right font-semibold">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {detalles.map((detalle) => (
-                  <tr key={detalle.id || detalle.productoId}>
-                    <td className="py-2.5 pr-2 text-gray-800">{detalle.productoNombre || '-'}</td>
-                    <td className="py-2.5 px-2 text-right text-gray-600">{detalle.cantidad}</td>
-                    <td className="py-2.5 px-2 text-right text-gray-600">{formatearDinero(detalle.precioUnitarioHistorico)}</td>
-                    <td className="py-2.5 pl-2 text-right font-semibold text-gray-900">{formatearDinero(detalle.subtotal)}</td>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full mt-5 text-sm min-w-[350px]">
+                <thead>
+                  <tr className="bg-emerald-50 text-left text-xs uppercase tracking-wider text-emerald-700">
+                    <th className="py-2 pr-2 font-semibold">Producto</th>
+                    <th className="py-2 px-2 text-right font-semibold">Cant.</th>
+                    <th className="py-2 px-2 text-right font-semibold">P. Unitario</th>
+                    <th className="py-2 pl-2 text-right font-semibold">Subtotal</th>
                   </tr>
-                ))}
-                {detalles.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="py-3 text-center text-gray-400">Sin ítems</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {detalles.map((detalle) => (
+                    <tr key={detalle.id || detalle.productoId}>
+                      <td className="py-2.5 pr-2 text-gray-800 break-words max-w-[150px]">{detalle.productoNombre || '-'}</td>
+                      <td className="py-2.5 px-2 text-right text-gray-600">{detalle.cantidad}</td>
+                      <td className="py-2.5 px-2 text-right text-gray-600">{formatearDinero(detalle.precioUnitarioHistorico)}</td>
+                      <td className="py-2.5 pl-2 text-right font-semibold text-gray-900">{formatearDinero(detalle.subtotal)}</td>
+                    </tr>
+                  ))}
+                  {detalles.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="py-3 text-center text-gray-400">Sin ítems</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             <div className="mt-4 flex justify-end">
               <div className="w-60 space-y-1.5 text-sm">
@@ -462,28 +507,31 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 p-6 border-t border-gray-100 bg-white flex-shrink-0">
+        <div className="flex flex-wrap gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-100 bg-white flex-shrink-0">
           <button
             onClick={descargarPDF}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm sm:text-base"
           >
-            <FileDown className="w-4 h-4" /> Descargar PDF
+            <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">Descargar</span> PDF
           </button>
           <button
             onClick={descargarImagen}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm sm:text-base"
           >
-            <FileImage className="w-4 h-4" /> Descargar imagen
+            {soportaCompartirArchivos
+              ? <><Share2 className="w-4 h-4" /> Compartir</>  
+              : <><FileImage className="w-4 h-4" /> <span className="hidden sm:inline">Descargar</span> Imagen</>
+            }
           </button>
           <button
             onClick={enviarWhatsApp}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm sm:text-base"
           >
-            <MessageCircle className="w-4 h-4" /> Enviar por WhatsApp
+            <MessageCircle className="w-4 h-4" /> WhatsApp
           </button>
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-colors cursor-pointer text-sm sm:text-base"
           >
             Cerrar
           </button>

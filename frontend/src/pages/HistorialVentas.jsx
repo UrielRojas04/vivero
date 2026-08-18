@@ -63,55 +63,92 @@ export default function HistorialVentas() {
       </div>
       
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
-              <th className="p-4 font-semibold">Fecha</th>
-              <th className="p-4 font-semibold">Cliente</th>
-              <th className="p-4 font-semibold text-right">Total Final</th>
-              <th className="p-4 font-semibold text-right">Entregó</th>
-              <th className="p-4 font-semibold text-center">Estado</th>
-              <th className="p-4 font-semibold text-center">Comprobante</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {ventasFiltradas.map((venta) => (
-              <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="p-4 text-gray-600">{new Date(venta.fecha).toLocaleString('es-AR')}</td>
-                <td className="p-4 font-medium text-gray-900">{venta.clienteNombre}</td>
-                <td className="p-4 text-right font-bold text-emerald-700">
-                  ${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}
-                </td>
-                <td className="p-4 text-right font-medium text-gray-700">
-                  ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}
-                </td>
-                <td className="p-4 text-center">
-                  <span className="px-2.5 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
-                    {venta.estadoPago}
-                  </span>
-                </td>
-                <td className="p-4 text-center">
-                  <button
-                    onClick={() => setVentaSeleccionada(venta)}
-                    title={`Ver comprobante de la venta #${venta.id}`}
-                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Receipt className="w-5 h-5" />
-                  </button>
-                </td>
+        {/* Vista Mobile (Tarjetas) */}
+        <div className="grid grid-cols-1 sm:hidden divide-y divide-gray-100">
+          {ventasFiltradas.map((venta) => (
+            <div key={venta.id} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold text-gray-900 leading-tight">{venta.clienteNombre}</h3>
+                  <p className="text-sm text-gray-500">{new Date(venta.fecha).toLocaleString('es-AR')}</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  {venta.estadoPago}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <div className="text-gray-600">
+                  <span className="block">Total: <span className="font-bold text-emerald-700">${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}</span></span>
+                  <span className="block">Pagado: ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}</span>
+                </div>
+                <button
+                  onClick={() => setVentaSeleccionada(venta)}
+                  className="bg-emerald-50 text-emerald-700 p-2 rounded-lg flex items-center gap-1 text-sm font-semibold hover:bg-emerald-100 transition-colors"
+                >
+                  <Receipt className="w-4 h-4" /> Ver
+                </button>
+              </div>
+            </div>
+          ))}
+          {ventasFiltradas.length === 0 && (
+            <div className="p-6 text-center text-gray-500">
+              {filtro.trim() ? 'No se encontraron ventas para la búsqueda.' : 'No hay ventas registradas todavía.'}
+            </div>
+          )}
+        </div>
+
+        {/* Vista Desktop (Tabla) */}
+        <div className="hidden sm:block">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
+                <th className="p-4 font-semibold">Fecha</th>
+                <th className="p-4 font-semibold">Cliente</th>
+                <th className="p-4 font-semibold text-right">Total Final</th>
+                <th className="p-4 font-semibold text-right">Entregó</th>
+                <th className="p-4 font-semibold text-center">Estado</th>
+                <th className="p-4 font-semibold text-center">Comprobante</th>
               </tr>
-            ))}
-            {ventasFiltradas.length === 0 && (
-              <tr>
-                <td colSpan="6" className="p-8 text-center text-gray-500">
-                  {filtro.trim()
-                    ? 'No se encontraron ventas para la búsqueda.'
-                    : 'No hay ventas registradas todavía.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {ventasFiltradas.map((venta) => (
+                <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="p-4 text-gray-600">{new Date(venta.fecha).toLocaleString('es-AR')}</td>
+                  <td className="p-4 font-medium text-gray-900">{venta.clienteNombre}</td>
+                  <td className="p-4 text-right font-bold text-emerald-700">
+                    ${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}
+                  </td>
+                  <td className="p-4 text-right font-medium text-gray-700">
+                    ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="px-2.5 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                      {venta.estadoPago}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => setVentaSeleccionada(venta)}
+                      title={`Ver comprobante de la venta #${venta.id}`}
+                      className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Receipt className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {ventasFiltradas.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-gray-500">
+                    {filtro.trim()
+                      ? 'No se encontraron ventas para la búsqueda.'
+                      : 'No hay ventas registradas todavía.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {ventaSeleccionada && (

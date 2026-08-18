@@ -85,12 +85,15 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
               </label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="1"
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
-                className={`w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                className={`w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
                   errors.stock ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
                 }`}
+                style={{ MozAppearance: 'textfield' }}
               />
               {errors.stock && <p className="mt-1 text-sm text-red-500">{errors.stock}</p>}
             </div>

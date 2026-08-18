@@ -21,6 +21,14 @@ const addRecent = (key, id) => {
 
 const formatCurrency = (value) => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// crypto.randomUUID() requiere un contexto seguro (HTTPS o localhost).
+// Al probar desde el celular por IP de LAN (http://192.168.x.x) no está disponible y explota.
+const generarIdLinea = () => (
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `linea-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+);
+
 export default function NuevaVenta() {
   const { pushToast } = useUIStore();
   const queryClient = useQueryClient();
@@ -28,6 +36,7 @@ export default function NuevaVenta() {
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const { unidadNegocioActiva } = useAuthStore();
 
   const liveStocks = useStockStore(state => state.liveStocks);
@@ -191,7 +200,7 @@ export default function NuevaVenta() {
   useEffect(() => {
     if (isModalOpen && pagosLineas.length === 0) {
       setPagosLineas([{
-        id: crypto.randomUUID(),
+        id: generarIdLinea(),
         monto: totalFinal > 0 ? totalFinal : '',
         metodoPago: 'EFECTIVO',
         banco: '',
@@ -204,7 +213,7 @@ export default function NuevaVenta() {
 
   const addLineaPago = () => {
     setPagosLineas(prev => [...prev, {
-      id: crypto.randomUUID(),
+      id: generarIdLinea(),
       monto: '',
       metodoPago: 'EFECTIVO',
       banco: '',
@@ -294,7 +303,7 @@ export default function NuevaVenta() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Lado izquierdo: Buscadores */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 w-full">
           
           {/* Tarjeta Cliente */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -436,11 +445,25 @@ export default function NuevaVenta() {
         </div>
 
         {/* Lado derecho: Carrito y Totales */}
-        <div className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-10rem)] sticky top-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-6">
-            <ShoppingCart className="w-6 h-6 text-emerald-600" />
-            Detalle de Venta
-          </h2>
+        {/* En desktop es sticky a la derecha, en mobile es un fixed drawer inferior/fullscreen */}
+        <div className={`
+          fixed inset-0 z-40 bg-white flex flex-col transition-transform duration-300 ease-in-out
+          ${isCartOpen ? 'translate-y-0' : 'translate-y-full'}
+          lg:relative lg:translate-y-0 lg:bg-gray-50 lg:p-6 lg:rounded-2xl lg:shadow-sm lg:border lg:border-gray-200 lg:h-[calc(100vh-10rem)] lg:sticky lg:top-6 lg:z-auto
+          p-4 pt-8
+        `}>
+          <div className="flex justify-between items-center mb-6 lg:mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <ShoppingCart className="w-6 h-6 text-emerald-600" />
+              Detalle de Venta
+            </h2>
+            <button 
+              className="lg:hidden text-gray-500 hover:bg-gray-100 p-2 rounded-full"
+              onClick={() => setIsCartOpen(false)}
+            >
+              Cerrar
+            </button>
+          </div>
           
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             {detalles.length === 0 ? (
@@ -496,10 +519,30 @@ export default function NuevaVenta() {
 
       </div>
 
+      {/* FAB (Floating Action Button) para mobile */}
+      {!isCartOpen && (
+        <div className="lg:hidden fixed bottom-6 right-6 z-30">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-lg flex items-center gap-2 transition-transform transform active:scale-95"
+          >
+            <div className="relative">
+              <ShoppingCart className="w-6 h-6" />
+              {detalles.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                  {detalles.reduce((acc, d) => acc + (parseInt(d.cantidad) || 0), 0)}
+                </span>
+              )}
+            </div>
+            <span className="font-bold ml-1">${formatCurrency(totalCalculado)}</span>
+          </button>
+        </div>
+      )}
+
       {/* Modal de Liquidación */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-6 overflow-y-auto max-h-[90vh]">
+          <div className="bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Liquidar Venta</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
@@ -564,18 +607,18 @@ export default function NuevaVenta() {
                   <div className="flex flex-col gap-3">
                     {pagosLineas.map((linea, index) => (
                       <div key={linea.id} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <FormattedNumberInput
                             id={`monto-${linea.id}`}
                             placeholder="Monto"
                             value={linea.monto}
                             onChange={val => updateLineaPago(linea.id, 'monto', val)}
-                            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 font-semibold"
+                            className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 font-semibold"
                           />
                           <select 
                             value={linea.metodoPago}
                             onChange={e => updateLineaPago(linea.id, 'metodoPago', e.target.value)}
-                            className="w-32 shrink-0 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 bg-gray-50"
+                            className="w-full sm:w-32 shrink-0 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 bg-gray-50"
                           >
                             <option value="EFECTIVO">Efectivo</option>
                             <option value="TRANSFERENCIA">Transferencia</option>
@@ -585,14 +628,14 @@ export default function NuevaVenta() {
                             type="button"
                             onClick={() => removeLineaPago(linea.id)}
                             disabled={pagosLineas.length === 1}
-                            className={`px-3 py-2 shrink-0 rounded-lg flex items-center justify-center transition-colors ${pagosLineas.length === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-red-500 hover:bg-red-100 hover:text-red-700'}`}
+                            className={`w-full sm:w-auto px-3 py-2 shrink-0 rounded-lg flex items-center justify-center transition-colors ${pagosLineas.length === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-red-500 hover:bg-red-100 hover:text-red-700'}`}
                             title="Eliminar fila"
                           >
                             <Trash2 className="w-5 h-5"/>
                           </button>
                         </div>
                         {linea.metodoPago === 'CHEQUE' && (
-                          <div className="grid grid-cols-2 gap-2 text-sm mt-3 pl-2 border-l-2 border-emerald-300">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-3 pl-2 sm:border-l-2 sm:border-emerald-300 border-t-2 sm:border-t-0 pt-2 sm:pt-0 border-emerald-200">
                             <input type="text" placeholder="Banco" value={linea.banco} onChange={e => updateLineaPago(linea.id, 'banco', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
                             <input type="text" placeholder="N° Serie" value={linea.numeroSerie} onChange={e => updateLineaPago(linea.id, 'numeroSerie', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
                             <div className="flex flex-col">
