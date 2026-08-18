@@ -140,6 +140,19 @@ const Siembras = () => {
     return '-';
   };
 
+  // Devuelve null cuando la siembra no tiene fecha de siembra (siembras
+  // históricas), para que la línea "Sembrado: ..." simplemente no se renderice
+  // en lugar de mostrar un valor vacío.
+  const formatPeriodoSiembra = (siembra) => {
+    if (!siembra.fechaSiembraInicio) return null;
+    const inicio = new Date(siembra.fechaSiembraInicio).toLocaleDateString('es-AR');
+    if (!siembra.fechaSiembraFin || siembra.fechaSiembraFin === siembra.fechaSiembraInicio) {
+      return inicio;
+    }
+    const fin = new Date(siembra.fechaSiembraFin).toLocaleDateString('es-AR');
+    return `${inicio} - ${fin}`;
+  };
+
   const getStatusBadge = (estado) => {
     switch (estado) {
       case 'EN_STOCK':
@@ -310,6 +323,11 @@ const Siembras = () => {
                       <p className="text-xs text-gray-500">
                         {formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}
                       </p>
+                      {formatPeriodoSiembra(siembra) && (
+                        <p className="text-xs text-gray-500">
+                          Sembrado: {formatPeriodoSiembra(siembra)}
+                        </p>
+                      )}
 
                       <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 rounded-xl p-3 border border-gray-100">
                         <div>
@@ -412,6 +430,9 @@ const Siembras = () => {
                         )}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">{formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}</div>
+                      {formatPeriodoSiembra(siembra) && (
+                        <div className="text-xs text-gray-500">Sembrado: {formatPeriodoSiembra(siembra)}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {siembra.dueno}

@@ -16,6 +16,8 @@ public class SiembraDTO {
     private String dueno;
     private String codigoLote;
     private String numeroSiembra;
+    private LocalDate fechaSiembraInicio;
+    private LocalDate fechaSiembraFin;
     private TipoOrigenSiembra tipoOrigen;
     private Integer cantidad;
     private EstadoSiembra estado;

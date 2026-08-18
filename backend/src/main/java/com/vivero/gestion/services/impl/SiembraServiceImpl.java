@@ -76,10 +76,31 @@ public class SiembraServiceImpl implements SiembraService {
         }
     }
 
+    /**
+     * Valida y normaliza el período de siembra de una siembra antes de persistirla.
+     * Reglas, en orden:
+     * - fechaSiembraInicio nula -> rechazo.
+     * - fechaSiembraFin nula -> se normaliza a fechaSiembraInicio (siembra de un
+     *   solo día: ambos campos quedan con la misma fecha).
+     * - fechaSiembraFin anterior a fechaSiembraInicio -> rechazo.
+     */
+    private void validarYNormalizarFechaSiembra(SiembraDTO dto) {
+        if (dto.getFechaSiembraInicio() == null) {
+            throw new RuntimeException("La fecha de siembra es obligatoria");
+        }
+        if (dto.getFechaSiembraFin() == null) {
+            dto.setFechaSiembraFin(dto.getFechaSiembraInicio());
+        }
+        if (dto.getFechaSiembraFin().isBefore(dto.getFechaSiembraInicio())) {
+            throw new RuntimeException("La fecha de fin de siembra no puede ser anterior a la de inicio");
+        }
+    }
+
     @Override
     @Transactional
     public SiembraDTO crearSiembra(SiembraDTO dto) {
         validarYNormalizarOrigen(dto);
+        validarYNormalizarFechaSiembra(dto);
 
         Siembra siembra = new Siembra();
         if (dto.getVariedadPlanta() != null && dto.getVariedadPlanta().getId() != null) {
@@ -92,6 +113,8 @@ public class SiembraServiceImpl implements SiembraService {
         siembra.setDueno(dto.getDueno());
         siembra.setCodigoLote(dto.getCodigoLote());
         siembra.setNumeroSiembra(dto.getNumeroSiembra());
+        siembra.setFechaSiembraInicio(dto.getFechaSiembraInicio());
+        siembra.setFechaSiembraFin(dto.getFechaSiembraFin());
         siembra.setTipoOrigen(dto.getTipoOrigen());
         siembra.setCantidad(dto.getCantidad());
         siembra.setEstado(EstadoSiembra.EN_PROCESO);
@@ -104,6 +127,7 @@ public class SiembraServiceImpl implements SiembraService {
     @Transactional
     public SiembraDTO actualizarSiembra(Long id, SiembraDTO dto) {
         validarYNormalizarOrigen(dto);
+        validarYNormalizarFechaSiembra(dto);
 
         Siembra siembra = siembraRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Siembra no encontrada con ID: " + id));
@@ -118,6 +142,8 @@ public class SiembraServiceImpl implements SiembraService {
         siembra.setDueno(dto.getDueno());
         siembra.setCodigoLote(dto.getCodigoLote());
         siembra.setNumeroSiembra(dto.getNumeroSiembra());
+        siembra.setFechaSiembraInicio(dto.getFechaSiembraInicio());
+        siembra.setFechaSiembraFin(dto.getFechaSiembraFin());
         siembra.setTipoOrigen(dto.getTipoOrigen());
         siembra.setCantidad(dto.getCantidad());
 
@@ -250,6 +276,8 @@ public class SiembraServiceImpl implements SiembraService {
         dto.setDueno(siembra.getDueno());
         dto.setCodigoLote(siembra.getCodigoLote());
         dto.setNumeroSiembra(siembra.getNumeroSiembra());
+        dto.setFechaSiembraInicio(siembra.getFechaSiembraInicio());
+        dto.setFechaSiembraFin(siembra.getFechaSiembraFin());
         dto.setTipoOrigen(siembra.getTipoOrigen());
         dto.setCantidad(siembra.getCantidad());
         dto.setEstado(siembra.getEstado());

@@ -43,6 +43,15 @@ public class Siembra {
     // orígenes; la obligatoriedad se valida en el servicio, no aquí.
     private String numeroSiembra;
 
+    // Fecha de ejecución de la siembra (día en que la semilla fue efectivamente
+    // colocada en las bandejas). NO confundir con fechaEstimada, que es la fecha
+    // estimada de entrega. Cuando la siembra se hizo en un solo día, ambos campos
+    // guardan la misma fecha; fechaSiembraFin nunca queda nula si
+    // fechaSiembraInicio tiene valor. La obligatoriedad y la normalización se
+    // validan en el servicio, no aquí.
+    private LocalDate fechaSiembraInicio;
+    private LocalDate fechaSiembraFin;
+
     @Enumerated(EnumType.STRING)
     private TipoOrigenSiembra tipoOrigen;
 

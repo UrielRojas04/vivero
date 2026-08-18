@@ -1,7 +1,5 @@
-## Purpose
+## MODIFIED Requirements
 
-Permitir que el sistema de siembras distinga claramente entre el código de lote del proveedor (cuando la semilla llega en sobre) y el número de siembra interno asignado por el vivero, facilitando la trazabilidad entre bandeja, sobre y cliente. Además, soportar el registro de siembras con origen en semilla suelta, sin código de lote, manteniendo un identificador único por siembra.
-## Requirements
 ### Requirement: Registro de Siembras
 El sistema SHALL permitir al usuario registrar una nueva siembra en proceso referenciando a las variedades parametrizadas en el sistema, incorporando retroalimentación visual sobre el equivalente en semillas en base a la cantidad y tipo de bandeja seleccionada. Además, el dueño del lote SHALL ser seleccionado desde una caja de búsqueda que incluya a los clientes registrados. El registro SHALL incluir el origen de la semilla, que puede ser `SOBRE` (semilla comercial que llega en un sobre con código de lote impreso por el proveedor) o `SUELTO` (semilla tomada de una bolsa, sin código de lote). El número de siembra SHALL ser obligatorio en ambos orígenes, y el código de lote SHALL ser obligatorio únicamente cuando el origen es `SOBRE`. El registro SHALL incluir además la fecha de siembra, entendida como el día o el período en que la semilla fue efectivamente colocada en las bandejas, y SHALL ser obligatoria en toda siembra creada o editada.
 
@@ -36,32 +34,7 @@ El sistema SHALL permitir al usuario registrar una nueva siembra en proceso refe
 - **THEN** el sistema limpia el código de lote de esa siembra y lo persiste como nulo
 - **AND** el número de siembra se conserva sin cambios
 
-### Requirement: Finalización de Siembra (Ingreso a Stock)
-El sistema SHALL permitir al usuario marcar una siembra como finalizada y transferir las plantas resultantes al stock de un producto.
-
-#### Scenario: Transición a catálogo
-- **WHEN** el usuario marca una siembra como "Lista para entregar"
-- **THEN** el sistema solicita seleccionar un Producto existente del catálogo y confirmar la cantidad final lograda
-- **AND** el sistema suma esa cantidad al stock del producto seleccionado
-- **AND** la siembra cambia su estado a `FINALIZADA`
-
-### Requirement: Trazabilidad de Siembras por Sobre y Cliente
-El sistema SHALL permitir que varias siembras distintas compartan el mismo código de lote, dado que de un mismo sobre de semillas pueden salir siembras para clientes diferentes. El número de siembra SHALL identificar a cada siembra por separado y es el valor que el vivero replica en todas las bandejas de esa siembra para vincularlas con su dueño y con su sobre de procedencia. El sistema SHALL NOT imponer una restricción de unicidad sobre el código de lote.
-
-#### Scenario: Un sobre repartido entre varios clientes
-- **WHEN** el usuario registra tres siembras con origen `SOBRE`, el mismo código de lote y tres dueños distintos, asignando a cada una un número de siembra diferente
-- **THEN** el sistema persiste las tres siembras sin error de duplicación
-- **AND** cada siembra conserva su propio número de siembra y su propio dueño
-
-#### Scenario: Búsqueda por número de siembra
-- **WHEN** el usuario busca en el listado de siembras usando un número de siembra
-- **THEN** el sistema muestra las siembras cuyo número de siembra coincide con el término buscado
-
-#### Scenario: Visualización del origen en el listado
-- **WHEN** el usuario consulta el listado de siembras
-- **THEN** cada siembra muestra su número de siembra y su origen
-- **AND** las siembras con origen `SOBRE` muestran además su código de lote
-- **AND** las siembras con origen `SUELTO` no muestran código de lote alguno
+## ADDED Requirements
 
 ### Requirement: Período de Siembra
 El sistema SHALL registrar la fecha en que la siembra fue efectivamente ejecutada mediante dos fechas, `fechaSiembraInicio` y `fechaSiembraFin`, admitiendo dos modalidades: un día único o un rango de días, dado que una siembra de muchas bandejas puede repartirse a lo largo de varias jornadas sin dejar de ser una única siembra. Cuando la siembra se realizó en un solo día, el sistema SHALL persistir la misma fecha en ambos campos. El sistema SHALL rechazar todo registro cuya fecha de fin sea anterior a su fecha de inicio. La fecha de siembra SHALL ser un dato distinto e independiente de la fecha estimada de entrega.
@@ -106,4 +79,3 @@ El sistema SHALL registrar la fecha en que la siembra fue efectivamente ejecutad
 - **THEN** el sistema propone como fecha estimada de entrega la fecha de fin de siembra más los días de crecimiento correspondientes al mes de esa fecha
 - **AND** el sistema recalcula la propuesta cada vez que el usuario modifica la variedad o cualquiera de las dos fechas de siembra
 - **AND** el usuario puede sobrescribir manualmente la fecha estimada de entrega propuesta
-

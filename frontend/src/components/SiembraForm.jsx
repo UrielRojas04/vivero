@@ -12,10 +12,13 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
   const [busquedaDueno, setBusquedaDueno] = useState('');
   const [showDuenoDropdown, setShowDuenoDropdown] = useState(false);
   const [tipoDueno, setTipoDueno] = useState('jefe');
+  const [modoFechaSiembra, setModoFechaSiembra] = useState('UN_DIA');
   const [formData, setFormData] = useState({
     variedadPlantaId: '',
     variedadBandejaId: '',
     fechaEstimada: '',
+    fechaSiembraInicio: '',
+    fechaSiembraFin: '',
     dueno: '',
     codigoLote: '',
     numeroSiembra: '',
@@ -52,10 +55,14 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
   useEffect(() => {
     if (isOpen) {
       if (siembra) {
+        const fechaSiembraInicio = siembra.fechaSiembraInicio || '';
+        const fechaSiembraFin = siembra.fechaSiembraFin || '';
         setFormData({
-          variedadPlantaId: siembra.variedadPlanta?.id || '',
-          variedadBandejaId: siembra.variedadBandeja?.id || '',
+          variedadPlantaId: siembra.variedadPlanta?.id?.toString() || '',
+          variedadBandejaId: siembra.variedadBandeja?.id?.toString() || '',
           fechaEstimada: siembra.fechaEstimada || '',
+          fechaSiembraInicio,
+          fechaSiembraFin,
           dueno: siembra.dueno || '',
           codigoLote: siembra.codigoLote || '',
           numeroSiembra: siembra.numeroSiembra || '',
@@ -65,11 +72,16 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
         setBusquedaPlanta(siembra.variedadPlanta?.nombre || '');
         setBusquedaDueno(siembra.dueno || '');
         setTipoDueno((siembra.dueno && siembra.dueno !== 'Jefe / Vivero propio') ? 'cliente' : 'jefe');
+        setModoFechaSiembra(
+          fechaSiembraFin && fechaSiembraFin !== fechaSiembraInicio ? 'RANGO' : 'UN_DIA'
+        );
       } else {
         setFormData({
           variedadPlantaId: '',
           variedadBandejaId: '',
           fechaEstimada: '',
+          fechaSiembraInicio: '',
+          fechaSiembraFin: '',
           dueno: 'Jefe / Vivero propio',
           codigoLote: '',
           numeroSiembra: '',
@@ -79,6 +91,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
         setBusquedaPlanta('');
         setBusquedaDueno('');
         setTipoDueno('jefe');
+        setModoFechaSiembra('UN_DIA');
       }
       setShowDropdown(false);
       setShowDuenoDropdown(false);
@@ -111,23 +124,49 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
     return planta[mesesMapping[mes]] || 0;
   };
 
+  // Calcula la fecha estimada de entrega a partir de una fecha base (la fecha de
+  // fin de siembra), sumándole los días de crecimiento correspondientes al mes de
+  // esa fecha base. Devuelve '' si falta la planta o la fecha base.
+  const calcularFechaEstimada = (planta, fechaBase) => {
+    if (!planta || !fechaBase) return '';
+    const date = new Date(`${fechaBase}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+    const dias = obtenerDiasCrecimiento(planta, date);
+    if (!dias || dias <= 0) return '';
+    date.setDate(date.getDate() + dias);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Aplica cambios sobre las fechas de siembra y recalcula la fecha estimada de
+  // entrega en base a fechaSiembraFin (último día sembrado), si hay una variedad
+  // seleccionada. El usuario sigue pudiendo sobrescribir el valor propuesto a mano.
+  const actualizarFechaSiembra = (updates) => {
+    setFormData(prev => {
+      const next = { ...prev, ...updates };
+      const planta = plantas.find(p => p.id.toString() === prev.variedadPlantaId);
+      if (planta) {
+        const fechaEstimadaCalculada = calcularFechaEstimada(planta, next.fechaSiembraFin);
+        if (fechaEstimadaCalculada) {
+          next.fechaEstimada = fechaEstimadaCalculada;
+        }
+      }
+      return next;
+    });
+  };
+
   const seleccionarPlanta = (planta) => {
     setBusquedaPlanta(planta.nombre);
     setShowDropdown(false);
     const id = planta.id.toString();
-    
-    const dias = obtenerDiasCrecimiento(planta);
-    if (dias > 0) {
-      const date = new Date();
-      date.setDate(date.getDate() + dias);
-      setFormData(prev => ({
+
+    setFormData(prev => {
+      const fechaEstimadaCalculada = calcularFechaEstimada(planta, prev.fechaSiembraFin);
+      return {
         ...prev,
         variedadPlantaId: id,
-        fechaEstimada: date.toISOString().split('T')[0]
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, variedadPlantaId: id }));
-    }
+        ...(fechaEstimadaCalculada ? { fechaEstimada: fechaEstimadaCalculada } : {})
+      };
+    });
   };
 
   // handlePlantaChange eliminado porque ahora usamos seleccionarPlanta
@@ -275,7 +314,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, tipoOrigen: 'SUELTO', codigoLote: '' }))}
+                  onClick={() => setFormData(prev => ({ ...prev, tipoOrigen: 'SUELTO' }))}
                   className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
                     formData.tipoOrigen === 'SUELTO'
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
@@ -340,6 +379,85 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 </div>
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de Siembra *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModoFechaSiembra('UN_DIA');
+                    actualizarFechaSiembra({ fechaSiembraFin: formData.fechaSiembraInicio });
+                  }}
+                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                    modoFechaSiembra === 'UN_DIA'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Un día
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoFechaSiembra('RANGO')}
+                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                    modoFechaSiembra === 'RANGO'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Rango de días
+                </button>
+              </div>
+            </div>
+
+            {modoFechaSiembra === 'UN_DIA' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fecha de Siembra *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.fechaSiembraInicio}
+                  onChange={(e) => actualizarFechaSiembra({
+                    fechaSiembraInicio: e.target.value,
+                    fechaSiembraFin: e.target.value
+                  })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sembrado Desde *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.fechaSiembraInicio}
+                    onChange={(e) => actualizarFechaSiembra({ fechaSiembraInicio: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sembrado Hasta *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    min={formData.fechaSiembraInicio}
+                    value={formData.fechaSiembraFin}
+                    onChange={(e) => actualizarFechaSiembra({ fechaSiembraFin: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
