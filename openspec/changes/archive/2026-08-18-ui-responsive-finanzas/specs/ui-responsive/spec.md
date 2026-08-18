@@ -1,6 +1,5 @@
-## Purpose
-Define los requisitos de diseño responsivo del frontend para adaptarse dinámicamente a diferentes tamaños de pantalla (mobile, tablet, desktop), asegurando una experiencia de usuario óptima en todos los dispositivos sin reescribir la lógica de negocio.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: Layout Responsive
 El frontend SHALL adaptar su layout principal (Sidebar, Navbar y Contenedor), sus vistas de catálogos y pantallas complejas como el Punto de Venta, la gestión de Clientes / Cuentas Corrientes y el módulo de Finanzas / Cheques dinámicamente según el tamaño de la pantalla del dispositivo.
 
@@ -34,44 +33,7 @@ El frontend SHALL adaptar su layout principal (Sidebar, Navbar y Contenedor), su
 - **THEN** los listados del módulo de Finanzas y de la cartera de cheques conservan su presentación tabular completa y las tarjetas permanecen ocultas
 - **THEN** los modales de cheque conservan su presentación centrada con bordes redondeados y alto máximo acotado
 
-### Requirement: Visualización del Saldo de Cuenta Corriente
-El frontend SHALL comunicar el estado de la cuenta corriente en dinero de un cliente de forma inequívoca, distinguiendo deuda, saldo a favor y saldo nulo mediante etiqueta textual y color, con jerarquía visual reforzada en pantallas móviles.
-
-#### Scenario: Cliente con deuda
-- **WHEN** el saldo en dinero del cliente es menor a cero
-- **THEN** se muestra la etiqueta "Debe" junto al monto en valor absoluto
-- **THEN** el monto y la etiqueta se presentan en tono rojo
-- **THEN** en la tarjeta móvil del listado, el monto se muestra con tipografía destacada (mayor que el texto secundario de la tarjeta)
-
-#### Scenario: Cliente con saldo a favor
-- **WHEN** el saldo en dinero del cliente es mayor a cero
-- **THEN** se muestra la etiqueta "A favor" junto al monto en valor absoluto
-- **THEN** el monto y la etiqueta se presentan en tono verde (emerald)
-
-#### Scenario: Cliente sin saldo pendiente
-- **WHEN** el saldo en dinero del cliente es exactamente cero
-- **THEN** se muestra la etiqueta "Sin saldo"
-- **THEN** el monto y la etiqueta se presentan en tono gris neutro, sin usar el color de saldo a favor
-
-#### Scenario: Coherencia entre vistas
-- **WHEN** el mismo cliente se observa en la tarjeta móvil, en la tabla de escritorio y en el modal de ajuste de saldo
-- **THEN** las tres vistas derivan la etiqueta y el tono del saldo de la misma función de presentación compartida
-- **THEN** las tres vistas muestran la misma etiqueta de estado para el mismo valor de saldo
-
-### Requirement: Listado de Clientes Priorizado en Mobile
-El frontend SHALL presentar el listado de clientes en pantallas móviles como tarjetas que prioricen el nombre o razón social y el saldo de cuenta corriente por sobre el resto de los datos, manteniendo la tabla completa en escritorio.
-
-#### Scenario: Listado en pantalla móvil
-- **WHEN** el listado de clientes se visualiza en una pantalla menor a 768px
-- **THEN** cada cliente se presenta como una tarjeta y la tabla permanece oculta
-- **THEN** la tarjeta muestra el nombre o razón social y el saldo como los elementos de mayor jerarquía visual
-- **THEN** las acciones de la tarjeta (Editar, Saldo, Eliminar y, si corresponde, las de bandejas) se presentan como botones de ancho repartido y área táctil amplia
-
-#### Scenario: Eliminación de un cliente
-- **WHEN** el usuario activa la acción de eliminar un cliente, tanto desde la tarjeta móvil como desde la tabla de escritorio
-- **THEN** se abre el modal de confirmación de la aplicación con variante de peligro
-- **THEN** la eliminación solo se ejecuta al confirmar en ese modal
-- **THEN** no se utilizan diálogos nativos del navegador
+## ADDED Requirements
 
 ### Requirement: Cartera de Cheques Priorizada en Mobile
 El frontend SHALL presentar la cartera de cheques en pantallas móviles como tarjetas que prioricen el monto y la proximidad de la fecha de cobro por sobre el resto de los datos, manteniendo la tabla completa en escritorio.
@@ -141,4 +103,3 @@ El frontend SHALL presentar los controles de selección del modal de actualizaci
 - **WHEN** el usuario abre el buscador de clientes para endosar dentro del modal a pantalla completa
 - **THEN** la lista de resultados es visible y desplazable en su totalidad sin quedar recortada por el área scrolleable del modal
 - **THEN** cada resultado de la lista tiene un área táctil suficiente para seleccionarse con el pulgar
-

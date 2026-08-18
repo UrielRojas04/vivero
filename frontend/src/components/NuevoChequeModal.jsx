@@ -96,9 +96,9 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
     .filter(c => c.nombreRazonSocial.toLowerCase().includes(searchCliente.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-visible my-8 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm">
+      <div className="bg-white w-full h-full sm:h-auto max-w-lg rounded-none sm:rounded-2xl shadow-xl flex flex-col max-h-screen sm:max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-50 rounded-xl">
               <CreditCard className="w-5 h-5 text-emerald-600" />
@@ -113,12 +113,13 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Cheque</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, esEmisionPropia: false }))}
@@ -162,12 +163,15 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   }}
                   onFocus={() => setIsDropdownOpen(true)}
                   placeholder="Buscar cliente..."
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                 />
               </div>
-              
+
               {isDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                /* D5: en mobile la lista se renderiza EN FLUJO (empuja el contenido del
+                   cuerpo scrolleable) para no quedar recortada por overflow-y-auto del
+                   panel; desde sm: (>=640px) vuelve a flotar como antes. */
+                <div className="static sm:absolute sm:z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                   <div 
                     className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-500 italic border-b border-gray-100"
                     onClick={() => {
@@ -207,7 +211,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
                 <input
@@ -216,7 +220,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   value={formData.banco}
                   onChange={handleChange}
                   placeholder="Ej: Banco Nación"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
 
@@ -228,12 +232,12 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   value={formData.numeroSerie}
                   onChange={handleChange}
                   placeholder="Ej: 12345678"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Emisión</label>
                 <input
@@ -242,7 +246,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   required
                   value={formData.fechaRecepcion}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
 
@@ -253,7 +257,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   name="fechaCobro"
                   value={formData.fechaCobro}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
             </div>
@@ -269,26 +273,27 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   required
                   value={formData.monto}
                   onChange={(val) => setFormData(prev => ({ ...prev, monto: val }))}
-                  className="w-full pl-8 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                  className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                   placeholder="Ej: 150000"
                 />
               </div>
             </div>
 
           </div>
+        </div>
 
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="flex-none flex gap-3 p-6 border-t border-gray-100 sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !formData.monto}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Registrar Cheque

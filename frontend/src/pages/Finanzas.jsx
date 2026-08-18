@@ -30,6 +30,7 @@ import { useUIStore } from '../store/useUIStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import { describirEstadoCheque, describirVencimientoCheque, describirOrigenCheque } from '../utils/chequeDisplay';
 import FormattedNumberInput from '../components/FormattedNumberInput';
 import ChequeEstadoModal from '../components/ChequeEstadoModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -414,16 +415,16 @@ const Finanzas = () => {
                   />
                 </div>
                 
-                <form onSubmit={handleCrearGasto} className="flex flex-row items-center gap-2 w-full xl:w-auto bg-gray-50/80 p-2 rounded-xl border border-gray-100">
+                <form onSubmit={handleCrearGasto} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto bg-gray-50/80 p-2 rounded-xl border border-gray-100">
                   <input
                     type="text"
                     placeholder="Nuevo Gasto..."
-                    className="flex-1 w-32 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                    className="flex-1 w-full sm:w-auto border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                     value={nuevoGasto.concepto}
                     onChange={e => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
                     required
                   />
-                  <div className="relative w-32 sm:w-40">
+                  <div className="relative w-full sm:w-40">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-base">$</span>
                     <FormattedNumberInput
                       id="monto"
@@ -438,7 +439,7 @@ const Finanzas = () => {
                     type="submit"
                     disabled={createGastoMutation.isPending}
                     title="Registrar Gasto"
-                    className="flex items-center justify-center bg-gray-900 text-white rounded-lg p-1.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto flex items-center justify-center bg-gray-900 text-white rounded-lg p-1.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     {createGastoMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                   </button>
@@ -479,7 +480,7 @@ const Finanzas = () => {
                     
                     {/* Fila sintética para Costo de Producción en Vivero */}
                     {unidadNegocioActiva === '1' && resumen?.costoMercaderiaVendida > 0 && gastosPage === 0 && searchGastos === '' && (
-                      <li className="flex items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/50 hover:border-blue-200 transition-colors shadow-sm">
+                      <li className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/50 hover:border-blue-200 transition-colors shadow-sm gap-2">
                         <div>
                           <p className="text-sm font-semibold text-gray-900 flex items-center">
                             Costo de Producción (Insumos)
@@ -495,7 +496,7 @@ const Finanzas = () => {
                       </li>
                     )}
                     {gastos.map(gasto => (
-                      <li key={gasto.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm">
+                      <li key={gasto.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm gap-2">
                         <div>
                           <p className="text-sm font-semibold text-gray-900 flex items-center">
                             {gasto.concepto}
@@ -637,63 +638,103 @@ const Finanzas = () => {
               <p className="text-sm text-gray-500">No hay ventas que coincidan con la búsqueda.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/75 border-b border-gray-200">
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">N°</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Productos</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendedor</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
+            <>
+              {/* Tarjetas mobile */}
+              <div className="grid grid-cols-1 gap-3 p-4 md:hidden">
+                {ventas.map((venta) => (
+                  <div key={venta.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500">#{venta.nroVenta ?? venta.id}</p>
+                        <p className="text-xs text-gray-500">{new Date(venta.fecha).toLocaleDateString('es-AR')}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
+                        {venta.estadoDePago}
+                      </span>
+                    </div>
+                    <p className="mt-2 font-semibold text-gray-900">{venta.clienteNombre}</p>
+                    <p className="mt-3 text-xl font-bold text-emerald-700">{formatMoney(venta.totalFinal)}</p>
                     {unidadNegocioActiva === '2' && (
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">G. Neta</th>
+                      <p className="text-sm font-semibold text-blue-600">G. Neta: {formatMoney(venta.gananciaNeta)}</p>
                     )}
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {ventas.map((venta) => (
-                    <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-4 py-3 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {new Date(venta.fecha).toLocaleDateString('es-AR')}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{venta.clienteNombre}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={venta.resumenProductos}>
-                        {venta.resumenProductos}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer hover:text-emerald-600 transition-colors" 
-                          onClick={() => {
-                            if (venta.vendedorId) setSelectedVendedorId(venta.vendedorId);
-                          }}
-                          title="Filtrar por este vendedor"
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
+                      <p>Método: {venta.metodoPago || '—'}</p>
+                      <p
+                        className="cursor-pointer hover:text-emerald-600 transition-colors"
+                        onClick={() => {
+                          if (venta.vendedorId) setSelectedVendedorId(venta.vendedorId);
+                        }}
+                        title="Filtrar por este vendedor"
                       >
-                        {venta.vendedorNombre}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-700">
-                        {formatMoney(venta.totalFinal)}
-                      </td>
-                      {unidadNegocioActiva === '2' && (
-                        <td className="px-4 py-3 text-right font-bold text-blue-600">
-                          {formatMoney(venta.gananciaNeta)}
-                        </td>
-                      )}
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
-                          {venta.estadoDePago}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center text-xs text-gray-600">
-                        {venta.metodoPago || '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        Vendedor: {venta.vendedorNombre}
+                      </p>
+                      <p className="truncate" title={venta.resumenProductos}>{venta.resumenProductos}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tabla desktop */}
+              <div className="hidden md:block">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/75 border-b border-gray-200">
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">N°</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Productos</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendedor</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
+                        {unidadNegocioActiva === '2' && (
+                          <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">G. Neta</th>
+                        )}
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {ventas.map((venta) => (
+                        <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-3 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {new Date(venta.fecha).toLocaleDateString('es-AR')}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-900">{venta.clienteNombre}</td>
+                          <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={venta.resumenProductos}>
+                            {venta.resumenProductos}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer hover:text-emerald-600 transition-colors"
+                              onClick={() => {
+                                if (venta.vendedorId) setSelectedVendedorId(venta.vendedorId);
+                              }}
+                              title="Filtrar por este vendedor"
+                          >
+                            {venta.vendedorNombre}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-700">
+                            {formatMoney(venta.totalFinal)}
+                          </td>
+                          {unidadNegocioActiva === '2' && (
+                            <td className="px-4 py-3 text-right font-bold text-blue-600">
+                              {formatMoney(venta.gananciaNeta)}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
+                              {venta.estadoDePago}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center text-xs text-gray-600">
+                            {venta.metodoPago || '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Paginación */}
@@ -758,61 +799,102 @@ const Finanzas = () => {
                 <p className="text-sm text-gray-500">No hay cheques en cartera.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/75 border-b border-gray-200">
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Recepción</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Cobro</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Banco</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Emisor</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Monto</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Tipo</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {chequesEnCarteraList.map((cheque) => (
-                      <tr key={cheque.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(cheque.fechaCobro).toLocaleDateString('es-AR')}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{cheque.banco}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{cheque.emisor}</td>
-                        <td className="px-6 py-4 text-sm font-bold text-emerald-700 text-right">
-                          {formatMoney(cheque.monto)}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {cheque.esEmisionPropia ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                              Propio
-                            </span>
+              <>
+                {/* Tarjetas mobile */}
+                <div className="grid grid-cols-1 gap-3 p-4 md:hidden">
+                  {chequesEnCarteraList.map((cheque) => {
+                    const vencimiento = describirVencimientoCheque(cheque.fechaCobro);
+                    const { editable } = describirEstadoCheque(cheque);
+                    return (
+                      <div key={cheque.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-2xl font-bold text-emerald-700">{formatMoney(cheque.monto)}</p>
+                            <p className={`text-xs font-semibold mt-1 ${vencimiento.tono.texto}`}>{vencimiento.etiqueta}</p>
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold ${describirOrigenCheque(cheque).tono.chip}`}>
+                            {describirOrigenCheque(cheque).etiqueta}
+                          </span>
+                        </div>
+                        <div className="mt-3 space-y-1 text-xs text-gray-500">
+                          <p>Origen: {cheque.clienteNombre || 'Suelto'}</p>
+                          <p>Banco: {cheque.banco || '-'}</p>
+                          <p>Recibido: {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}</p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          {editable ? (
+                            <button
+                              onClick={() => {
+                                setSelectedCheque(cheque);
+                                setIsChequeModalOpen(true);
+                              }}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer font-semibold text-sm"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Actualizar Estado
+                            </button>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                              Tercero
-                            </span>
+                            <p className="text-center text-gray-400 text-[10px] uppercase font-bold tracking-wide py-2">Bloqueado</p>
                           )}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <button
-                            onClick={() => {
-                              setSelectedCheque(cheque);
-                              setIsChequeModalOpen(true);
-                            }}
-                            className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
-                            title="Editar estado"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Tabla desktop */}
+                <div className="hidden md:block">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50/75 border-b border-gray-200">
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Recepción</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Cobro</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Banco</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origen</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Monto</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Tipo</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {chequesEnCarteraList.map((cheque) => (
+                          <tr key={cheque.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {new Date(cheque.fechaCobro).toLocaleDateString('es-AR')}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{cheque.banco}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{cheque.clienteNombre || 'Suelto'}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-emerald-700 text-right">
+                              {formatMoney(cheque.monto)}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold ${describirOrigenCheque(cheque).tono.chip}`}>
+                                {describirOrigenCheque(cheque).etiqueta}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <button
+                                onClick={() => {
+                                  setSelectedCheque(cheque);
+                                  setIsChequeModalOpen(true);
+                                }}
+                                className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                                title="Editar estado"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
