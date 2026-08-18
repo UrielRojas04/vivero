@@ -5,6 +5,7 @@ import { clientesApi } from '../api/clientes.api';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import FormattedNumberInput from './FormattedNumberInput';
+import { describirSaldo } from '../utils/saldoDisplay';
 
 const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
   const [monto, setMonto] = useState('');
@@ -36,18 +37,20 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!monto || isNaN(monto) || parseFloat(monto) <= 0) return;
-    
+
     // PAGO suma al balance (reduce la deuda o aumenta el saldo a favor)
     // DEUDA resta al balance (aumenta la deuda o reduce el saldo a favor)
     const valorAjuste = tipoAjuste === 'PAGO' ? parseFloat(monto) : -parseFloat(monto);
-    
+
     ajusteMutation.mutate(valorAjuste);
   };
 
+  const saldo = describirSaldo(cliente.balanceDinero);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm">
+      <div className="bg-white w-full h-full sm:h-auto max-w-md rounded-none sm:rounded-2xl shadow-xl flex flex-col max-h-screen sm:max-h-[95vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-50 rounded-xl">
               <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -65,16 +68,15 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="bg-gray-50 p-4 rounded-xl">
-              <div className="text-sm text-gray-500 mb-1">Saldo Actual</div>
-              <div className={`text-2xl font-bold ${cliente.balanceDinero < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
+              <div className="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">
+                {saldo.etiqueta}
               </div>
-              {cliente.balanceDinero < 0 && (
-                <div className="text-xs text-red-500 mt-1">El cliente tiene deuda.</div>
-              )}
+              <div className={`text-3xl font-bold ${saldo.tono.texto}`}>
+                $ {saldo.monto}
+              </div>
             </div>
 
             <div>
@@ -85,7 +87,7 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
                 <button
                   type="button"
                   onClick={() => setTipoAjuste('PAGO')}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     tipoAjuste === 'PAGO'
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:bg-emerald-50'
@@ -97,7 +99,7 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
                 <button
                   type="button"
                   onClick={() => setTipoAjuste('DEUDA')}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     tipoAjuste === 'DEUDA'
                       ? 'border-red-500 bg-red-50 text-red-700 font-bold'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-red-200 hover:bg-red-50'
@@ -127,25 +129,25 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                {tipoAjuste === 'PAGO' 
-                  ? 'Este monto se sumará al saldo (reduce deuda).' 
+                {tipoAjuste === 'PAGO'
+                  ? 'Este monto se sumará al saldo (reduce deuda).'
                   : 'Este monto se restará del saldo (aumenta deuda).'}
               </p>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="flex-none flex gap-3 p-4 px-6 border-t border-gray-100 sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={ajusteMutation.isPending || !monto || parseFloat(monto) <= 0}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
               {ajusteMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Guardar {tipoAjuste === 'PAGO' ? 'Pago' : 'Deuda'}

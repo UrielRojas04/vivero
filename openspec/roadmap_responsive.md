@@ -36,7 +36,7 @@ Usaremos Tailwind CSS (`sm:`, `md:`, `lg:`) para que las tablas se conviertan en
 ## Etapa 5: Finanzas y Cheques
 **Change propuesto:** `ui-responsive-finanzas`
 - **Gestión de Cheques:** El panel de cheques suele tener muchas columnas (banco, monto, fechas, estado). En celular, mostrar una vista tipo lista de tarjetas donde destaquen el monto y los días restantes para cobro.
-- **Gestión de Cheques:** El panel de cheques suele tener muchas columnas (banco, monto, fechas, estado). En celular, mostrar una vista tipo lista de tarjetas donde destaquen el monto y los días restantes para cobro.
+- **Seguir la metodología de tarjetas:** Como venimos haciendo con la seccion Productos y Clientes vamos a reemplazar esas filas por tarjetas profesionales y bonitas y entendibles en el celular
 - **Modales de Endoso/Rechazo:** Ajustar el `ChequeEstadoModal` para que los radio buttons y selectores de clientes caigan bien al dedo.
 
 ## Etapa 6: Mejoras de UX Cross-Sección ✅ COMPLETADO

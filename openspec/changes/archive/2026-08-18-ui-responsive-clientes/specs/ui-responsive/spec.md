@@ -1,6 +1,5 @@
-## Purpose
-Define los requisitos de diseño responsivo del frontend para adaptarse dinámicamente a diferentes tamaños de pantalla (mobile, tablet, desktop), asegurando una experiencia de usuario óptima en todos los dispositivos sin reescribir la lógica de negocio.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: Layout Responsive
 El frontend SHALL adaptar su layout principal (Sidebar, Navbar y Contenedor), sus vistas de catálogos y pantallas complejas como el Punto de Venta y la gestión de Clientes / Cuentas Corrientes dinámicamente según el tamaño de la pantalla del dispositivo.
 
@@ -28,6 +27,8 @@ El frontend SHALL adaptar su layout principal (Sidebar, Navbar y Contenedor), su
 - **THEN** las barras de búsqueda y botones principales se presentan alineados en la misma fila horizontal
 - **THEN** en pantallas divididas como Nueva Venta, ambos paneles se muestran simultáneamente (ej. Búsqueda a la izquierda, Carrito a la derecha)
 - **THEN** los modales de cuenta corriente del cliente conservan su presentación centrada con bordes redondeados y alto máximo acotado
+
+## ADDED Requirements
 
 ### Requirement: Visualización del Saldo de Cuenta Corriente
 El frontend SHALL comunicar el estado de la cuenta corriente en dinero de un cliente de forma inequívoca, distinguiendo deuda, saldo a favor y saldo nulo mediante etiqueta textual y color, con jerarquía visual reforzada en pantallas móviles.

@@ -8,6 +8,7 @@ import AjusteSaldoModal from '../components/AjusteSaldoModal';
 import { useUIStore } from '../store/useUIStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import { describirSaldo } from '../utils/saldoDisplay';
 
 const Clientes = () => {
   const { pushToast, askConfirm } = useUIStore();
@@ -152,26 +153,29 @@ const Clientes = () => {
 
       {/* Vista Mobile (Cards) */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
-        {filteredClientes.map((cliente) => (
+        {filteredClientes.map((cliente) => {
+          const saldo = describirSaldo(cliente.balanceDinero);
+          return (
           <div key={cliente.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+            <div className="flex justify-between items-start gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
                   {cliente.nombreRazonSocial.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{cliente.nombreRazonSocial}</h3>
-                  <p className="text-sm text-gray-500">{cliente.telefono || 'Sin teléfono'}</p>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-gray-900 truncate">{cliente.nombreRazonSocial}</h3>
+                  <p className="text-xs text-gray-400 truncate">{cliente.telefono || 'Sin teléfono'}</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  cliente.balanceDinero < 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-                }`}>
-                  $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
+              <div className="flex flex-col items-end flex-shrink-0">
+                <span className="text-xs uppercase tracking-wide font-semibold text-gray-400">
+                  {saldo.etiqueta}
+                </span>
+                <span className={`text-2xl font-bold ${saldo.tono.texto}`}>
+                  $ {saldo.monto}
                 </span>
                 {unidadNegocioActiva !== '2' && (
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                     cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
                   }`}>
                     {cliente.balanceBandejas || 0} bandejas
@@ -182,19 +186,19 @@ const Clientes = () => {
             <div className="flex gap-2 pt-2 border-t border-gray-50">
               <button
                 onClick={() => handleOpenModal(cliente)}
-                className="flex-1 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Pencil className="w-4 h-4" /> Editar
               </button>
               <button
                 onClick={() => handleOpenAjusteSaldo(cliente)}
-                className="flex-1 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <DollarSign className="w-4 h-4" /> Saldo
               </button>
               <button
                 onClick={() => handleConfirmDelete(cliente.id, cliente.nombreRazonSocial)}
-                className="flex-1 flex justify-center items-center py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition-colors cursor-pointer"
+                className="flex-1 flex justify-center items-center py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4 mr-2" /> Eliminar
               </button>
@@ -216,7 +220,8 @@ const Clientes = () => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
         {filteredClientes.length === 0 && (
           <div className="text-center py-8 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
             No se encontraron clientes.
@@ -237,7 +242,9 @@ const Clientes = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredClientes.map((cliente) => (
+            {filteredClientes.map((cliente) => {
+              const saldo = describirSaldo(cliente.balanceDinero);
+              return (
               <tr key={cliente.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
@@ -249,10 +256,11 @@ const Clientes = () => {
                 </td>
                 <td className="p-4 text-gray-600">{cliente.telefono || '-'}</td>
                 <td className="p-4 text-right">
-                  <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${
-                    cliente.balanceDinero < 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-                  }`}>
-                    $ {cliente.balanceDinero ? cliente.balanceDinero.toLocaleString('es-AR') : '0'}
+                  <span
+                    title={saldo.etiqueta}
+                    className={`px-2.5 py-1 rounded-full text-sm font-medium ${saldo.tono.chip}`}
+                  >
+                    $ {saldo.monto} · {saldo.etiqueta}
                   </span>
                 </td>
                 {unidadNegocioActiva !== '2' && (
@@ -309,7 +317,8 @@ const Clientes = () => {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {filteredClientes.length === 0 && (
               <tr>
                 <td colSpan="5" className="p-8 text-center text-gray-500">

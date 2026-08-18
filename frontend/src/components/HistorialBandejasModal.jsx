@@ -28,9 +28,9 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
   if (!isOpen || !cliente) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl animate-fade-in-up max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full h-full sm:h-auto max-w-2xl rounded-none sm:rounded-2xl overflow-hidden shadow-xl animate-fade-in-up max-h-screen sm:max-h-[90vh] flex flex-col">
+        <div className="flex-none flex justify-between items-center p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
               <History className="w-5 h-5" />
@@ -40,11 +40,11 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
               <p className="text-sm text-gray-500">{cliente.nombreRazonSocial}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <div className="p-0 overflow-y-auto flex-1 bg-gray-50/50">
           {loading ? (
             <div className="flex justify-center p-12">
@@ -55,42 +55,44 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
               No hay movimientos registrados para este cliente.
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wider sticky top-0">
-                  <th className="p-4 font-semibold">Fecha</th>
-                  <th className="p-4 font-semibold">Tipo</th>
-                  <th className="p-4 font-semibold text-right">Cantidad</th>
-                  <th className="p-4 font-semibold text-center">Detalle</th>
-                  <th className="p-4 font-semibold text-right">Usuario</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
-                {historial.map((mov) => (
-                  <tr key={mov.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-4 text-sm text-gray-600">
-                      {new Date(mov.fecha).toLocaleString('es-AR')}
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        mov.tipo === 'ENTREGA' ? 'bg-orange-50 text-orange-700' : 'bg-emerald-50 text-emerald-700'
-                      }`}>
-                        {mov.tipo}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right font-bold text-gray-900">
-                      {mov.cantidad}
-                    </td>
-                    <td className="p-4 text-center text-sm text-gray-500">
-                      {mov.ventaId ? `Venta #${mov.ventaId}` : 'Devolución directa'}
-                    </td>
-                    <td className="p-4 text-right text-sm text-gray-500">
-                      {mov.usuarioNombre}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wider sticky top-0">
+                    <th className="p-4 font-semibold">Fecha</th>
+                    <th className="p-4 font-semibold">Tipo</th>
+                    <th className="p-4 font-semibold text-right">Cantidad</th>
+                    <th className="p-4 font-semibold text-center">Detalle</th>
+                    <th className="p-4 font-semibold text-right">Usuario</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {historial.map((mov) => (
+                    <tr key={mov.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-4 text-sm text-gray-600 whitespace-nowrap">
+                        {new Date(mov.fecha).toLocaleString('es-AR')}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                          mov.tipo === 'ENTREGA' ? 'bg-orange-50 text-orange-700' : 'bg-emerald-50 text-emerald-700'
+                        }`}>
+                          {mov.tipo}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right font-bold text-gray-900">
+                        {mov.cantidad}
+                      </td>
+                      <td className="p-4 text-center text-sm text-gray-500 whitespace-nowrap">
+                        {mov.ventaId ? `Venta #${mov.ventaId}` : 'Devolución directa'}
+                      </td>
+                      <td className="p-4 text-right text-sm text-gray-500 whitespace-nowrap">
+                        {mov.usuarioNombre}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
