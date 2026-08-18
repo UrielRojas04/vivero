@@ -6,7 +6,7 @@ import PaseStockModal from '../components/PaseStockModal';
 import ConversorBandejas from '../components/ConversorBandejas';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Siembras = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
@@ -14,7 +14,18 @@ const Siembras = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchMode, setSearchMode] = useState('TODO'); // 'TODO' | 'NUMERO_SIEMBRA'
   const [showConversor, setShowConversor] = useState(false);
+  const [expandedIds, setExpandedIds] = useState(new Set());
+
+  const toggleExpanded = (id) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -108,11 +119,26 @@ const Siembras = () => {
 
   const filteredSiembras = siembras.filter((s) => {
     if (s.estado === 'EN_STOCK') return false; // Ocultar las que ya pasaron a stock
-    const matchSearch = (s.variedadPlanta?.nombre && s.variedadPlanta.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (s.dueno && s.dueno.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (s.numeroLote && s.numeroLote.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchSearch;
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+
+    // Modo exclusivo: sólo número de siembra, para no confundirlo con el código
+    // de lote cuando ambos comparten el mismo valor numérico (ej. los dos "1").
+    if (searchMode === 'NUMERO_SIEMBRA') {
+      return !!(s.numeroSiembra && s.numeroSiembra.toLowerCase().includes(term));
+    }
+
+    return (s.variedadPlanta?.nombre && s.variedadPlanta.nombre.toLowerCase().includes(term)) ||
+      (s.dueno && s.dueno.toLowerCase().includes(term)) ||
+      (s.codigoLote && s.codigoLote.toLowerCase().includes(term)) ||
+      (s.numeroSiembra && s.numeroSiembra.toLowerCase().includes(term));
   });
+
+  const formatOrigen = (tipoOrigen) => {
+    if (tipoOrigen === 'SUELTO') return 'Suelto';
+    if (tipoOrigen === 'SOBRE') return 'Sobre';
+    return '-';
+  };
 
   const getStatusBadge = (estado) => {
     switch (estado) {
@@ -166,18 +192,39 @@ const Siembras = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
         <div className="relative w-full md:max-w-md">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="h-5 h-5 text-gray-400" />
           </span>
           <input
             type="text"
-            placeholder="Buscar por variedad, lote o dueño..."
+            placeholder={searchMode === 'NUMERO_SIEMBRA' ? 'Buscar sólo por número de siembra...' : 'Buscar por variedad, número de siembra, lote o dueño...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50/50 transition-all"
           />
+        </div>
+
+        <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl p-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setSearchMode('TODO')}
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              searchMode === 'TODO' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Todo
+          </button>
+          <button
+            type="button"
+            onClick={() => setSearchMode('NUMERO_SIEMBRA')}
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              searchMode === 'NUMERO_SIEMBRA' ? 'bg-white text-indigo-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Sólo Nº Siembra
+          </button>
         </div>
       </div>
 
@@ -220,89 +267,116 @@ const Siembras = () => {
                 else progress = Math.max(10, 100 - (diffDays * 3));
               }
 
+              const isExpanded = expandedIds.has(siembra.id);
+
               return (
-                <div key={siembra.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-semibold shrink-0">
-                        <Sprout className="w-5 h-5" />
+                <div key={siembra.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(siembra.id)}
+                    className="w-full text-left p-4 flex flex-col gap-2 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold font-mono bg-indigo-100 text-indigo-800">
+                          Nº {siembra.numeroSiembra || '-'}
+                        </span>
+                        {siembra.codigoLote && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold font-mono bg-amber-100 text-amber-800">
+                            Lote {siembra.codigoLote}
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-base leading-tight">
+                      {getStatusBadge(siembra.estado)}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                          <Sprout className="w-4 h-4" />
+                        </div>
+                        <span className="font-semibold text-gray-900 text-sm truncate">
                           {siembra.variedadPlanta?.nombre || '-'}
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                          Lote: {siembra.numeroLote} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}
-                        </p>
-                      </div>
-                    </div>
-                    {getStatusBadge(siembra.estado)}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 rounded-xl p-3 border border-gray-100 mt-1">
-                    <div>
-                      <span className="text-gray-500 block text-xs mb-0.5">Dueño</span>
-                      <span className="font-medium text-gray-900">{siembra.dueno}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block text-xs mb-0.5">Cant. Inicial</span>
-                      <span className="font-medium text-gray-900">{siembra.cantidad} u.</span>
-                    </div>
-                  </div>
-
-                  {est && (
-                    <div className="flex flex-col gap-1.5 mt-1">
-                      <div className="flex justify-between items-end">
-                        <span className="text-xs font-medium text-gray-500">Progreso Estimado</span>
-                        <span className="text-xs font-semibold text-gray-700">
-                          {est.toLocaleDateString('es-AR')} {diffDays > 0 ? `(${diffDays}d)` : '(Lista)'}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all ${progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`} 
-                          style={{ width: `${progress}%` }}
-                        />
+                      {isExpanded
+                        ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0" />
+                        : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />}
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
+                      <p className="text-xs text-gray-500">
+                        {formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <div>
+                          <span className="text-gray-500 block text-xs mb-0.5">Dueño</span>
+                          <span className="font-medium text-gray-900">{siembra.dueno}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block text-xs mb-0.5">Cant. Inicial</span>
+                          <span className="font-medium text-gray-900">{siembra.cantidad} u.</span>
+                        </div>
+                      </div>
+
+                      {est && (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-end">
+                            <span className="text-xs font-medium text-gray-500">Progreso Estimado</span>
+                            <span className="text-xs font-semibold text-gray-700">
+                              {est.toLocaleDateString('es-AR')} {diffDays > 0 ? `(${diffDays}d)` : '(Lista)'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                        {(siembra.estado === 'FINALIZADA' || siembra.estado === 'EN_PROCESO') && (
+                          <button
+                            onClick={() => {
+                              setSiembraToPaseStock(siembra);
+                              setIsPaseStockOpen(true);
+                            }}
+                            className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            <PackagePlus className="w-4 h-4" /> Stock
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedSiembra(siembra);
+                            setIsFormOpen(true);
+                          }}
+                          className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Edit2 className="w-4 h-4" /> Editar
+                        </button>
+                        <button
+                          onClick={() =>
+                            askConfirm({
+                              title: '¿Eliminar siembra?',
+                              message: 'Esta acción no se puede deshacer.',
+                              variant: 'danger',
+                              confirmLabel: 'Eliminar',
+                              onConfirm: () => handleDelete(siembra.id),
+                            })
+                          }
+                          className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" /> Eliminar
+                        </button>
                       </div>
                     </div>
                   )}
-
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 mt-1">
-                    {(siembra.estado === 'FINALIZADA' || siembra.estado === 'EN_PROCESO') && (
-                      <button
-                        onClick={() => {
-                          setSiembraToPaseStock(siembra);
-                          setIsPaseStockOpen(true);
-                        }}
-                        className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <PackagePlus className="w-4 h-4" /> Stock
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setSelectedSiembra(siembra);
-                        setIsFormOpen(true);
-                      }}
-                      className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <Edit2 className="w-4 h-4" /> Editar
-                    </button>
-                    <button
-                      onClick={() =>
-                        askConfirm({
-                          title: '¿Eliminar siembra?',
-                          message: 'Esta acción no se puede deshacer.',
-                          variant: 'danger',
-                          confirmLabel: 'Eliminar',
-                          onConfirm: () => handleDelete(siembra.id),
-                        })
-                      }
-                      className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" /> Eliminar
-                    </button>
-                  </div>
                 </div>
               );
             })}
@@ -314,7 +388,7 @@ const Siembras = () => {
               <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/75 border-b border-gray-200">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Variedad / Lote</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Variedad / Identificación</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Dueño</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cant. Inicial</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entrega Est.</th>
@@ -327,7 +401,17 @@ const Siembras = () => {
                   <tr key={siembra.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="font-semibold text-gray-900">{siembra.variedadPlanta?.nombre || '-'}</div>
-                      <div className="text-xs text-gray-500">Lote: {siembra.numeroLote} | Bandeja: {siembra.variedadBandeja?.nombre || '-'}</div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold font-mono bg-indigo-100 text-indigo-800">
+                          Nº {siembra.numeroSiembra || '-'}
+                        </span>
+                        {siembra.codigoLote && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold font-mono bg-amber-100 text-amber-800">
+                            Lote {siembra.codigoLote}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {siembra.dueno}

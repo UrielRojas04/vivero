@@ -34,7 +34,17 @@ public class Siembra {
 
     private String dueno;
 
-    private String numeroLote;
+    // Código de lote impreso por el proveedor en el sobre de semillas.
+    // NO lleva restricción de unicidad: varias siembras pueden compartir el
+    // mismo código de lote cuando de un sobre salen siembras para clientes distintos.
+    private String codigoLote;
+
+    // Número de siembra interno asignado por el vivero. Obligatorio en todos los
+    // orígenes; la obligatoriedad se valida en el servicio, no aquí.
+    private String numeroSiembra;
+
+    @Enumerated(EnumType.STRING)
+    private TipoOrigenSiembra tipoOrigen;
 
     private Integer cantidad;
 

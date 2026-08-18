@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { variedadesPlantasApi } from '../api/variedades-plantas.api';
 import { variedadesBandejasApi } from '../api/variedades-bandejas.api';
 import { clientesApi } from '../api/clientes.api';
+import FormattedNumberInput from './FormattedNumberInput';
 
 const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
   const [busquedaPlanta, setBusquedaPlanta] = useState('');
@@ -16,7 +17,9 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
     variedadBandejaId: '',
     fechaEstimada: '',
     dueno: '',
-    numeroLote: '',
+    codigoLote: '',
+    numeroSiembra: '',
+    tipoOrigen: 'SOBRE',
     cantidad: ''
   });
 
@@ -54,7 +57,9 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
           variedadBandejaId: siembra.variedadBandeja?.id || '',
           fechaEstimada: siembra.fechaEstimada || '',
           dueno: siembra.dueno || '',
-          numeroLote: siembra.numeroLote || '',
+          codigoLote: siembra.codigoLote || '',
+          numeroSiembra: siembra.numeroSiembra || '',
+          tipoOrigen: siembra.tipoOrigen || 'SOBRE',
           cantidad: siembra.cantidad || ''
         });
         setBusquedaPlanta(siembra.variedadPlanta?.nombre || '');
@@ -66,7 +71,9 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
           variedadBandejaId: '',
           fechaEstimada: '',
           dueno: 'Jefe / Vivero propio',
-          numeroLote: '',
+          codigoLote: '',
+          numeroSiembra: '',
+          tipoOrigen: 'SOBRE',
           cantidad: ''
         });
         setBusquedaPlanta('');
@@ -250,16 +257,60 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Origen de la Semilla *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, tipoOrigen: 'SOBRE' }))}
+                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                    formData.tipoOrigen === 'SOBRE'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Sobre
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, tipoOrigen: 'SUELTO', codigoLote: '' }))}
+                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                    formData.tipoOrigen === 'SUELTO'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Suelto
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {formData.tipoOrigen === 'SOBRE' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Código de Lote *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.codigoLote}
+                    onChange={(e) => setFormData({ ...formData, codigoLote: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Número de Lote *
+                  Número de Siembra *
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.numeroLote}
-                  onChange={(e) => setFormData({ ...formData, numeroLote: e.target.value })}
+                  value={formData.numeroSiembra}
+                  onChange={(e) => setFormData({ ...formData, numeroSiembra: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 />
               </div>
@@ -268,16 +319,11 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                   Cantidad Inicial (Bandejas) *
                 </label>
                 <div className="relative">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                  <FormattedNumberInput
                     required
-                    min="1"
                     value={formData.cantidad}
-                    onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    style={{ MozAppearance: 'textfield' }}
+                    onChange={(val) => setFormData({ ...formData, cantidad: val })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                   {formData.cantidad && formData.variedadBandejaId && (
                     <div className="absolute right-0 top-full mt-1 text-xs text-emerald-600 font-medium">

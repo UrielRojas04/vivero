@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Package } from 'lucide-react';
 import api from '../api/axios';
+import FormattedNumberInput from './FormattedNumberInput';
 
 const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
   const [productos, setProductos] = useState([]);
@@ -59,7 +60,7 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
 
         <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto flex flex-col">
           <p className="text-sm text-gray-600 mb-6">
-            Vas a marcar como "Lista para entregar" la variedad <strong>{siembra.variedad}</strong> (Lote: {siembra.numeroLote}). Selecciona a qué producto del catálogo sumar el stock resultante.
+            Vas a marcar como "Lista para entregar" la variedad <strong>{siembra.variedad}</strong> (Siembra: {siembra.numeroSiembra || '-'}{siembra.codigoLote ? ` • Lote: ${siembra.codigoLote}` : ''}). Selecciona a qué producto del catálogo sumar el stock resultante.
           </p>
 
           <div className="space-y-4">
@@ -89,16 +90,11 @@ const FinalizarSiembraModal = ({ isOpen, siembra, onFinalizar, onCancel }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cantidad Final Lograda *
               </label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
+              <FormattedNumberInput
                 required
-                min="1"
                 value={cantidadFinal}
-                onChange={(e) => setCantidadFinal(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                style={{ MozAppearance: 'textfield' }}
+                onChange={setCantidadFinal}
+                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 placeholder="Ej: 100"
               />
               <p className="text-xs text-gray-500 mt-1">La cantidad inicial sembrada fue {siembra.cantidad}.</p>

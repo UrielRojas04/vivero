@@ -74,7 +74,7 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
               Planta: {siembra.variedadPlanta?.nombre}
             </h4>
             <p className="text-xs text-emerald-600">
-              Lote: {siembra.numeroLote} • Dueño: {siembra.dueno}
+              Siembra: {siembra.numeroSiembra || '-'}{siembra.codigoLote ? ` • Lote: ${siembra.codigoLote}` : ''} • Dueño: {siembra.dueno}
             </p>
           </div>
 
@@ -83,17 +83,12 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Stock (Unidades logradas)
               </label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                min="1"
+              <FormattedNumberInput
                 value={stock}
-                onChange={(e) => setStock(e.target.value)}
-                className={`w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
+                onChange={setStock}
+                className={`w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
                   errors.stock ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
                 }`}
-                style={{ MozAppearance: 'textfield' }}
               />
               {errors.stock && <p className="mt-1 text-sm text-red-500">{errors.stock}</p>}
             </div>

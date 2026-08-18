@@ -13,6 +13,7 @@ import com.vivero.gestion.models.EstadoSiembra;
 import com.vivero.gestion.models.MovimientoStock;
 import com.vivero.gestion.models.Producto;
 import com.vivero.gestion.models.Siembra;
+import com.vivero.gestion.models.TipoOrigenSiembra;
 import com.vivero.gestion.models.Usuario;
 import com.vivero.gestion.repositories.MovimientoStockRepository;
 import com.vivero.gestion.repositories.ProductoRepository;
@@ -51,9 +52,35 @@ public class SiembraServiceImpl implements SiembraService {
         return mapToDTO(siembra);
     }
 
+    /**
+     * Valida y normaliza el origen de la semilla de una siembra antes de persistirla.
+     * Reglas, en orden:
+     * - tipoOrigen nulo -> rechazo.
+     * - numeroSiembra nulo o en blanco -> rechazo.
+     * - tipoOrigen == SOBRE y codigoLote nulo o en blanco -> rechazo.
+     * - tipoOrigen == SUELTO -> se fuerza codigoLote a null, descartando cualquier valor recibido.
+     */
+    private void validarYNormalizarOrigen(SiembraDTO dto) {
+        if (dto.getTipoOrigen() == null) {
+            throw new RuntimeException("El origen de la semilla es obligatorio");
+        }
+        if (dto.getNumeroSiembra() == null || dto.getNumeroSiembra().isBlank()) {
+            throw new RuntimeException("El número de siembra es obligatorio");
+        }
+        if (dto.getTipoOrigen() == TipoOrigenSiembra.SOBRE
+                && (dto.getCodigoLote() == null || dto.getCodigoLote().isBlank())) {
+            throw new RuntimeException("El código de lote es obligatorio cuando el origen es SOBRE");
+        }
+        if (dto.getTipoOrigen() == TipoOrigenSiembra.SUELTO) {
+            dto.setCodigoLote(null);
+        }
+    }
+
     @Override
     @Transactional
     public SiembraDTO crearSiembra(SiembraDTO dto) {
+        validarYNormalizarOrigen(dto);
+
         Siembra siembra = new Siembra();
         if (dto.getVariedadPlanta() != null && dto.getVariedadPlanta().getId() != null) {
             siembra.setVariedadPlanta(variedadPlantaRepository.findById(dto.getVariedadPlanta().getId()).orElse(null));
@@ -63,7 +90,9 @@ public class SiembraServiceImpl implements SiembraService {
         }
         siembra.setFechaEstimada(dto.getFechaEstimada());
         siembra.setDueno(dto.getDueno());
-        siembra.setNumeroLote(dto.getNumeroLote());
+        siembra.setCodigoLote(dto.getCodigoLote());
+        siembra.setNumeroSiembra(dto.getNumeroSiembra());
+        siembra.setTipoOrigen(dto.getTipoOrigen());
         siembra.setCantidad(dto.getCantidad());
         siembra.setEstado(EstadoSiembra.EN_PROCESO);
 
@@ -74,6 +103,8 @@ public class SiembraServiceImpl implements SiembraService {
     @Override
     @Transactional
     public SiembraDTO actualizarSiembra(Long id, SiembraDTO dto) {
+        validarYNormalizarOrigen(dto);
+
         Siembra siembra = siembraRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Siembra no encontrada con ID: " + id));
 
@@ -85,7 +116,9 @@ public class SiembraServiceImpl implements SiembraService {
         }
         siembra.setFechaEstimada(dto.getFechaEstimada());
         siembra.setDueno(dto.getDueno());
-        siembra.setNumeroLote(dto.getNumeroLote());
+        siembra.setCodigoLote(dto.getCodigoLote());
+        siembra.setNumeroSiembra(dto.getNumeroSiembra());
+        siembra.setTipoOrigen(dto.getTipoOrigen());
         siembra.setCantidad(dto.getCantidad());
 
         Siembra saved = siembraRepository.save(siembra);
@@ -149,12 +182,12 @@ public class SiembraServiceImpl implements SiembraService {
 
         // Crear el nuevo producto
         Producto producto = new Producto();
-        producto.setNombre(siembra.getVariedadPlanta() != null ? siembra.getVariedadPlanta().getNombre() : "Siembra Lote " + siembra.getNumeroLote());
-        producto.setDescripcion("Siembra pasada a stock. Bandeja: " + 
+        producto.setNombre(siembra.getVariedadPlanta() != null ? siembra.getVariedadPlanta().getNombre() : "Siembra Lote " + siembra.getCodigoLote());
+        producto.setDescripcion("Siembra pasada a stock. Bandeja: " +
             (siembra.getVariedadBandeja() != null ? siembra.getVariedadBandeja().getNombre() : "N/A"));
         producto.setPrecio(request.getPrecioVenta());
         producto.setStock(request.getStock());
-        producto.setLote(siembra.getNumeroLote());
+        producto.setLote(siembra.getCodigoLote());
         producto.setDueno(siembra.getDueno());
         
         com.vivero.gestion.models.UnidadNegocio un = new com.vivero.gestion.models.UnidadNegocio();
@@ -215,7 +248,9 @@ public class SiembraServiceImpl implements SiembraService {
         
         dto.setFechaEstimada(siembra.getFechaEstimada());
         dto.setDueno(siembra.getDueno());
-        dto.setNumeroLote(siembra.getNumeroLote());
+        dto.setCodigoLote(siembra.getCodigoLote());
+        dto.setNumeroSiembra(siembra.getNumeroSiembra());
+        dto.setTipoOrigen(siembra.getTipoOrigen());
         dto.setCantidad(siembra.getCantidad());
         dto.setEstado(siembra.getEstado());
         return dto;

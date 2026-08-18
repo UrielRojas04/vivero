@@ -3,6 +3,7 @@ package com.vivero.gestion.dto;
 import java.time.LocalDate;
 
 import com.vivero.gestion.models.EstadoSiembra;
+import com.vivero.gestion.models.TipoOrigenSiembra;
 
 import lombok.Data;
 
@@ -13,7 +14,9 @@ public class SiembraDTO {
     private VariedadBandejaDTO variedadBandeja;
     private LocalDate fechaEstimada;
     private String dueno;
-    private String numeroLote;
+    private String codigoLote;
+    private String numeroSiembra;
+    private TipoOrigenSiembra tipoOrigen;
     private Integer cantidad;
     private EstadoSiembra estado;
 }

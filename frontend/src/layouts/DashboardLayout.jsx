@@ -270,7 +270,7 @@ const DashboardLayout = () => {
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-gray-900">
-                                  {alerta.variedadPlanta?.nombre} (Lote {alerta.numeroLote})
+                                  {alerta.variedadPlanta?.nombre} (Siembra {alerta.numeroSiembra || '-'})
                                 </p>
                                 <p className="text-xs text-gray-500 mt-0.5">
                                   {alerta.estado === 'FINALIZADA' 

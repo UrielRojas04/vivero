@@ -1,7 +1,5 @@
-## Purpose
+## MODIFIED Requirements
 
-Permitir que el sistema de siembras distinga claramente entre el código de lote del proveedor (cuando la semilla llega en sobre) y el número de siembra interno asignado por el vivero, facilitando la trazabilidad entre bandeja, sobre y cliente. Además, soportar el registro de siembras con origen en semilla suelta, sin código de lote, manteniendo un identificador único por siembra.
-## Requirements
 ### Requirement: Registro de Siembras
 El sistema SHALL permitir al usuario registrar una nueva siembra en proceso referenciando a las variedades parametrizadas en el sistema, incorporando retroalimentación visual sobre el equivalente en semillas en base a la cantidad y tipo de bandeja seleccionada. Además, el dueño del lote SHALL ser seleccionado desde una caja de búsqueda que incluya a los clientes registrados. El registro SHALL incluir el origen de la semilla, que puede ser `SOBRE` (semilla comercial que llega en un sobre con código de lote impreso por el proveedor) o `SUELTO` (semilla tomada de una bolsa, sin código de lote). El número de siembra SHALL ser obligatorio en ambos orígenes, y el código de lote SHALL ser obligatorio únicamente cuando el origen es `SOBRE`.
 
@@ -32,14 +30,7 @@ El sistema SHALL permitir al usuario registrar una nueva siembra en proceso refe
 - **THEN** el sistema limpia el código de lote de esa siembra y lo persiste como nulo
 - **AND** el número de siembra se conserva sin cambios
 
-### Requirement: Finalización de Siembra (Ingreso a Stock)
-El sistema SHALL permitir al usuario marcar una siembra como finalizada y transferir las plantas resultantes al stock de un producto.
-
-#### Scenario: Transición a catálogo
-- **WHEN** el usuario marca una siembra como "Lista para entregar"
-- **THEN** el sistema solicita seleccionar un Producto existente del catálogo y confirmar la cantidad final lograda
-- **AND** el sistema suma esa cantidad al stock del producto seleccionado
-- **AND** la siembra cambia su estado a `FINALIZADA`
+## ADDED Requirements
 
 ### Requirement: Trazabilidad de Siembras por Sobre y Cliente
 El sistema SHALL permitir que varias siembras distintas compartan el mismo código de lote, dado que de un mismo sobre de semillas pueden salir siembras para clientes diferentes. El número de siembra SHALL identificar a cada siembra por separado y es el valor que el vivero replica en todas las bandejas de esa siembra para vincularlas con su dueño y con su sobre de procedencia. El sistema SHALL NOT imponer una restricción de unicidad sobre el código de lote.
@@ -58,4 +49,3 @@ El sistema SHALL permitir que varias siembras distintas compartan el mismo códi
 - **THEN** cada siembra muestra su número de siembra y su origen
 - **AND** las siembras con origen `SOBRE` muestran además su código de lote
 - **AND** las siembras con origen `SUELTO` no muestran código de lote alguno
-
