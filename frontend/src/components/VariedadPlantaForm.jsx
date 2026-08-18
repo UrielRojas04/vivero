@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Save } from 'lucide-react';
 import { variedadesPlantasApi } from '../api/variedades-plantas.api';
 import { useUIStore } from '../store/useUIStore';
+import FormattedNumberInput from './FormattedNumberInput';
 
 export default function VariedadPlantaForm({ variedad, onClose }) {
   const queryClient = useQueryClient();
@@ -195,13 +196,11 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
                 {estaciones.map(est => (
                   <div key={est.label}>
                     <label className="block text-xs text-gray-500 mb-1">{est.label}</label>
-                    <input
-                      type="number"
+                    <FormattedNumberInput
                       required
-                      min="1"
                       className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors text-center"
                       value={formData[est.peakKey] === 0 ? '' : formData[est.peakKey]}
-                      onChange={(e) => handleEstacionChange(est.key, e.target.value)}
+                      onChange={(val) => handleEstacionChange(est.key, val)}
                     />
                   </div>
                 ))}
@@ -222,13 +221,11 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
                   {meses.map(mes => (
                     <div key={mes.key}>
                       <label className="block text-xs text-gray-500 mb-1">{mes.label}</label>
-                      <input
-                        type="number"
+                      <FormattedNumberInput
                         required
-                        min="1"
                         className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors text-center"
                         value={formData[mes.key] === 0 ? '' : formData[mes.key]}
-                        onChange={(e) => setFormData({...formData, [mes.key]: e.target.value === '' ? '' : (parseInt(e.target.value) || 0)})}
+                        onChange={(val) => setFormData({...formData, [mes.key]: val === '' ? '' : (parseInt(val) || 0)})}
                       />
                     </div>
                   ))}

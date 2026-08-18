@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
- * Componente de input numérico.
- * Usa type="number" e inputMode="numeric" para forzar teclados numéricos en mobile.
- * Oculta los spinners nativos mediante clases CSS y estilos.
+ * Componente que envuelve un input y formatea automáticamente los números
+ * con separadores de miles y coma decimal (estilo es-AR).
+ * Mantiene internamente el valor formateado pero dispara el onChange con el valor numérico (crudo).
+ * Usa inputMode="decimal" sobre type="text" (no type="number") para que el teclado
+ * numérico se abra en mobile SIN perder la posibilidad de mostrar separadores de miles.
  */
 const FormattedNumberInput = ({
   value,
@@ -14,39 +16,103 @@ const FormattedNumberInput = ({
   id = '',
   required = false
 }) => {
+  // Estado local para mostrar el string formateado en el input
+  const [displayValue, setDisplayValue] = useState('');
+
+  // Función para formatear el valor a string (ej. 1500000.5 -> "1.500.000,5")
+  const formatValue = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+
+    // Si viene como string que termina en coma o punto (ej. "15,"), permitimos que siga editando sin borrar la coma
+    if (typeof val === 'string' && (val.endsWith(',') || val.endsWith('.'))) {
+      return val;
+    }
+
+    const numberValue = parseFloat(val);
+    if (isNaN(numberValue)) return '';
+
+    return new Intl.NumberFormat('es-AR', {
+      maximumFractionDigits: 2,
+    }).format(numberValue);
+  };
+
+  // Sincronizar estado local cuando cambia el valor desde afuera (prop 'value')
+  useEffect(() => {
+    // Solo formateamos si el valor que llega es diferente al numérico del estado actual
+    // para evitar sobreescribir mientras el usuario tipea (como cuando pone una coma "1500,").
+    const parsedCurrent = parseRawNumber(displayValue);
+    if (value !== parsedCurrent) {
+      setDisplayValue(formatValue(value));
+    }
+  }, [value]);
+
+  // Función para des-formatear (ej. "1.500.000,50" -> 1500000.5)
+  const parseRawNumber = (str) => {
+    if (!str) return null;
+
+    // Reemplazar puntos (separador de miles) por nada, y comas por puntos (decimales)
+    let rawStr = str.replace(/\./g, '').replace(/,/g, '.');
+
+    // Si la cadena está vacía luego de limpiar, retornar null
+    if (!rawStr || isNaN(parseFloat(rawStr))) return null;
+
+    return parseFloat(rawStr);
+  };
 
   const handleChange = (e) => {
-    const val = e.target.value;
-    if (val === '') {
+    let inputValue = e.target.value;
+
+    // Permitir solo números, comas y puntos.
+    // Reemplazamos cualquier caracter que no sea número o coma/punto.
+    inputValue = inputValue.replace(/[^\d.,]/g, '');
+
+    // Si terminó borrando todo
+    if (inputValue === '') {
+      setDisplayValue('');
       if (onChange) onChange('');
       return;
     }
-    // Como es type="number", el value ya viene parseable (ej. "15.5") o vacío si es inválido
-    const rawNumber = parseFloat(val);
-    if (onChange && !isNaN(rawNumber)) {
-      onChange(rawNumber);
+
+    // Convertimos la entrada a un número raw para pasarlo al padre
+    const rawNumber = parseRawNumber(inputValue);
+
+    // Formatear para mostrar
+    // Si el usuario está tipeando una coma, punto, o termina en cero después de la coma,
+    // no queremos que formatValue se lo coma (ej. "15,0" o "15,50")
+    if (inputValue.match(/[,.][\d]*0$/) || inputValue.endsWith(',') || inputValue.endsWith('.')) {
+      // Reemplazamos punto por coma para mantener estándar local
+      const safeInput = inputValue.replace(/\./g, ',');
+      setDisplayValue(safeInput);
+      if (onChange && rawNumber !== null) onChange(rawNumber);
+    } else {
+      // Intentamos formatear lo que tenemos
+      const formatted = formatValue(rawNumber);
+
+      // Si formatValue nos devuelve vacío pero el input no lo estaba, mantenemos inputValue limpio
+      if (formatted === '' && inputValue !== '') {
+        setDisplayValue(inputValue);
+      } else {
+        setDisplayValue(formatted);
+      }
+
+      if (onChange && rawNumber !== null) {
+        onChange(rawNumber);
+      }
     }
   };
 
-  // Convertimos a string para evitar warnings de React si el valor es null/undefined
-  const displayValue = (value !== null && value !== undefined) ? value : '';
-
   return (
     <input
-      type="number"
-      inputMode="numeric"
-      pattern="[0-9]*"
+      type="text"
+      inputMode="decimal"
       id={id}
       value={displayValue}
       onChange={handleChange}
-      // Clases para esconder los spinners en Webkit
-      className={`${className} [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+      className={className}
       placeholder={placeholder}
       disabled={disabled}
       required={required}
       autoComplete="off"
-      // Estilo inline para esconder spinners en Firefox
-      style={{ MozAppearance: 'textfield' }}
     />
   );
 };
