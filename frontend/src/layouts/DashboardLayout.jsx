@@ -6,7 +6,7 @@ import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import { siembrasApi } from '../api/siembras.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus } from 'lucide-react';
 
 const navGroups = [
   {
@@ -33,6 +33,7 @@ const navGroups = [
     title: 'Gestión',
     items: [
       { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES' },
+      { to: '/bandejas', label: 'Devolución de Bandejas', icon: PackageMinus, permission: ['LEER_CLIENTES', 'LEER_BANDEJAS'] },
       { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS' },
       { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS' },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
@@ -100,10 +101,15 @@ const DashboardLayout = () => {
             const isHerramientas = activeBusinessId === 2; // Assuming ID 2 is Herramientas
 
             const visibleItems = group.items.filter((item) => {
-              if (item.permission && !hasPermission(item.permission)) return false;
-              if (isHerramientas && (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Productos (Plantas)')) {
-                // Rename Productos to just Productos for Herramientas, or hide Siembras/Insumos
-                if (item.label === 'Siembras' || item.label === 'Insumos') return false;
+              // item.permission acepta un string o un arreglo "cualquiera de estos" (ej. bandejas,
+              // alcanzable por LEER_CLIENTES o por el permiso acotado LEER_BANDEJAS).
+              if (item.permission) {
+                const permisos = Array.isArray(item.permission) ? item.permission : [item.permission];
+                if (!permisos.some(hasPermission)) return false;
+              }
+              if (isHerramientas && (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Productos (Plantas)' || item.label === 'Devolución de Bandejas')) {
+                // Rename Productos to just Productos for Herramientas, or hide Siembras/Insumos/Bandejas
+                if (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Devolución de Bandejas') return false;
               }
               return true;
             }).map(item => {

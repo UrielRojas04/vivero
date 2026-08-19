@@ -6,6 +6,7 @@ import Productos from './pages/Productos';
 import Insumos from './pages/Insumos';
 import Clientes from './pages/Clientes';
 import CuentaCorrienteCliente from './pages/CuentaCorrienteCliente';
+import DevolucionBandejas from './pages/DevolucionBandejas';
 import UsuariosAdmin from './pages/UsuariosAdmin';
 import Finanzas from './pages/Finanzas';
 import Cheques from './pages/Cheques';
@@ -43,6 +44,14 @@ function App() {
             <Route element={<ProtectedRoute requiredPermission="LEER_CLIENTES" />}>
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/clientes/:id/cuenta-corriente" element={<CuentaCorrienteCliente />} />
+            </Route>
+
+            {/* Devolución de Bandejas: alcanzable con LEER_CLIENTES (jefe, como siempre) O con el
+                permiso acotado LEER_BANDEJAS (empleado al que se le otorgó sólo esto). No va dentro
+                del grupo de arriba porque ese exige LEER_CLIENTES a secas y dejaría afuera al
+                empleado con el permiso acotado — es justamente el caso que resuelve este change. */}
+            <Route element={<ProtectedRoute requiredPermission={['LEER_CLIENTES', 'LEER_BANDEJAS']} />}>
+              <Route path="/bandejas" element={<DevolucionBandejas />} />
             </Route>
 
             {/* Módulo de Ventas con sus subsecciones */}

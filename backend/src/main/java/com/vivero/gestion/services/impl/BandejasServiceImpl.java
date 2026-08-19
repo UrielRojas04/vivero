@@ -1,8 +1,10 @@
 package com.vivero.gestion.services.impl;
 
+import com.vivero.gestion.dto.ClienteBandejasDTO;
 import com.vivero.gestion.dto.HistorialBandejasDTO;
 import com.vivero.gestion.models.*;
 import com.vivero.gestion.repositories.*;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import com.vivero.gestion.services.BandejasService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -113,5 +115,25 @@ public class BandejasServiceImpl implements BandejasService {
                     }
                     return dto;
                 }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClienteBandejasDTO> listarClientesParaBandejas() {
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Cliente> clientes;
+        if (unidadId != null) {
+            clientes = clienteRepository.findAllByUnidadNegocioId(unidadId);
+        } else {
+            clientes = clienteRepository.findAll();
+        }
+        return clientes.stream()
+                .map(cliente -> ClienteBandejasDTO.builder()
+                        .id(cliente.getId())
+                        .nombreRazonSocial(cliente.getNombreRazonSocial())
+                        .balanceBandejas(cliente.getCuentaCorrienteBandejas() != null
+                                ? cliente.getCuentaCorrienteBandejas().getBalanceBandejas() : 0)
+                        .build())
+                .collect(Collectors.toList());
     }
 }

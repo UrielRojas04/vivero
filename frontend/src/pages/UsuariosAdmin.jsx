@@ -41,6 +41,7 @@ export default function UsuariosAdmin() {
         ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_STOCK'] }] : []),
         ...(!isHerramientas ? [{ id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] }] : []),
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
+        { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'] },
         ...(isHerramientas ? [{ id: 'finanzas', name: 'Finanzas', permNames: ['LEER_FINANZAS'] }] : []),
         ...(isHerramientas ? [{ id: 'cheques', name: 'Cheques', permNames: ['LEER_FINANZAS'] }] : []),
         { id: 'admin', name: 'Usuarios (Admin)', permNames: ['ADMIN_DB'] }
