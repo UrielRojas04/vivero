@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Productos from './pages/Productos';
 import Insumos from './pages/Insumos';
 import Clientes from './pages/Clientes';
+import CuentaCorrienteCliente from './pages/CuentaCorrienteCliente';
 import UsuariosAdmin from './pages/UsuariosAdmin';
 import Finanzas from './pages/Finanzas';
 import Cheques from './pages/Cheques';
@@ -41,6 +42,7 @@ function App() {
 
             <Route element={<ProtectedRoute requiredPermission="LEER_CLIENTES" />}>
               <Route path="/clientes" element={<Clientes />} />
+              <Route path="/clientes/:id/cuenta-corriente" element={<CuentaCorrienteCliente />} />
             </Route>
 
             {/* Módulo de Ventas con sus subsecciones */}

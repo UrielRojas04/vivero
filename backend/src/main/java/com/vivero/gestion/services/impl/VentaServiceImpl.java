@@ -218,6 +218,90 @@ public class VentaServiceImpl implements VentaService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<VentaResponseDTO> listarVentasPorCliente(Long clienteId) {
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Venta> ventas = (unidadId != null)
+                ? ventaRepository.findByClienteIdAndUnidadNegocioIdOrderByFechaDesc(clienteId, unidadId)
+                : ventaRepository.findByClienteIdOrderByFechaDesc(clienteId);
+
+        // Segundo paso del fetch: Hibernate no admite JOIN FETCH de dos bags en la misma query
+        // (MultipleBagFetchException), así que los pagos se cargan acá sobre las mismas entidades.
+        // El retorno se descarta a propósito: el efecto está en el contexto de persistencia.
+        if (!ventas.isEmpty()) {
+            ventaRepository.completarPagos(ventas);
+        }
+
+        return ventas.stream()
+                .map(this::mapearAVentaResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public VentaResponseDTO registrarPago(Long ventaId, PagoRequestDTO request) {
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + ventaId));
+
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null && venta.getUnidadNegocio() != null
+                && !unidadId.equals(venta.getUnidadNegocio().getId())) {
+            throw new RuntimeException("La venta no pertenece a la unidad de negocio activa.");
+        }
+
+        if (request == null || request.getMonto() == null
+                || request.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("El monto del pago debe ser mayor a cero");
+        }
+
+        // Sólo efectivo y transferencia: registrar un cheque exige banco, número de serie y
+        // fechas, y ya existe un flujo dedicado para eso en la pantalla de Cheques. Aceptarlo acá
+        // duplicaría ese alta a medias (un Pago sin su Cheque asociado).
+        String metodo = request.getMetodoPago() != null ? request.getMetodoPago().toUpperCase() : "";
+        if (!"EFECTIVO".equals(metodo) && !"TRANSFERENCIA".equals(metodo)) {
+            throw new RuntimeException("Para registrar un cheque usá la pantalla de Cheques");
+        }
+
+        Pago pago = new Pago();
+        pago.setMonto(request.getMonto());
+        pago.setMetodoPago(metodo);
+        pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        venta.addPago(pago);
+
+        // Recalcular el estado sumando TODOS los pagos de la venta (los previos más este).
+        BigDecimal totalPagado = venta.getPagos().stream()
+                .map(p -> p.getMonto() != null ? p.getMonto() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalFinal = venta.getTotalFinal() != null ? venta.getTotalFinal() : BigDecimal.ZERO;
+
+        if (totalPagado.compareTo(totalFinal) >= 0) {
+            venta.setEstadoPago("PAGADO");
+        } else if (totalPagado.compareTo(BigDecimal.ZERO) > 0) {
+            venta.setEstadoPago("PARCIAL");
+        } else {
+            venta.setEstadoPago("DEBE");
+        }
+
+        // Pagar reduce la deuda: balancePesos es negativo cuando el cliente debe, así que sumar
+        // el monto lo acerca a cero. Misma convención que crearVenta (ver CuentaCorrienteDinero).
+        Cliente cliente = venta.getCliente();
+        if (cliente != null) {
+            CuentaCorrienteDinero ccd = ccdRepository.findByClienteId(cliente.getId())
+                    .orElseGet(() -> {
+                        CuentaCorrienteDinero nueva = new CuentaCorrienteDinero();
+                        nueva.setCliente(cliente);
+                        nueva.setBalancePesos(BigDecimal.ZERO);
+                        return ccdRepository.save(nueva);
+                    });
+            ccd.agregarSaldoAFavor(request.getMonto());
+            ccdRepository.save(ccd);
+        }
+
+        Venta ventaGuardada = ventaRepository.save(venta);
+        return mapearAVentaResponseDTO(ventaGuardada);
+    }
+
     private VentaResponseDTO mapearAVentaResponseDTO(Venta venta) {
         VentaResponseDTO dto = new VentaResponseDTO();
         dto.setId(venta.getId());

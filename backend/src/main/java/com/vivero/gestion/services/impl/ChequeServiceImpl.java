@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ChequeServiceImpl implements ChequeService {
@@ -145,6 +147,14 @@ public class ChequeServiceImpl implements ChequeService {
         }
 
         return toDTO(chequeRepository.save(cheque));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChequeDTO> listarChequesPorCliente(Long clienteId) {
+        return chequeRepository.findByClienteIdOrderByFechaRecepcionDesc(clienteId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     private ChequeDTO toDTO(Cheque cheque) {

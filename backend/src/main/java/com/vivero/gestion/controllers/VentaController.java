@@ -1,5 +1,6 @@
 package com.vivero.gestion.controllers;
 
+import com.vivero.gestion.dto.PagoRequestDTO;
 import com.vivero.gestion.dto.VentaRequestDTO;
 import com.vivero.gestion.dto.VentaResponseDTO;
 import com.vivero.gestion.services.VentaService;
@@ -34,5 +35,15 @@ public class VentaController {
     public ResponseEntity<List<VentaResponseDTO>> listarVentas() {
         List<VentaResponseDTO> ventas = ventaService.listarVentas();
         return ResponseEntity.ok(ventas);
+    }
+
+    /**
+     * Registra un pago sobre una venta existente (el cliente vuelve y trae plata a cuenta de lo
+     * que debía). Recalcula el estadoPago de la venta y actualiza el saldo de cuenta corriente.
+     */
+    @PostMapping("/{id}/pagos")
+    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
+    public ResponseEntity<VentaResponseDTO> registrarPago(@PathVariable Long id, @RequestBody PagoRequestDTO request) {
+        return ResponseEntity.ok(ventaService.registrarPago(id, request));
     }
 }

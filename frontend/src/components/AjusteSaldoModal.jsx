@@ -70,6 +70,14 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Desde que existe el pago asociado a una venta puntual (dentro de "Cuenta
+                Corriente"), éste queda como el camino de excepción: deuda o pago suelto que
+                no corresponde a ninguna venta en particular. */}
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-800">
+              Usá esto sólo para deuda o pago <strong>que no corresponde a ninguna venta puntual</strong>.
+              Si el cliente está pagando una venta pendiente, hacelo desde <strong>Cuenta Corriente</strong>: queda asociado a esa venta y no acá, suelto.
+            </div>
+
             <div className="bg-gray-50 p-4 rounded-xl">
               <div className="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">
                 {saldo.etiqueta}

@@ -2,6 +2,7 @@ package com.vivero.gestion.services;
 
 import java.util.List;
 import com.vivero.gestion.dto.ClienteDTO;
+import com.vivero.gestion.dto.FacturaClienteDTO;
 
 public interface ClienteService {
     List<ClienteDTO> getAll();
@@ -10,4 +11,5 @@ public interface ClienteService {
     ClienteDTO update(Long id, ClienteDTO clienteDTO);
     void delete(Long id);
     ClienteDTO ajustarSaldo(Long id, java.math.BigDecimal monto);
+    FacturaClienteDTO obtenerFactura(Long id);
 }

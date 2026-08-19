@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Plus, Pencil, Trash2, Search, DollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, DollarSign, FileText } from 'lucide-react';
 import ClienteForm from '../components/ClienteForm';
 import DevolucionBandejasModal from '../components/DevolucionBandejasModal';
 import HistorialBandejasModal from '../components/HistorialBandejasModal';
@@ -11,6 +12,7 @@ import { getErrorMessage } from '../utils/errorMessage';
 import { describirSaldo } from '../utils/saldoDisplay';
 
 const Clientes = () => {
+  const navigate = useNavigate();
   const { pushToast, askConfirm } = useUIStore();
   const { unidadNegocioActiva } = useAuthStore();
   const [clientes, setClientes] = useState([]);
@@ -74,6 +76,12 @@ const Clientes = () => {
   const handleOpenAjusteSaldo = (cliente) => {
     setEditingCliente(cliente);
     setIsAjusteModalOpen(true);
+  };
+
+  const handleOpenFactura = (cliente) => {
+    // Antes abría un modal; ahora es una página propia (más lugar para leer el documento,
+    // en computadora y en celular).
+    navigate(`/clientes/${cliente.id}/cuenta-corriente`);
   };
 
   const handleSubmit = async (formData) => {
@@ -191,10 +199,22 @@ const Clientes = () => {
                 <Pencil className="w-4 h-4" /> Editar
               </button>
               <button
-                onClick={() => handleOpenAjusteSaldo(cliente)}
+                onClick={() => handleOpenFactura(cliente)}
+                title="Cuenta Corriente"
                 className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <DollarSign className="w-4 h-4" /> Saldo
+                {/* Rótulo corto ("Cuenta") en vez de "Cuenta Corriente" completo: con varios botones
+                    en esta fila a 320px el texto completo desborda; el título completo queda en el
+                    atributo title y en el modal. Es la acción principal: desde ahí se ve la deuda
+                    por venta y se registra el pago asociado. */}
+                <FileText className="w-4 h-4" /> Cuenta
+              </button>
+              <button
+                onClick={() => handleOpenAjusteSaldo(cliente)}
+                title="Ajuste manual de saldo (sin venta asociada) — para deuda o pago suelto que no corresponde a ninguna venta puntual. Para pagar una venta pendiente, usá Cuenta Corriente."
+                className="flex-shrink-0 px-3 py-2.5 text-gray-400 bg-gray-50 hover:bg-gray-100 hover:text-gray-600 rounded-lg transition-colors flex items-center justify-center cursor-pointer"
+              >
+                <DollarSign className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleConfirmDelete(cliente.id, cliente.nombreRazonSocial)}
@@ -290,11 +310,18 @@ const Clientes = () => {
                     </button>
                     <div className="w-px h-6 bg-gray-200 mx-1 self-center"></div>
                     <button
-                      onClick={() => handleOpenAjusteSaldo(cliente)}
+                      onClick={() => handleOpenFactura(cliente)}
                       className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                      title="Ajustar Saldo"
+                      title="Cuenta Corriente"
                     >
-                      <DollarSign className="w-5 h-5" />
+                      <FileText className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleOpenAjusteSaldo(cliente)}
+                      className="p-1.5 text-gray-300 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                      title="Ajuste manual de saldo (sin venta asociada) — para deuda o pago suelto que no corresponde a ninguna venta puntual. Para pagar una venta pendiente, usá Cuenta Corriente."
+                    >
+                      <DollarSign className="w-4 h-4" />
                     </button>
                     {unidadNegocioActiva !== '2' && (
                       <>

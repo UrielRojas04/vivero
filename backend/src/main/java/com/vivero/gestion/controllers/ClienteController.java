@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.vivero.gestion.dto.ClienteDTO;
+import com.vivero.gestion.dto.FacturaClienteDTO;
 import com.vivero.gestion.services.ClienteService;
 
 import lombok.RequiredArgsConstructor;
@@ -55,5 +56,13 @@ public class ClienteController {
     @PostMapping("/{id}/saldo/ajuste")
     public ResponseEntity<ClienteDTO> ajustarSaldo(@PathVariable Long id, @RequestBody com.vivero.gestion.dto.AjusteSaldoDTO ajusteDTO) {
         return ResponseEntity.ok(clienteService.ajustarSaldo(id, ajusteDTO.getMonto()));
+    }
+
+    // Cuenta corriente itemizada del cliente ("factura dinámica"): LEER_CLIENTES, no ESCRIBIR_VENTAS
+    // ni LEER_FINANZAS (ver Decisión 1 y 3.2 de openspec/changes/factura-cliente-dinamica/design.md).
+    @PreAuthorize("hasAuthority('LEER_CLIENTES')")
+    @GetMapping("/{id}/factura")
+    public ResponseEntity<FacturaClienteDTO> obtenerFactura(@PathVariable Long id) {
+        return ResponseEntity.ok(clienteService.obtenerFactura(id));
     }
 }

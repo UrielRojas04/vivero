@@ -8,5 +8,9 @@ export const clientesApi = {
   ajustarSaldoCliente: async (id, monto) => {
     const { data } = await api.post(`/clientes/${id}/saldo/ajuste`, { monto });
     return data;
+  },
+  obtenerFactura: async (id) => {
+    const { data } = await api.get(`/clientes/${id}/factura`);
+    return data;
   }
 };

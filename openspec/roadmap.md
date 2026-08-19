@@ -4,6 +4,10 @@ Mapa completo de changes para desarrollar **Sistema Vivero (ERP)** de inicio a f
 Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y atomicidad.
 
 > **Nota de estado (2026-08-10):** Todos los changes hasta `us-016-remitos-pdf` están **completados y archivados** en OPSX (incl. `infra-001-db-viewer`, `docker-full-stack`, `chore-limpieza-pre-ventas`, `ui-rbac-profile`, `ui-feedback-modals`, `ui-cart-persistence` y `us-016-remitos-pdf`). El multi-negocio por `UnidadNegocio` quedó **vestigial** (RBAC plano desde `us-012`; `us-003-multi-negocio` **[REVERTIDO]** — reemplazado por `chore-limpieza-pre-ventas`). **Pendiente:** `us-017-finanzas-ui`.
+>
+> **⚠️ Este documento está desactualizado** (`us-017-finanzas-ui` y varios changes posteriores —incluida toda la etapa de UI responsive, `siembras-origen-lote`, `siembras-fecha-rango` y `factura-cliente-dinamica`— ya están archivados y no figuran acá). Conviene regenerarlo con `roadmap-generator` antes de usarlo para planificar el próximo change.
+>
+> **Recomendación registrada (change `factura-cliente-dinamica`):** el siguiente change natural es `cuenta-corriente-movimientos` — construir el libro de movimientos de cuenta corriente (entidad `MovimientoCuentaCorriente`, retrofit de `ajustarSaldo`/cheques sueltos/reversas) para que la línea agregada "Otros movimientos de cuenta corriente" de la factura por cliente se pueda desglosar en renglones detallados. Ver Decisión 4 de `openspec/changes/archive/2026-08-18-factura-cliente-dinamica/design.md` (o la ruta de archive correspondiente una vez archivado este change) para las alternativas evaluadas y por qué se dejó fuera de alcance esta vez.
 
 ## Orden de ejecución
 
