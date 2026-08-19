@@ -6,7 +6,7 @@ import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import { siembrasApi } from '../api/siembras.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, Truck } from 'lucide-react';
 
 const navGroups = [
   {
@@ -37,6 +37,10 @@ const navGroups = [
       { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS' },
       { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS' },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
+      // Exclusivos del negocio Herramientas — el filtro más abajo los oculta cuando
+      // isHerramientas es false (ver Decisión 9 / Sección "Pedidos" de design.md).
+      { to: '/pedidos', label: 'Pedidos', icon: ClipboardList, permission: 'LEER_PEDIDOS' },
+      { to: '/proveedores', label: 'Proveedores', icon: Truck, permission: 'LEER_PEDIDOS' },
     ]
   }
 ];
@@ -110,6 +114,12 @@ const DashboardLayout = () => {
               if (isHerramientas && (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Productos (Plantas)' || item.label === 'Devolución de Bandejas')) {
                 // Rename Productos to just Productos for Herramientas, or hide Siembras/Insumos/Bandejas
                 if (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Devolución de Bandejas') return false;
+              }
+              // Condición inversa a la de arriba: Pedidos/Proveedores son exclusivos de
+              // Herramientas, así que se ocultan cuando el negocio activo NO es Herramientas
+              // (tarea 10.3 de tasks.md) — no toca la lógica existente de Siembras/Insumos/Bandejas.
+              if (!isHerramientas && (item.label === 'Pedidos' || item.label === 'Proveedores')) {
+                return false;
               }
               return true;
             }).map(item => {

@@ -17,6 +17,8 @@ import Configuracion from './pages/Configuracion';
 import NuevaVenta from './pages/NuevaVenta';
 import HistorialVentas from './pages/HistorialVentas';
 import VentasLayout from './pages/VentasLayout';
+import Pedidos from './pages/Pedidos';
+import Proveedores from './pages/Proveedores';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 
@@ -67,6 +69,14 @@ function App() {
             <Route element={<ProtectedRoute requiredPermission="LEER_FINANZAS" />}>
               <Route path="/finanzas" element={<Finanzas />} />
               <Route path="/cheques" element={<Cheques />} />
+            </Route>
+
+            {/* Circuito de pedidos a proveedores: exclusivo del negocio Herramientas (el menú lo
+                oculta con isHerramientas en DashboardLayout.jsx), protegido acá por permiso como
+                el resto de las secciones. */}
+            <Route element={<ProtectedRoute requiredPermission="LEER_PEDIDOS" />}>
+              <Route path="/pedidos" element={<Pedidos />} />
+              <Route path="/proveedores" element={<Proveedores />} />
             </Route>
 
             <Route element={<ProtectedRoute requiredPermission="ADMIN_DB" />}>

@@ -23,6 +23,16 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
     @Override
     @Transactional
     public MovimientoStock registrarMovimiento(Producto producto, Integer cantidad, TipoMovimientoStock tipo, Usuario usuario) {
+        // La firma de 4 parámetros delega en la de 5 con costoBaseExplicito = null: se comporta
+        // exactamente igual que antes (costoBase sale de producto.getCostoProducto()), y queda una
+        // sola implementación de la fórmula (Decisión 4 de design.md, tarea 5.3).
+        return registrarMovimiento(producto, cantidad, tipo, usuario, null);
+    }
+
+    @Override
+    @Transactional
+    public MovimientoStock registrarMovimiento(Producto producto, Integer cantidad, TipoMovimientoStock tipo, Usuario usuario,
+                                                 BigDecimal costoBaseExplicito) {
         MovimientoStock mov = new MovimientoStock();
         mov.setProducto(producto);
         mov.setUnidadNegocio(producto.getUnidadNegocio());
@@ -30,14 +40,19 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
         mov.setTipoMovimiento(tipo);
         mov.setUsuario(usuario);
         mov.setFecha(LocalDateTime.now());
-        
+
         BigDecimal costoBase;
         BigDecimal descuentoPerc;
         BigDecimal costoEnvioPerc;
         BigDecimal costoUnitarioFinal;
 
         if (tipo == TipoMovimientoStock.INGRESO || tipo == TipoMovimientoStock.AJUSTE_INICIAL) {
-            costoBase = producto.getCostoProducto() != null ? producto.getCostoProducto() : BigDecimal.ZERO;
+            // costoBaseExplicito != null: viene de un pedido a proveedor confirmado (el
+            // costoUnitarioPactado de ese ítem). null: comportamiento genérico sin cambios, se
+            // deriva de producto.getCostoProducto() como siempre. La rama de egresos (más abajo,
+            // sin tocar) no recibe este parámetro.
+            costoBase = costoBaseExplicito != null ? costoBaseExplicito
+                    : (producto.getCostoProducto() != null ? producto.getCostoProducto() : BigDecimal.ZERO);
             descuentoPerc = producto.getDescuentoProveedor() != null ? producto.getDescuentoProveedor() : BigDecimal.ZERO;
             costoEnvioPerc = producto.getUnidadNegocio() != null && producto.getUnidadNegocio().getCostoEnvioPorcentaje() != null 
                     ? producto.getUnidadNegocio().getCostoEnvioPorcentaje() : BigDecimal.ZERO;

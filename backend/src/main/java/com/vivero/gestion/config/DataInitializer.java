@@ -76,6 +76,8 @@ public class DataInitializer implements CommandLineRunner {
         Permiso pLeerFinanzas = crearPermiso("LEER_FINANZAS");
         Permiso pLeerBandejas = crearPermiso("LEER_BANDEJAS");
         Permiso pEscribirBandejas = crearPermiso("ESCRIBIR_BANDEJAS");
+        Permiso pLeerPedidos = crearPermiso("LEER_PEDIDOS");
+        Permiso pEscribirPedidos = crearPermiso("ESCRIBIR_PEDIDOS");
 
         // 2. Crear Roles y asignar permisos
         Set<Permiso> permisosJefe = new HashSet<>();
@@ -90,6 +92,14 @@ public class DataInitializer implements CommandLineRunner {
         permisosJefe.add(pLeerFinanzas);
         permisosJefe.add(pLeerBandejas);
         permisosJefe.add(pEscribirBandejas);
+        // Permisos del circuito de pedidos a proveedores (herramientas-pedidos-proveedores):
+        // sólo JEFE los recibe por defecto. permisosEmpleado (más abajo) queda intacto a propósito
+        // — ver Decisión 8 de design.md y el precedente de bandejas-acceso-limitado. El rol
+        // "ADMIN 2" (creado a mano desde UsuariosAdmin.jsx) NO se toca acá: DataInitializer sólo
+        // tiene autoridad sobre JEFE/EMPLEADO_VIVERO; otorgarle estos permisos a ADMIN 2 se hace
+        // vía la API real de roles, en la verificación en vivo del grupo 11.
+        permisosJefe.add(pLeerPedidos);
+        permisosJefe.add(pEscribirPedidos);
 
         Rol rolJefe = crearRol("JEFE", permisosJefe);
         // Asegurar que el jefe siempre tenga todos los permisos, incluso si el rol ya existía
