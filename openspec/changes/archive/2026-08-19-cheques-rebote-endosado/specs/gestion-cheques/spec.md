@@ -1,8 +1,5 @@
-# gestion-cheques Specification
+## MODIFIED Requirements
 
-## Purpose
-Registro de metadatos de cheques para su control, seguimiento y conciliación contable.
-## Requirements
 ### Requirement: Registro de metadatos de cheques
 El sistema SHALL permitir la captura, persistencia y gestión de metadatos de los cheques recibidos como medio de pago. Estos metadatos MUST incluir banco, número de serie, fecha de cobro, estado actual, y opcionalmente a quién fue entregado en caso de endoso.
 
@@ -49,17 +46,7 @@ En particular, desde el estado `ENTREGADO` el sistema SHALL seguir bloqueando la
 - **WHEN** un usuario solicita cualquier cambio de estado sobre un cheque en estado `COBRADO` o en estado `RECHAZADO`
 - **THEN** el sistema rechaza la operación con el error de inmutabilidad contable, sin excepción
 
-### Requirement: Registro manual de cheques
-El sistema SHALL permitir a los usuarios registrar cheques manualmente desde el módulo de Cheques, independientemente de una liquidación de venta.
-
-#### Scenario: Registro exitoso con impacto en cuenta corriente
-- **WHEN** el usuario completa el formulario de nuevo cheque seleccionando un cliente y un monto
-- **THEN** el sistema persiste el cheque con estado `EN_CARTERA`
-- **AND** el saldo (`balanceDinero`) del cliente seleccionado se incrementa por el monto del cheque (se abona a su cuenta)
-
-#### Scenario: Registro sin cliente asociado
-- **WHEN** el usuario completa el formulario pero no especifica un cliente (si se permite cheques anónimos)
-- **THEN** el sistema persiste el cheque con estado `EN_CARTERA` sin afectar saldos de clientes
+## ADDED Requirements
 
 ### Requirement: Preservación de los datos del endoso al rechazar
 El sistema SHALL conservar el destinatario del endoso, la fecha de entrega y la relación al cliente endosatario cuando un cheque en estado `ENTREGADO` pasa a `RECHAZADO`. Esos datos SHALL NOT ser borrados por la transición, dado que identifican a la persona a la que el vivero le sigue debiendo el dinero del cheque rebotado.
@@ -88,4 +75,3 @@ Cuando el endosatario no es un cliente del sistema, la confirmación SHALL menci
 #### Scenario: Los cheques cobrados y rechazados no ofrecen acción
 - **WHEN** el usuario visualiza un cheque en estado `COBRADO` o `RECHAZADO`
 - **THEN** el sistema no ofrece ninguna acción de cambio de estado sobre ese cheque
-

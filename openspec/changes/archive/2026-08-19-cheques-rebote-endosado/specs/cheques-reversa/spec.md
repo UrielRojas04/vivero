@@ -1,18 +1,4 @@
-# cheques-reversa Specification
-
-## Purpose
-TBD - created by archiving change us-021-reversa-cheques. Update Purpose after archive.
-## Requirements
-### Requirement: Reversa automática de cuenta corriente por cheque rechazado
-The system SHALL revert the account balance modification that was applied when a cheque was created, if its state is changed to RECHAZADO.
-
-#### Scenario: Cheque de tercero es rechazado
-- **WHEN** user changes the state of a third-party cheque (`esEmisionPropia = false`) to `RECHAZADO`
-- **THEN** the system MUST increase the debt (or reduce the favorable balance) of the associated client by the cheque's amount.
-
-#### Scenario: Cheque propio es rechazado
-- **WHEN** user changes the state of an own-issued cheque (`esEmisionPropia = true`) to `RECHAZADO`
-- **THEN** the system MUST decrease the debt (or increase the favorable balance) of the associated client by the cheque's amount.
+## ADDED Requirements
 
 ### Requirement: Reversa doble por rebote de cheque endosado
 El sistema SHALL, cuando un cheque que fue endosado a un cliente del sistema pasa al estado `RECHAZADO`, ejecutar dos movimientos de cuenta corriente de signo opuesto y por el monto del cheque: MUST aumentar la deuda del cliente original que entregó el cheque al vivero, y MUST acreditar saldo a favor al cliente endosatario, porque el pago que se le realizó con ese cheque quedó sin efecto y el vivero le sigue debiendo ese dinero.
@@ -46,4 +32,3 @@ Las dos cuentas corrientes SHALL permanecer independientes: un pago posterior a 
 #### Scenario: El rebote no se aplica dos veces
 - **WHEN** se intenta marcar como `RECHAZADO` un cheque que ya está en estado `RECHAZADO`
 - **THEN** el sistema rechaza la operación y ninguna cuenta corriente resulta modificada
-
