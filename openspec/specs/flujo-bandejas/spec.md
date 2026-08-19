@@ -1,4 +1,9 @@
-# flujo-bandejas Specification`n`n## Requirements
+# flujo-bandejas Specification
+
+## Purpose
+Define requirements for recording, tracking, and auditing tray movements (deliveries and returns) in the greenhouse management system.
+
+## Requirements
 
 ### Requirement: Registro de Historial de Bandejas
 El sistema SHALL permitir asentar movimientos físicos de bandejas (entregas y devoluciones) vinculados a un cliente.
