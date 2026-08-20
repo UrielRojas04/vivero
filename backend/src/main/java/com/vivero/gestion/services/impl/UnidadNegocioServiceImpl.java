@@ -30,6 +30,7 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         model.setNombre(dto.getNombre());
         model.setDescripcion(dto.getDescripcion());
         model.setCostoEnvioPorcentaje(dto.getCostoEnvioPorcentaje());
+        model.setIvaPorcentaje(dto.getIvaPorcentaje());
         model.setActivo(dto.isActivo());
         return mapToDTO(repository.save(model));
     }
@@ -41,6 +42,11 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         if (dto.getNombre() != null) model.setNombre(dto.getNombre());
         if (dto.getDescripcion() != null) model.setDescripcion(dto.getDescripcion());
         if (dto.getCostoEnvioPorcentaje() != null) model.setCostoEnvioPorcentaje(dto.getCostoEnvioPorcentaje());
+        // Mismo patrón que costoEnvioPorcentaje (tarea 8.2): sólo pisa cuando el DTO trae un
+        // valor. Esto es el default GLOBAL de la unidad de negocio (siempre tiene un valor
+        // concreto, arranca en ZERO) — no confundir con Producto.ivaPorcentaje, que sí puede
+        // quedar en null a propósito para "heredar" este default (Decisión 5).
+        if (dto.getIvaPorcentaje() != null) model.setIvaPorcentaje(dto.getIvaPorcentaje());
         model.setActivo(dto.isActivo());
         return mapToDTO(repository.save(model));
     }
@@ -51,6 +57,7 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         dto.setNombre(model.getNombre());
         dto.setDescripcion(model.getDescripcion());
         dto.setCostoEnvioPorcentaje(model.getCostoEnvioPorcentaje());
+        dto.setIvaPorcentaje(model.getIvaPorcentaje());
         dto.setActivo(model.isActivo());
         return dto;
     }

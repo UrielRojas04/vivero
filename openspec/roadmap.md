@@ -161,3 +161,28 @@ Generado a partir de `knowledge-base/` aplicando las reglas de secuenciación y 
 **Depende de**: `us-013-ventas-core`, `us-008-frontend-insumos`.
 **Justificación**: El entregable final para el dueño del negocio: ver la rentabilidad neta.
 **🚀 PRÓXIMO CHANGE**: es el siguiente a proponer/implementar según el roadmap.
+
+## Backlog (descartado por ahora, no proponer sin retomar la conversación)
+
+### Pedidos a proveedores de herramientas (catálogos multi-marca) — descartado el 2026-08-19
+
+**Problema**: el jefe arma pedidos de reposición de stock a proveedores de herramientas (ej. SHIMURA), cada uno con su propio catálogo, descuentos, descuentos por método de pago, moneda (algunos en USD con tipo de cambio propio), IVA y costo de envío. Tipear todo eso a mano es tedioso.
+
+**Opciones evaluadas**:
+1. **Carga de Excel por marca + armado de pedido por código de producto** (recomendada si se retoma): el Excel se parsea a una tabla propia (`catalogo_proveedor_items` o similar) con código/precio/moneda/tipo de cambio/IVA/descuento — no se guarda el archivo `.xlsx` en sí, solo los datos parseados. Quedaba pendiente decidir si cada carga nueva **pisa** el catálogo vigente de esa marca (más simple, sin historial de precios) o lo **versiona** (guarda las filas viejas marcadas como no vigentes, para poder auditar precios pasados). El volumen de datos no era el problema — a la escala de un vivero (incluso con ~200 catálogos) es trivial para Postgres.
+2. **Conectar la web a un catálogo externo de cada proveedor** (descartada): depende de que cada proveedor tenga API pública o página estable para leer, cosa que la mayoría de proveedores de vivero no tiene. Frágil (se rompe si el proveedor cambia de diseño) y no escala a "todos los proveedores" como estrategia general.
+
+**Por qué se descartó por ahora**: el cliente informó que podrían llegar a ser ~200 catálogos distintos (una carga por marca/proveedor), lo cual vuelve operativamente pesado el enfoque de carga manual de Excel uno por uno, más allá de que la base de datos en sí lo soportaría sin problema. Se decidió no avanzar con ningún enfoque por ahora.
+
+**Si se retoma en el futuro**, antes de proponer un change conviene repensar el enfoque para 200 proveedores (¿priorizar solo los más usados? ¿un formato de carga más masivo, tipo ZIP con varios Excel a la vez? ¿un mapeo de columnas reutilizable por marca para que cargar un catálogo nuevo sea rápido incluso a esa escala?) en vez de asumir que el patrón "un Excel, un mapeo manual" pensado para pocas marcas escala igual de bien a 200.
+
+**Actualización 2026-08-20 — parte de este problema ya se resolvió, y el resto tiene change propuesto:**
+
+- **Resuelto por `costeo-flexible-por-producto`** (archivado 2026-08-20): la parte de "cada proveedor tiene sus descuentos, su IVA y su envío" ya no depende de tipear todo a mano en cada compra. El producto tiene una lista libre de descuentos **estables** (`ProductoDescuento`, aplicados en cascada) e IVA/envío propios con fallback al default de la unidad de negocio. Elimina la fricción de las cuatro copias de la fórmula que existían antes, pero **no** resuelve nada de catálogos ni de moneda — sigue sin haber forma de cargar un catálogo de proveedor de una vez.
+- **Retomado por `config-costeo-por-proveedor`** (propuesto, sin implementar aún — `openspec/changes/config-costeo-por-proveedor/`): toma **la parte de moneda y tipo de cambio** que quedaba pendiente acá (conversión de USD a pesos como paso 0 de la cadena de costeo, para proveedores como Shimura que cotizan en dólares) y **configuración de proveedor por defecto** (perfil de costeo del `Proveedor`: si maneja IVA aparte o incluido, sus descuentos habituales, su envío — precargables al armar un pedido), más la unificación de `Marca`/`Proveedor` en Herramientas. **No** incluye la importación de catálogos por Excel — ese pedazo del problema (los ~200 catálogos) sigue descartado más abajo, sin change propuesto todavía.
+
+### Descuentos a nivel de `Pedido` (para el descuento por pagar en efectivo) — posible trabajo futuro, no pendiente de ningún change
+
+**Estado real hoy:** los descuentos que varían compra a compra —típicamente el descuento por pagar en efectivo, que no es una condición fija del producto ni del proveedor— se resuelven ajustando a mano el `costoUnitarioPactado` de cada línea del pedido, mecanismo que ya existe desde `herramientas-pedidos-proveedores` y que **no requiere ningún desarrollo nuevo**. Este ajuste manual convive sin conflicto con la lista de descuentos **estables** del producto (`ProductoDescuento`, de `costeo-flexible-por-producto`): la cascada de descuentos estables se sigue aplicando encima del `costoUnitarioPactado` ya rebajado, sin doble conteo (verificado en la tarea 11.10.1 de ese change).
+
+Modelar un descuento a nivel de cabecera de `Pedido` (uno solo que se reparta o se aplique a todas sus líneas) se **evaluó explícitamente con el usuario durante `costeo-flexible-por-producto`** como alternativa al ajuste manual línea por línea, y **se descartó para ese change** (Decisión 14 de su `design.md`; confirmado también, sin reabrirlo, en el alcance de `config-costeo-por-proveedor`). No es un pendiente de ningún change activo ni propuesto — queda anotado acá únicamente como **opción abierta a futuro**, sin comprometer el alcance de ningún change existente. Si se retoma algún día, conviene repensarlo junto con `config-costeo-por-proveedor` (que ya introduce el perfil de costeo por defecto del proveedor) en vez de como un campo aislado en `Pedido`.

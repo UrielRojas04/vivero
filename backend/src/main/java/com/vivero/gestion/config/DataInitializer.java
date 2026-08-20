@@ -60,8 +60,8 @@ public class DataInitializer implements CommandLineRunner {
 
         // 0. Crear Unidades de Negocio Base
         if (unidadNegocioRepository.count() == 0) {
-            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, true));
-            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, true));
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true));
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true));
         }
 
         // 1. Crear Permisos
@@ -143,7 +143,40 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Se inicializaron movimientos de stock históricos.");
         }
 
+        // 5. Migrar descuento_proveedor a producto_descuentos (Decisión 8 de design.md de
+        // costeo-flexible-por-producto). Idempotente: si el producto ya tiene al menos un
+        // descuento cargado no se toca, así que reiniciar el backend muchas veces no duplica
+        // filas. Productos con descuento_proveedor en 0/NULL no generan ninguna fila (serían
+        // ruido visual y no cambian ningún número). La columna vieja NO se toca ni se vacía:
+        // queda como red de rollback.
+        migrarDescuentoProveedorAProductoDescuentos();
+
         System.out.println("Base de datos inicializada con roles y usuario jefe.");
+    }
+
+    private void migrarDescuentoProveedorAProductoDescuentos() {
+        java.util.List<Producto> productos = productoRepository.findAll();
+        int migrados = 0;
+        for (Producto p : productos) {
+            java.math.BigDecimal desc = p.getDescuentoProveedor();
+            if (desc == null || desc.compareTo(java.math.BigDecimal.ZERO) == 0) {
+                continue; // 0 o NULL: no genera fila de descuento (tarea 4.2)
+            }
+            if (p.getDescuentos() != null && !p.getDescuentos().isEmpty()) {
+                continue; // ya migrado / ya tiene descuentos cargados: idempotencia (tarea 4.1)
+            }
+            com.vivero.gestion.models.ProductoDescuento pd = new com.vivero.gestion.models.ProductoDescuento();
+            pd.setProducto(p);
+            pd.setNombre("Proveedor");
+            pd.setPorcentaje(desc);
+            pd.setOrden(0);
+            p.getDescuentos().add(pd);
+            productoRepository.save(p);
+            migrados++;
+        }
+        if (migrados > 0) {
+            System.out.println("Migración de descuentos: " + migrados + " producto(s) con descuento_proveedor convertido(s) a producto_descuentos.");
+        }
     }
 
     private Permiso crearPermiso(String nombre) {

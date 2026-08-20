@@ -1,14 +1,19 @@
 package com.vivero.gestion.models;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.Formula;
@@ -56,8 +61,26 @@ public class Producto {
     @Column(name = "porcentaje_ganancia")
     private BigDecimal porcentajeGanancia;
 
+    // Se conserva sin tocar como red de rollback (Decisión 8 de design.md de
+    // costeo-flexible-por-producto): la fórmula deja de leerla en el grupo 5/6 de ese change,
+    // pero la columna y su valor no se borran.
     @Column(precision = 5, scale = 2)
     private BigDecimal descuentoProveedor = BigDecimal.ZERO;
+
+    // Lista libre de descuentos ESTABLES del producto (Decisión 1). Se combinan en cascada
+    // (Decisión 2), nunca se suman. @BatchSize evita el N+1 en el listado (Decisión 11).
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 25)
+    private List<ProductoDescuento> descuentos = new ArrayList<>();
+
+    // Nullable, SIN valor por defecto a propósito (Decisión 5): null == "hereda el default de la
+    // unidad de negocio", 0 == "no aplica para este producto". Inicializarlos en ZERO como hace
+    // descuentoProveedor destruiría esa distinción antes de que exista (tarea 2.4).
+    @Column(name = "iva_porcentaje", precision = 5, scale = 2)
+    private BigDecimal ivaPorcentaje;
+
+    @Column(name = "costo_envio_porcentaje", precision = 5, scale = 2)
+    private BigDecimal costoEnvioPorcentaje;
 
     @ManyToOne
     @JoinColumn(name = "unidad_negocio_id")
@@ -114,7 +137,16 @@ public class Producto {
     
     public BigDecimal getDescuentoProveedor() { return descuentoProveedor; }
     public void setDescuentoProveedor(BigDecimal descuentoProveedor) { this.descuentoProveedor = descuentoProveedor; }
-    
+
+    public List<ProductoDescuento> getDescuentos() { return descuentos; }
+    public void setDescuentos(List<ProductoDescuento> descuentos) { this.descuentos = descuentos; }
+
+    public BigDecimal getIvaPorcentaje() { return ivaPorcentaje; }
+    public void setIvaPorcentaje(BigDecimal ivaPorcentaje) { this.ivaPorcentaje = ivaPorcentaje; }
+
+    public BigDecimal getCostoEnvioPorcentaje() { return costoEnvioPorcentaje; }
+    public void setCostoEnvioPorcentaje(BigDecimal costoEnvioPorcentaje) { this.costoEnvioPorcentaje = costoEnvioPorcentaje; }
+
     public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
     public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
     

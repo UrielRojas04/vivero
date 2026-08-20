@@ -1,6 +1,8 @@
 package com.vivero.gestion.dto;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProductoDTO {
 
@@ -17,6 +19,13 @@ public class ProductoDTO {
     private BigDecimal porcentajeGanancia;
     private BigDecimal descuentoProveedor;
     private BigDecimal costoUnitarioHistorico;
+
+    // Campos nuevos de costeo-flexible-por-producto (grupo 8). ivaPorcentaje y
+    // costoEnvioPorcentaje viajan tal cual: null == "hereda el default de la unidad de negocio"
+    // (Decisión 5) — el service los persiste respetando ese null, nunca lo convierte en 0.
+    private List<ProductoDescuentoDTO> descuentos = new ArrayList<>();
+    private BigDecimal ivaPorcentaje;
+    private BigDecimal costoEnvioPorcentaje;
 
     public ProductoDTO() {}
 
@@ -69,4 +78,13 @@ public class ProductoDTO {
 
     public BigDecimal getCostoUnitarioHistorico() { return costoUnitarioHistorico; }
     public void setCostoUnitarioHistorico(BigDecimal costoUnitarioHistorico) { this.costoUnitarioHistorico = costoUnitarioHistorico; }
+
+    public List<ProductoDescuentoDTO> getDescuentos() { return descuentos; }
+    public void setDescuentos(List<ProductoDescuentoDTO> descuentos) { this.descuentos = descuentos; }
+
+    public BigDecimal getIvaPorcentaje() { return ivaPorcentaje; }
+    public void setIvaPorcentaje(BigDecimal ivaPorcentaje) { this.ivaPorcentaje = ivaPorcentaje; }
+
+    public BigDecimal getCostoEnvioPorcentaje() { return costoEnvioPorcentaje; }
+    public void setCostoEnvioPorcentaje(BigDecimal costoEnvioPorcentaje) { this.costoEnvioPorcentaje = costoEnvioPorcentaje; }
 }

@@ -26,6 +26,13 @@ public class UnidadNegocio {
     
     @Column(precision = 5, scale = 2)
     private java.math.BigDecimal costoEnvioPorcentaje = java.math.BigDecimal.ZERO;
-    
+
+    // Default de IVA de la unidad, simétrico a costoEnvioPorcentaje (Decisión 5 de design.md de
+    // costeo-flexible-por-producto). Nace en 0.00 en las dos unidades existentes: con IVA 0 la
+    // fórmula nueva es algebraicamente idéntica a la vieja, así que el arranque no cambia ningún
+    // costo (Migration Plan, paso 3).
+    @Column(name = "iva_porcentaje", precision = 5, scale = 2)
+    private java.math.BigDecimal ivaPorcentaje = java.math.BigDecimal.ZERO;
+
     private boolean activo = true;
 }

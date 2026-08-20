@@ -1,6 +1,5 @@
-## Purpose
-Esta especificación define el comportamiento del registro de productos y actualización de stock dentro del catálogo.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: Registro de Producto
 El sistema MUST permitir registrar un nuevo producto definiendo su costo catálogo, **su lista de descuentos estables** (cada uno con nombre y porcentaje), **su porcentaje de IVA**, **su porcentaje de costo de envío**, su porcentaje de ganancia deseada, y de manera opcional vincularlo a una `Marca` (entidad relacional).
 
@@ -36,18 +35,3 @@ El frontend SHALL permitir al usuario ingresar el margen de ganancia esperado (%
 #### Scenario: El costo mostrado coincide con el costo persistido
 - **WHEN** el usuario configura descuentos, IVA y envío en el formulario, observa el costo final informado y guarda el producto
 - **THEN** el costo de adquisición que el sistema calcula al guardar coincide, al centavo, con el que el formulario había informado
-
-### Requirement: Afectación de Stock Actual
-El sistema SHALL actualizar el campo `stockActual` del producto de manera transaccional al realizar una venta o ajuste, y emitir un evento SSE a los clientes conectados para notificar la nueva cantidad.
-
-#### Scenario: Venta confirmada actualiza stock y notifica
-- **WHEN** se descuentan 5 unidades de un producto en una venta
-- **THEN** el `stockActual` del producto disminuye en 5 de forma atómica junto a la creación del MovimientoStock, y se despacha un evento SSE con el nuevo stock hacia el frontend.
-
-### Requirement: Recepción de Stock
-El sistema SHALL permitir ingresar stock a los productos del catálogo mediante diferentes mecanismos.
-
-#### Scenario: Ingreso desde Siembra finalizada
-- **WHEN** el usuario procesa la finalización de un lote de siembra
-- **THEN** el stock del producto seleccionado se incrementa de acuerdo a la cantidad cosechada de la siembra
-- **AND** se registra un movimiento de stock de tipo `INGRESO_SIEMBRA` con referencia al lote de la siembra

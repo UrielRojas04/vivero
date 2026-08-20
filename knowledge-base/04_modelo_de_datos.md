@@ -11,6 +11,8 @@
 
 ### 2. Catálogo
 - **`Producto`**: `id`, `nombre`, `precioCosto`, `precioVenta`, `stockActual`.
+  - *(`costeo-flexible-por-producto`, archivado 2026-08-20)* Campos nuevos: `ivaPorcentaje` y `costoEnvioPorcentaje`, ambos `BigDecimal(5,2)` **nullable, sin default**. `null` = hereda el valor por defecto de la `UnidadNegocio`; `0` = explícitamente no aplica ese componente (ver RN-07). Colección `descuentos` (`@OneToMany` a `ProductoDescuento`, `cascade=ALL`, `orphanRemoval=true`, `@BatchSize(25)` para evitar N+1 en el listado). El campo legado `descuentoProveedor` se mantiene intacto (no se borra ni se resignifica), pero ya no participa en ningún cálculo de costo — fue migrado a una fila de `ProductoDescuento` (`nombre="Proveedor"`) por una migración idempotente en `DataInitializer`.
+- **`ProductoDescuento`** *(nueva, `costeo-flexible-por-producto`)*: `id`, `producto` (`@ManyToOne`), `nombre` (`String(100)`, obligatorio), `porcentaje` (`BigDecimal(5,2)`, obligatorio), `orden` (`Integer`). Tabla `producto_descuentos`. Representa un descuento **estable** del producto (acuerdo permanente con el proveedor); la lista se aplica en cascada, no se suma (ver RN-07). No modela descuentos puntuales de una compra (esos van en `PedidoDetalle.costoUnitarioPactado`).
 - **`Insumo`**: `id`, `descripcion`, `costo`, `fechaCompra`. Para trazabilidad de gastos.
 
 ### 3. Clientes y Cuentas Corrientes
@@ -29,6 +31,11 @@
 ### Changes posteriores
 - **`Pago`** (`us-013-ventas-pagos`): `id`, `ventaId`, `monto`, `fecha`, `usuarioId`.
 - **`HistorialBandejas`** (`us-014-bandejas-flujo`): `id`, `clienteId`, `ventaId`, `cantidad`, `tipo` (ENTREGA/DEVOLUCION), `fecha`, `usuarioId`.
+
+### Campos de costeo agregados a entidades ya implementadas (`costeo-flexible-por-producto`, archivado 2026-08-20)
+> Nota: pese a la nota de estado de la cabecera de este documento (2026-08-10, desactualizada), `UnidadNegocio` y `MovimientoStock` ya existen y están en producción — se implementaron en changes archivados posteriores a esa fecha (`multi-negocio-core`, `us-013-ventas-core` y siguientes). Esta sección documenta sólo los campos que agregó `costeo-flexible-por-producto` sobre esas dos entidades; no es una resincronización completa del resto del documento.
+- **`UnidadNegocio`**: campo nuevo `ivaPorcentaje` (`BigDecimal(5,2)`, default `ZERO`), simétrico al `costoEnvioPorcentaje` que ya existía. Es el default de IVA que hereda un producto de esa unidad cuando su propio `ivaPorcentaje` es `null` (ver RN-07).
+- **`MovimientoStock`**: tres campos nuevos, todos **nullable y sin default**: `costoNeto` (`BigDecimal(12,2)`, el costo tras aplicar la cascada de descuentos, antes de IVA/envío), `ivaPorcentaje` (`BigDecimal(5,2)`, el IVA efectivo aplicado en ese movimiento) y `descuentoDetalle` (`String(500)`, snapshot textual de los descuentos aplicados, ej. `"Proveedor 10.00%; Volumen 5.00%"`). Se pueblan sólo en movimientos `INGRESO`/`AJUSTE_INICIAL` posteriores a este change; un egreso copia el desglose del último ingreso en vez de recalcularlo. Los movimientos anteriores al change quedan con las tres columnas en `NULL` (no hay recálculo retroactivo).
 
 ## Relaciones Clave (ERD Lógico)
 - `Usuario` N:M `Rol` N:M `Permiso` (RBAC plano, sin tenant).

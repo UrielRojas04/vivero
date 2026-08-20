@@ -50,6 +50,19 @@ public class MovimientoStock {
     @Column(name = "envio_porcentaje", precision = 5, scale = 2)
     private BigDecimal envioPorcentaje = BigDecimal.ZERO;
 
+    // Desglose congelado nuevo (Decisión 7 de design.md de costeo-flexible-por-producto), TODOS
+    // nullable y SIN valor por defecto a propósito: los movimientos históricos tienen que quedar
+    // en NULL ("no había esto cuando se congeló"), no en 0.00 — un default de 0 mentiría diciendo
+    // "IVA cero registrado" (Decisión 13, tarea 3.2).
+    @Column(name = "costo_neto", precision = 12, scale = 2)
+    private BigDecimal costoNeto;
+
+    @Column(name = "iva_porcentaje", precision = 5, scale = 2)
+    private BigDecimal ivaPorcentaje;
+
+    @Column(name = "descuento_detalle", length = 500)
+    private String descuentoDetalle;
+
     private LocalDateTime fecha;
 
     @ManyToOne
@@ -79,7 +92,16 @@ public class MovimientoStock {
     
     public BigDecimal getEnvioPorcentaje() { return envioPorcentaje; }
     public void setEnvioPorcentaje(BigDecimal envioPorcentaje) { this.envioPorcentaje = envioPorcentaje; }
-    
+
+    public BigDecimal getCostoNeto() { return costoNeto; }
+    public void setCostoNeto(BigDecimal costoNeto) { this.costoNeto = costoNeto; }
+
+    public BigDecimal getIvaPorcentaje() { return ivaPorcentaje; }
+    public void setIvaPorcentaje(BigDecimal ivaPorcentaje) { this.ivaPorcentaje = ivaPorcentaje; }
+
+    public String getDescuentoDetalle() { return descuentoDetalle; }
+    public void setDescuentoDetalle(String descuentoDetalle) { this.descuentoDetalle = descuentoDetalle; }
+
     public LocalDateTime getFecha() { return fecha; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
     public Usuario getUsuario() { return usuario; }

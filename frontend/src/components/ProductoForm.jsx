@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Tag } from 'lucide-react';
+import { X, Tag, Plus, Trash2 } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
 import { useAuthStore } from '../store/useAuthStore';
 import { useQuery } from '@tanstack/react-query';
 import { negociosApi } from '../api/negocios.api';
 import { marcasApi } from '../api/marcas.api';
+import { calcularCosto, resolverEfectivo } from '../utils/costeo';
 
 const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const { unidadNegocioActiva } = useAuthStore();
-  
+
   const { data: negocios } = useQuery({
     queryKey: ['negocios'],
     queryFn: () => negociosApi.getAll(),
@@ -16,14 +17,21 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   });
 
   const activeUnit = negocios?.find(n => n.id.toString() === unidadNegocioActiva);
-  const costoEnvioPorcentaje = activeUnit?.costoEnvioPorcentaje || 0;
-  
+  const costoEnvioDefault = activeUnit?.costoEnvioPorcentaje ?? 0;
+  const ivaDefault = activeUnit?.ivaPorcentaje ?? 0;
+
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precio, setPrecio] = useState('');
   const [costoProducto, setCostoProducto] = useState('');
   const [porcentajeGanancia, setPorcentajeGanancia] = useState('');
-  const [descuentoProveedor, setDescuentoProveedor] = useState('');
+  // Lista libre de descuentos ESTABLES del producto (Decisión 1 de design.md de
+  // costeo-flexible-por-producto), reemplaza el input único "Desc. Prov (%)" (tarea 9.3).
+  const [descuentos, setDescuentos] = useState([]);
+  // IVA y envío propios del producto: opcionales, '' significa "hereda el default de la unidad
+  // de negocio" (Decisión 5) — nunca se guarda como 0 por defecto.
+  const [ivaPropio, setIvaPropio] = useState('');
+  const [envioPropio, setEnvioPropio] = useState('');
   const [stock, setStock] = useState('');
   const [lote, setLote] = useState('');
   const [dueno, setDueno] = useState('');
@@ -43,7 +51,13 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setPrecio(producto.precio || '');
       setCostoProducto(producto.costoProducto || '');
       setPorcentajeGanancia(producto.porcentajeGanancia || '');
-      setDescuentoProveedor(producto.descuentoProveedor || '');
+      setDescuentos(
+        producto.descuentos && producto.descuentos.length > 0
+          ? producto.descuentos.map(d => ({ nombre: d.nombre || '', porcentaje: d.porcentaje ?? '' }))
+          : []
+      );
+      setIvaPropio(producto.ivaPorcentaje !== null && producto.ivaPorcentaje !== undefined ? String(producto.ivaPorcentaje) : '');
+      setEnvioPropio(producto.costoEnvioPorcentaje !== null && producto.costoEnvioPorcentaje !== undefined ? String(producto.costoEnvioPorcentaje) : '');
       setStock(producto.stock || '');
       setLote(producto.lote || '');
       setDueno(producto.dueno || '');
@@ -54,7 +68,9 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setPrecio('');
       setCostoProducto('');
       setPorcentajeGanancia('');
-      setDescuentoProveedor('');
+      setDescuentos([]);
+      setIvaPropio('');
+      setEnvioPropio('');
       setStock('');
       setLote('');
       setDueno('');
@@ -63,17 +79,18 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     setErrors({});
   }, [producto, isOpen]);
 
-  const calcCostoFinal = (costo, desc) => {
+  const calcCostoFinal = (costo, descuentosList, ivaPropioVal, envioPropioVal) => {
     const cBase = costo ? parseFloat(costo) : 0;
-    const dProv = desc ? parseFloat(desc) : 0;
-    const descMonto = (cBase * dProv) / 100;
-    const cDesc = cBase - descMonto;
-    const envMonto = (cDesc * costoEnvioPorcentaje) / 100;
-    return cDesc + envMonto;
+    const porcentajes = (descuentosList || [])
+      .map((d) => (d.porcentaje !== '' && d.porcentaje !== null && d.porcentaje !== undefined ? parseFloat(d.porcentaje) : NaN))
+      .filter((p) => !Number.isNaN(p));
+    const ivaEfectivo = resolverEfectivo(ivaPropioVal, ivaDefault);
+    const envioEfectivo = resolverEfectivo(envioPropioVal, costoEnvioDefault);
+    return calcularCosto(cBase, porcentajes, ivaEfectivo, envioEfectivo).costoFinal;
   };
 
-  const recalcPrecio = (costo, desc, ganancia) => {
-    const cf = calcCostoFinal(costo, desc);
+  const recalcPrecio = (costo, descuentosList, ivaPropioVal, envioPropioVal, ganancia) => {
+    const cf = calcCostoFinal(costo, descuentosList, ivaPropioVal, envioPropioVal);
     const pGan = ganancia ? parseFloat(ganancia) : 0;
     if (cf > 0) {
       const ganMonto = (cf * pGan) / 100;
@@ -81,8 +98,8 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     }
   };
 
-  const recalcGanancia = (costo, desc, prec) => {
-    const cf = calcCostoFinal(costo, desc);
+  const recalcGanancia = (costo, descuentosList, ivaPropioVal, envioPropioVal, prec) => {
+    const cf = calcCostoFinal(costo, descuentosList, ivaPropioVal, envioPropioVal);
     const pr = prec ? parseFloat(prec) : 0;
     if (cf > 0) {
       const pGan = ((pr - cf) / cf) * 100;
@@ -94,37 +111,87 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
 
   const handleCostoChange = (val) => {
     setCostoProducto(val);
-    recalcPrecio(val, descuentoProveedor, porcentajeGanancia);
+    recalcPrecio(val, descuentos, ivaPropio, envioPropio, porcentajeGanancia);
   };
-  
-  const handleDescChange = (val) => {
-    setDescuentoProveedor(val);
-    recalcPrecio(costoProducto, val, porcentajeGanancia);
-  };
-  
+
   const handleGananciaChange = (val) => {
     setPorcentajeGanancia(val);
-    recalcPrecio(costoProducto, descuentoProveedor, val);
+    recalcPrecio(costoProducto, descuentos, ivaPropio, envioPropio, val);
   };
-  
+
   const handlePrecioChange = (val) => {
     setPrecio(val);
-    recalcGanancia(costoProducto, descuentoProveedor, val);
+    recalcGanancia(costoProducto, descuentos, ivaPropio, envioPropio, val);
   };
 
-  // Cálculos derivados de precios para visualización
-  const cBase = costoProducto ? parseFloat(costoProducto) : 0;
-  const dProv = descuentoProveedor ? parseFloat(descuentoProveedor) : 0;
-  const pVenta = precio ? parseFloat(precio) : 0;
+  const handleIvaPropioChange = (val) => {
+    setIvaPropio(val);
+    recalcPrecio(costoProducto, descuentos, val, envioPropio, porcentajeGanancia);
+  };
 
-  const descuentoMonto = (cBase * dProv) / 100;
-  const costoConDescuento = cBase - descuentoMonto;
-  const envioMonto = (costoConDescuento * costoEnvioPorcentaje) / 100;
-  const costoFinalCalc = costoConDescuento + envioMonto;
+  const handleEnvioPropioChange = (val) => {
+    setEnvioPropio(val);
+    recalcPrecio(costoProducto, descuentos, ivaPropio, val, porcentajeGanancia);
+  };
+
+  const handleDescuentoNombreChange = (index, val) => {
+    const next = descuentos.map((d, i) => (i === index ? { ...d, nombre: val } : d));
+    setDescuentos(next);
+  };
+
+  const handleDescuentoPorcentajeChange = (index, val) => {
+    const next = descuentos.map((d, i) => (i === index ? { ...d, porcentaje: val } : d));
+    setDescuentos(next);
+    recalcPrecio(costoProducto, next, ivaPropio, envioPropio, porcentajeGanancia);
+  };
+
+  const handleAddDescuento = () => {
+    setDescuentos([...descuentos, { nombre: '', porcentaje: '' }]);
+  };
+
+  const handleRemoveDescuento = (index) => {
+    const next = descuentos.filter((_, i) => i !== index);
+    setDescuentos(next);
+    recalcPrecio(costoProducto, next, ivaPropio, envioPropio, porcentajeGanancia);
+  };
+
+  // Desglose en vivo (tarea 9.6): una línea por descuento (cascada, en el orden cargado), línea
+  // de IVA, línea de envío, costo final y precio de venta — todo desde el mismo utilitario que
+  // arma el payload, para que la UI nunca pueda mostrar un número distinto del que se guarda.
+  const cBase = costoProducto ? parseFloat(costoProducto) : 0;
+  const pVenta = precio ? parseFloat(precio) : 0;
+  const ivaEfectivo = resolverEfectivo(ivaPropio, ivaDefault);
+  const envioEfectivo = resolverEfectivo(envioPropio, costoEnvioDefault);
+
+  const porcentajesDescuento = descuentos
+    .map((d) => (d.porcentaje !== '' && d.porcentaje !== null && d.porcentaje !== undefined ? parseFloat(d.porcentaje) : NaN))
+    .filter((p) => !Number.isNaN(p));
+
+  // Monto de cada fila para el desglose visual: en vez de reimplementar la cascada a mano acá
+  // (que sería una quinta copia de la fórmula), se lee como la diferencia entre lo que da
+  // calcularCosto() aplicando los descuentos de a uno más en cada paso — el único lugar que
+  // multiplica porcentajes sigue siendo costeo.js.
+  const prefijoPorcentaje = (hastaIndex) =>
+    descuentos.slice(0, hastaIndex).map((x) => (x.porcentaje !== '' && x.porcentaje !== null && x.porcentaje !== undefined ? parseFloat(x.porcentaje) : NaN));
+
+  let netoPrevio = cBase;
+  const filasDescuento = descuentos.map((d, index) => {
+    const perc = d.porcentaje !== '' && d.porcentaje !== null && d.porcentaje !== undefined ? parseFloat(d.porcentaje) : NaN;
+    if (Number.isNaN(perc)) {
+      return { nombre: d.nombre, porcentaje: 0, monto: 0 };
+    }
+    const netoHastaAca = calcularCosto(cBase, prefijoPorcentaje(index + 1), 0, 0).netoConDescuentos;
+    const monto = netoPrevio - netoHastaAca;
+    netoPrevio = netoHastaAca;
+    return { nombre: d.nombre, porcentaje: perc, monto };
+  });
+
+  const desglose = calcularCosto(cBase, porcentajesDescuento, ivaEfectivo, envioEfectivo);
+  const costoFinalCalc = desglose.costoFinal;
   const gananciaMonto = pVenta - costoFinalCalc;
 
   const isVivero = unidadNegocioActiva !== '2';
-  const tituloModal = producto 
+  const tituloModal = producto
     ? (isVivero ? 'Editar Producto (Planta)' : 'Editar Producto')
     : (isVivero ? 'Nuevo Producto (Planta)' : 'Nuevo Producto');
   const labelNombre = isVivero ? 'Nombre de la Planta' : 'Nombre del Producto';
@@ -143,6 +210,18 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     } else if (parseInt(stock, 10) < 0) {
       newErrors.stock = 'El stock no puede ser negativo';
     }
+    // Validación de la lista de descuentos (tarea 9.7): nombre no vacío, porcentaje no negativo.
+    // No se manda la petición si alguna fila es inválida.
+    const nombreFaltante = descuentos.some((d) => !d.nombre || !d.nombre.trim());
+    const porcentajeInvalido = descuentos.some((d) => {
+      const p = d.porcentaje === '' || d.porcentaje === null || d.porcentaje === undefined ? NaN : parseFloat(d.porcentaje);
+      return Number.isNaN(p) || p < 0;
+    });
+    if (nombreFaltante) {
+      newErrors.descuentos = 'Cada descuento debe tener un nombre.';
+    } else if (porcentajeInvalido) {
+      newErrors.descuentos = 'El porcentaje de cada descuento debe ser un número mayor o igual a 0.';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -156,7 +235,15 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         precio: parseFloat(precio),
         costoProducto: costoProducto ? parseFloat(costoProducto) : null,
         porcentajeGanancia: porcentajeGanancia ? parseFloat(porcentajeGanancia) : null,
-        descuentoProveedor: descuentoProveedor ? parseFloat(descuentoProveedor) : null,
+        // Este formulario ya no edita descuentoProveedor directamente (Decisión 8: la columna
+        // queda intacta como red de rollback, pero deja de leerse/escribirse desde acá). La
+        // lista de descuentos es la fuente de verdad nueva; no enviarlo deja el valor migrado
+        // sin tocar en el backend (actualizarProducto sólo lo pisa si el DTO trae un valor).
+        descuentos: descuentos.map((d) => ({ nombre: d.nombre.trim(), porcentaje: parseFloat(d.porcentaje) })),
+        // '' -> null (no 0): un campo vacío significa "hereda el default de la unidad de
+        // negocio" (Decisión 5), mismo patrón que ya usa este componente para costoProducto.
+        ivaPorcentaje: ivaPropio !== '' ? parseFloat(ivaPropio) : null,
+        costoEnvioPorcentaje: envioPropio !== '' ? parseFloat(envioPropio) : null,
         stock: parseInt(stock, 10),
         lote: lote.trim() || null,
         dueno: dueno.trim() || null,
@@ -184,20 +271,20 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
       onClick={handleBackdropClick}
     >
       <div className="bg-white/90 backdrop-blur-md rounded-none sm:rounded-2xl border border-white/20 w-full h-full sm:h-auto max-w-2xl shadow-2xl flex flex-col max-h-screen sm:max-h-[95vh] scale-100 transition-transform duration-300 animate-scaleIn">
-        
+
         {/* Header */}
         <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-600 text-white sm:rounded-t-2xl">
           <h2 className="text-lg font-semibold">
             {tituloModal}
           </h2>
-          <button 
+          <button
             onClick={onCancel}
-            className="p-1.5 rounded-full hover:bg-emerald-700 transition-colors text-white/90 hover:text-white"
+            className="p-1.5 rounded-full hover:bg-emerald-700 transition-colors text-white/90 hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -277,7 +364,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 <p className="mt-1 text-xs text-red-500 font-medium">{errors.stock}</p>
               )}
             </div>
-            
+
             {unidadNegocioActiva === '2' && (
               <div className="col-span-1">
                 <label htmlFor="marcaId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -297,10 +384,10 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 </select>
               </div>
             )}
-            
+
             {unidadNegocioActiva === '2' && (
               <div className="col-span-2 mt-2 bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <div className="grid grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                   <div>
                     <label htmlFor="costoProducto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                       Costo Catálogo
@@ -314,15 +401,37 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                     />
                   </div>
                   <div>
-                    <label htmlFor="descuentoProveedor" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                      Desc. Prov (%)
+                    <label htmlFor="ivaPropio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                      IVA propio (%)
                     </label>
                     <FormattedNumberInput
-                      id="descuentoProveedor"
-                      value={descuentoProveedor}
-                      onChange={handleDescChange}
+                      id="ivaPropio"
+                      // El estado ivaPropio sigue siendo la fuente de verdad para el submit
+                      // ('' = hereda -> null). Lo que se MUESTRA en el input, en cambio, es el
+                      // default de la unidad cuando no hay override, para que el campo se vea
+                      // "pre-cargado" con ese número en vez de un placeholder gris. Al tipear,
+                      // FormattedNumberInput dispara onChange con el valor tipeado y ivaPropio
+                      // deja de ser '', quedando como override real (aunque el número coincida
+                      // con el default).
+                      value={ivaPropio !== '' ? ivaPropio : ivaDefault}
+                      onChange={handleIvaPropioChange}
                       className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
-                      placeholder="0"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="envioPropio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                      Envío propio (%)
+                    </label>
+                    <FormattedNumberInput
+                      id="envioPropio"
+                      // Mismo patrón que ivaPropio: el valor mostrado cae al default de envío
+                      // de la unidad cuando envioPropio === '' (hereda), sin tocar el estado que
+                      // decide qué se manda en el submit.
+                      value={envioPropio !== '' ? envioPropio : costoEnvioDefault}
+                      onChange={handleEnvioPropioChange}
+                      className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
+                      placeholder="0.00"
                     />
                   </div>
                   <div>
@@ -337,47 +446,85 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                       placeholder="0"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="precioManual" className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">
-                      Precio Venta
-                    </label>
-                    <FormattedNumberInput
-                      id="precioManual"
-                      value={precio}
-                      onChange={handlePrecioChange}
-                      className="w-full px-4 py-2 rounded-xl border-2 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-emerald-200 focus:border-emerald-500 text-emerald-900 font-bold text-center"
-                      placeholder="0.00"
-                    />
-                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-0 bg-white border border-gray-100 rounded-lg p-3 text-sm text-gray-600 shadow-sm">
-                  {/* Modificadores (Columna 1) */}
-                  <div className="flex flex-col pr-4 border-r border-gray-100 space-y-2 justify-center">
-                    <div className="truncate flex justify-between items-center text-gray-500">
-                      <span>Desc. (<span className="font-semibold">{dProv}%</span>):</span>
-                      <strong>-${descuentoMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Descuentos estables (Proveedor, Volumen, Pronto pago...)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddDescuento}
+                    className="flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar descuento
+                  </button>
+                </div>
+
+                {descuentos.length === 0 && (
+                  <p className="text-xs text-gray-400 italic mb-2">Sin descuentos cargados.</p>
+                )}
+
+                <div className="space-y-2 mb-3">
+                  {descuentos.map((d, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={d.nombre}
+                        onChange={(e) => handleDescuentoNombreChange(index, e.target.value)}
+                        placeholder="Ej: Proveedor, Volumen, Pronto pago"
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                      />
+                      <div className="w-24 shrink-0">
+                        <FormattedNumberInput
+                          value={d.porcentaje}
+                          onChange={(val) => handleDescuentoPorcentajeChange(index, val)}
+                          placeholder="%"
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDescuento(index)}
+                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                        aria-label="Quitar descuento"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div className="text-rose-600 truncate flex justify-between items-center border-t border-gray-50 pt-2">
-                      <span>Envío (<span className="font-semibold">{costoEnvioPorcentaje}%</span>):</span>
-                      <strong>+${envioMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                  ))}
+                </div>
+                {errors.descuentos && (
+                  <p className="mb-3 text-xs text-red-500 font-medium">{errors.descuentos}</p>
+                )}
+
+                <div className="bg-white border border-gray-100 rounded-lg p-3 text-sm text-gray-600 shadow-sm space-y-2">
+                  {filasDescuento.map((f, index) => (
+                    <div key={index} className="flex justify-between items-center text-gray-500 gap-2">
+                      <span className="truncate">{f.nombre || 'Descuento'} (<span className="font-semibold">{f.porcentaje}%</span>):</span>
+                      <strong className="shrink-0">-${f.monto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                     </div>
+                  ))}
+                  <div className="flex justify-between items-center text-gray-500 border-t border-gray-50 pt-2">
+                    <span>IVA (<span className="font-semibold">{ivaEfectivo}%</span>):</span>
+                    <strong>+${desglose.montoIva.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
-                  
-                  {/* Totales (Columna 2) */}
-                  <div className="flex flex-col pl-4 justify-center py-1">
-                    <div className="truncate flex justify-between items-center pb-2">
-                      <span>C. Final:</span>
-                      <strong className="text-gray-900">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
-                    </div>
-                    <div className="text-emerald-700 truncate flex justify-between items-center border-t border-gray-100 pt-2">
-                      <span className="font-semibold uppercase tracking-wider text-xs">Precio Venta:</span>
-                      <strong className="text-lg">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
-                    </div>
-                    <div className="text-emerald-600/80 truncate flex justify-between items-center text-xs mt-1">
-                      <span>Ganancia Neta:</span>
-                      <strong>+${gananciaMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
-                    </div>
+                  <div className="text-rose-600 flex justify-between items-center">
+                    <span>Envío (<span className="font-semibold">{envioEfectivo}%</span>):</span>
+                    <strong>+${desglose.montoEnvio.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-gray-100 pt-2">
+                    <span>C. Final:</span>
+                    <strong className="text-gray-900">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div className="text-emerald-700 flex justify-between items-center">
+                    <span className="font-semibold uppercase tracking-wider text-xs">Precio Venta:</span>
+                    <strong className="text-lg">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div className="text-emerald-600/80 flex justify-between items-center text-xs">
+                    <span>Ganancia Neta:</span>
+                    <strong>+${gananciaMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
                 </div>
 
@@ -418,7 +565,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               </div>
             </div>
           )}
-          
+
           {/* Removed marcaId from here as it was moved up */}
 
           </div>
