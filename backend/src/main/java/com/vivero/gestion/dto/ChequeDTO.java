@@ -19,6 +19,7 @@ public class ChequeDTO {
     private String entregadoA;
     private Boolean esEmisionPropia;
     private Long endosadoAClienteId;
+    private String endosadoAClienteNombre;
 
     public Long getId() {
         return id;
@@ -138,5 +139,13 @@ public class ChequeDTO {
 
     public void setEndosadoAClienteId(Long endosadoAClienteId) {
         this.endosadoAClienteId = endosadoAClienteId;
+    }
+
+    public String getEndosadoAClienteNombre() {
+        return endosadoAClienteNombre;
+    }
+
+    public void setEndosadoAClienteNombre(String endosadoAClienteNombre) {
+        this.endosadoAClienteNombre = endosadoAClienteNombre;
     }
 }

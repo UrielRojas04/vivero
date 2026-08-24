@@ -1,6 +1,7 @@
 package com.vivero.gestion.controllers;
 
 import com.vivero.gestion.dto.ProductoDTO;
+import com.vivero.gestion.dto.RevisionCostoProductoDTO;
 import com.vivero.gestion.services.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,16 @@ public class ProductoController {
     public ResponseEntity<ProductoDTO> crearProducto(@RequestBody ProductoDTO dto) {
         ProductoDTO creado = productoService.crearProducto(dto);
         return new ResponseEntity<>(creado, HttpStatus.CREATED);
+    }
+
+    // Panel de revisión de costos (Decisión 8 de design.md de revision-costos-productos): sólo
+    // LEER_STOCK, igual que el resto de las lecturas de este controller — no es una capacidad
+    // nueva del negocio, es otra vista del catálogo que el usuario ya puede leer. El controller
+    // no llama al repositorio (regla dura 6): toda la lógica vive en ProductoServiceImpl.
+    @GetMapping("/revision-costos")
+    @PreAuthorize("hasAuthority('LEER_STOCK')")
+    public ResponseEntity<List<RevisionCostoProductoDTO>> listarRevisionCostos() {
+        return ResponseEntity.ok(productoService.listarRevisionCostos());
     }
 
     @GetMapping("/{id}")

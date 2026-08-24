@@ -27,6 +27,9 @@ public class PedidoDetalle {
     @Column(name = "producto_nombre_nuevo")
     private String productoNombreNuevo;
 
+    // Ya no se usa (Decisión de la sesión del 2026-08-20): el precio de venta ya no se pide al
+    // armar el pedido, se calcula después en Productos a partir del costo. Columna dejada sin
+    // uso en vez de ALTER TABLE, mismo criterio que descuentoProveedor.
     @Column(name = "producto_precio_nuevo", precision = 12, scale = 2)
     private BigDecimal productoPrecioNuevo;
 
@@ -41,6 +44,39 @@ public class PedidoDetalle {
     // ambos casos rompe el requisito de remanente visible.
     @Column(name = "cantidad_recibida")
     private Integer cantidadRecibida;
+
+    // ---- Costeo pactado de la línea (Decisión 8 de design.md de config-costeo-por-proveedor):
+    // la línea queda auto-contenida, describe completamente cómo se llegó a su costo sin
+    // depender de que el producto ni el proveedor sigan configurados igual mañana. El flujo que
+    // los pide, precarga y persiste es de los grupos 7/8, fuera de alcance del grupo 5 — acá sólo
+    // se agregan las columnas.
+
+    // Moneda pactada de ESTA línea. Default ARS, mismo criterio que Producto.monedaCosto (tarea
+    // 5.1): sin valor por defecto ambiguo.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moneda_linea", length = 3, columnDefinition = "varchar(3) default 'ARS'")
+    private MonedaCosto monedaLinea = MonedaCosto.ARS;
+
+    @Column(name = "iva_pactado_porcentaje", precision = 5, scale = 2)
+    private BigDecimal ivaPactadoPorcentaje;
+
+    @Column(name = "envio_pactado_porcentaje", precision = 5, scale = 2)
+    private BigDecimal envioPactadoPorcentaje;
+
+    // Descuento efectivo TOTAL de la línea, ya colapsado (ej. 12.00 para un único descuento de
+    // 12%, o el equivalente de una cascada de varios) — añadido en el grupo 8 de tasks.md de
+    // config-costeo-por-proveedor para completar el par numérico/textual que el grupo 5 dejó sólo
+    // textual, mismo criterio que MovimientoStock.descuentoPorcentaje / descuentoDetalle. Es lo
+    // que permite reconstruir un ProductoDescuento estructurado cuando una línea "pendiente" se
+    // convierte en Producto real al confirmar la recepción (PedidoServiceImpl.confirmarRecepcion,
+    // tarea 8.6) — el texto solo no alcanza para eso.
+    @Column(name = "descuento_pactado_porcentaje", precision = 5, scale = 2)
+    private BigDecimal descuentoPactadoPorcentaje;
+
+    // Detalle textual de los descuentos pactados de la línea (ej. "Descuento 1: 12%; Descuento 2:
+    // 5%"), mismo criterio que MovimientoStock.descuentoDetalle.
+    @Column(name = "descuento_pactado_detalle", length = 500)
+    private String descuentoPactadoDetalle;
 
     public PedidoDetalle() {}
 
@@ -67,4 +103,19 @@ public class PedidoDetalle {
 
     public Integer getCantidadRecibida() { return cantidadRecibida; }
     public void setCantidadRecibida(Integer cantidadRecibida) { this.cantidadRecibida = cantidadRecibida; }
+
+    public MonedaCosto getMonedaLinea() { return monedaLinea; }
+    public void setMonedaLinea(MonedaCosto monedaLinea) { this.monedaLinea = monedaLinea; }
+
+    public BigDecimal getIvaPactadoPorcentaje() { return ivaPactadoPorcentaje; }
+    public void setIvaPactadoPorcentaje(BigDecimal ivaPactadoPorcentaje) { this.ivaPactadoPorcentaje = ivaPactadoPorcentaje; }
+
+    public BigDecimal getEnvioPactadoPorcentaje() { return envioPactadoPorcentaje; }
+    public void setEnvioPactadoPorcentaje(BigDecimal envioPactadoPorcentaje) { this.envioPactadoPorcentaje = envioPactadoPorcentaje; }
+
+    public BigDecimal getDescuentoPactadoPorcentaje() { return descuentoPactadoPorcentaje; }
+    public void setDescuentoPactadoPorcentaje(BigDecimal descuentoPactadoPorcentaje) { this.descuentoPactadoPorcentaje = descuentoPactadoPorcentaje; }
+
+    public String getDescuentoPactadoDetalle() { return descuentoPactadoDetalle; }
+    public void setDescuentoPactadoDetalle(String descuentoPactadoDetalle) { this.descuentoPactadoDetalle = descuentoPactadoDetalle; }
 }

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 import com.vivero.gestion.dto.ClienteDTO;
-import com.vivero.gestion.dto.FacturaClienteDTO;
+import com.vivero.gestion.dto.CuentaCorrienteDTO;
 import com.vivero.gestion.dto.VentaResponseDTO;
 import com.vivero.gestion.models.Cliente;
 import com.vivero.gestion.models.CuentaCorrienteBandejas;
@@ -153,7 +153,7 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Override
     @Transactional(readOnly = true)
-    public FacturaClienteDTO obtenerFactura(Long id) {
+    public CuentaCorrienteDTO obtenerFactura(Long id) {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         Cliente cliente;
         if (unidadId != null) {
@@ -193,7 +193,7 @@ public class ClienteServiceImpl implements ClienteService {
         // saldo, cheques sueltos, reversas, ventas dadas de baja). Ver Decisión 4 de design.md.
         BigDecimal diferenciaNoItemizada = balanceDinero.subtract(saldoSegunVentas);
 
-        FacturaClienteDTO dto = new FacturaClienteDTO();
+        CuentaCorrienteDTO dto = new CuentaCorrienteDTO();
         dto.setClienteId(cliente.getId());
         dto.setClienteNombre(cliente.getNombreRazonSocial());
         dto.setClienteTelefono(cliente.getTelefono());
@@ -208,7 +208,7 @@ public class ClienteServiceImpl implements ClienteService {
 
         // Cheques sueltos del cliente: la única parte de "otros movimientos" que tiene registro
         // real y se puede desglosar. El ajuste manual de saldo no deja rastro (ver comentario en
-        // FacturaClienteDTO.cheques).
+        // CuentaCorrienteDTO.cheques).
         List<ChequeDTO> cheques = chequeService.listarChequesPorCliente(id);
         dto.setCheques(cheques);
 

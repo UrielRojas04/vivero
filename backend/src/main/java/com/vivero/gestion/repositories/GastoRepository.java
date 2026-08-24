@@ -29,8 +29,8 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                 UNION ALL
                 SELECT 
                     CONCAT('I-', id) as idUnico, 
-                    CONCAT('Insumo: ', nombre) as concepto, 
-                    precio as monto, 
+                    CONCAT('Insumo: ', nombre, ' (x', stock, ')') as concepto, 
+                    (precio * stock) as monto, 
                     fecha_compra as fecha, 
                     'INSUMO' as tipo 
                 FROM insumos
@@ -51,8 +51,8 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                 UNION ALL
                 SELECT 
                     CONCAT('I-', id) as idUnico, 
-                    CONCAT('Insumo: ', nombre) as concepto, 
-                    precio as monto, 
+                    CONCAT('Insumo: ', nombre, ' (x', stock, ')') as concepto, 
+                    (precio * stock) as monto, 
                     fecha_compra as fecha, 
                     'INSUMO' as tipo 
                 FROM insumos

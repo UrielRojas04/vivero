@@ -478,23 +478,7 @@ const Finanzas = () => {
                       </li>
                     ))}
                     
-                    {/* Fila sintética para Costo de Producción en Vivero */}
-                    {unidadNegocioActiva === '1' && resumen?.costoMercaderiaVendida > 0 && gastosPage === 0 && searchGastos === '' && (
-                      <li className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/50 hover:border-blue-200 transition-colors shadow-sm gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 flex items-center">
-                            Costo de Producción (Insumos)
-                            <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200">AUTOMÁTICO</span>
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Costo total de insumos registrados en este período.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-bold text-red-600">{formatMoney(resumen.costoMercaderiaVendida)}</span>
-                        </div>
-                      </li>
-                    )}
+                    {/* Fila sintética para Costo de Producción en Vivero eliminada por redundancia con insumos individuales */}
                     {gastos.map(gasto => (
                       <li key={gasto.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm gap-2">
                         <div>
@@ -804,7 +788,7 @@ const Finanzas = () => {
                 <div className="grid grid-cols-1 gap-3 p-4 md:hidden">
                   {chequesEnCarteraList.map((cheque) => {
                     const vencimiento = describirVencimientoCheque(cheque.fechaCobro);
-                    const { editable } = describirEstadoCheque(cheque);
+                    const { editable, rechazable } = describirEstadoCheque(cheque);
                     return (
                       <div key={cheque.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
@@ -822,7 +806,7 @@ const Finanzas = () => {
                           <p>Recibido: {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}</p>
                         </div>
                         <div className="mt-4 pt-3 border-t border-gray-100">
-                          {editable ? (
+                          {editable || rechazable ? (
                             <button
                               onClick={() => {
                                 setSelectedCheque(cheque);

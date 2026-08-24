@@ -214,6 +214,7 @@ public class SiembraServiceImpl implements SiembraService {
         producto.setPrecio(request.getPrecioVenta());
         producto.setStock(request.getStock());
         producto.setLote(siembra.getCodigoLote());
+        producto.setNumeroSiembra(siembra.getNumeroSiembra());
         producto.setDueno(siembra.getDueno());
         
         com.vivero.gestion.models.UnidadNegocio un = new com.vivero.gestion.models.UnidadNegocio();

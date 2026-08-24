@@ -27,11 +27,20 @@ const TONO_ROJO = { texto: 'text-red-600', fondo: 'bg-red-50', chip: 'bg-red-50 
 const TONO_AMBAR = { texto: 'text-amber-600', fondo: 'bg-amber-50', chip: 'bg-amber-50 text-amber-700' };
 
 /**
- * describirEstadoCheque(cheque) -> { estado, etiqueta, tono, editable }
+ * describirEstadoCheque(cheque) -> { estado, etiqueta, tono, editable, rechazable }
  *
  * `etiqueta` absorbe la regla de emisión propia: un cheque propio en
  * EN_CARTERA se presenta como "EMITIDO" y en COBRADO como "DEBITADO",
  * porque desde el punto de vista del vivero es plata que sale, no que entra.
+ *
+ * `editable` NO cambió de definición (cheques-rebote-endosado, Decisión 6):
+ * un cheque `ENTREGADO` sigue sin ser editable en el sentido amplio de "abrir
+ * el selector completo de estados". `rechazable` es el indicador nuevo y
+ * separado: verdadero cuando el cheque puede pasar a `RECHAZADO`, que hoy es
+ * el caso de `EN_CARTERA` (como siempre) y también de `ENTREGADO` (el rebote
+ * de un cheque ya endosado). Las vistas dibujan el botón de acción cuando
+ * `editable || rechazable`, y es el modal quien decide, con el estado real
+ * del cheque, qué opciones ofrecer dentro de él.
  */
 export const describirEstadoCheque = (cheque) => {
   const estado = cheque.estado;
@@ -47,12 +56,14 @@ export const describirEstadoCheque = (cheque) => {
   }
 
   const editable = !['RECHAZADO', 'ENTREGADO', 'COBRADO'].includes(estado);
+  const rechazable = estado === 'EN_CARTERA' || estado === 'ENTREGADO';
 
   return {
     estado,
     etiqueta,
     tono: TONOS_ESTADO[estado] || TONO_GRIS,
     editable,
+    rechazable,
   };
 };
 

@@ -3,9 +3,14 @@ import { Leaf, LayoutDashboard, Settings, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import VariedadesPlantas from './VariedadesPlantas';
 import VariedadesBandejas from './VariedadesBandejas';
+import Proveedores from './Proveedores';
 import ConfiguracionHerramientas from '../components/ConfiguracionHerramientas';
-import ConfiguracionMarcas from '../components/ConfiguracionMarcas';
-import { Tag } from 'lucide-react';
+import { Truck } from 'lucide-react';
+// ConfiguracionMarcas ya no se renderiza acá (OQ10, grupo 10 de config-costeo-por-proveedor,
+// tarea 10.7): la pestaña "Marcas" se esconde, pero el componente, MarcaController,
+// MarcaService(Impl), MarcaRepository, MarcaDTO y los endpoints /api/marcas quedan intactos
+// como red de rollback de la unificación Marca->Proveedor (OQ1). Borrarlos de verdad es un
+// chore posterior. No reimportar este componente sin volver a leer esa decisión.
 
 export default function Configuracion() {
   const { hasPermission, unidadNegocioActiva } = useAuthStore();
@@ -84,8 +89,8 @@ export default function Configuracion() {
             <button
               onClick={() => setActiveSection('herramientas')}
               className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
-                activeSection === 'herramientas' 
-                  ? 'border-orange-500 ring-2 ring-orange-500/20' 
+                activeSection === 'herramientas'
+                  ? 'border-orange-500 ring-2 ring-orange-500/20'
                   : 'border-gray-100 hover:border-orange-500 hover:shadow-md'
               }`}
             >
@@ -105,32 +110,38 @@ export default function Configuracion() {
                 </p>
               </div>
             </button>
-
-            <button
-              onClick={() => setActiveSection('marcas')}
-              className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
-                activeSection === 'marcas' 
-                  ? 'border-emerald-500 ring-2 ring-emerald-500/20' 
-                  : 'border-gray-100 hover:border-emerald-500 hover:shadow-md'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                activeSection === 'marcas' ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
-              }`}>
-                <Tag className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className={`text-lg font-bold transition-colors mb-1 ${
-                  activeSection === 'marcas' ? 'text-emerald-700' : 'text-gray-900 group-hover:text-emerald-700'
-                }`}>
-                  Gestión de Marcas
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Catálogo de marcas para filtros y productos
-                </p>
-              </div>
-            </button>
           </>
+        )}
+
+        {/* Proveedores requiere LEER_PEDIDOS (sólo lo tienen JEFE y ADMIN 2 hoy) — a propósito
+            separado del resto de "Herramientas Configs", que gobierna ESCRIBIR_STOCK: la
+            configuración de proveedores incluye datos de costeo (IVA, descuentos, moneda) que
+            no debería ver cualquiera con permiso de stock, sólo quien gestiona pedidos. */}
+        {hasPermission('LEER_PEDIDOS') && unidadNegocioActiva === '2' && (
+          <button
+            onClick={() => setActiveSection('proveedores')}
+            className={`bg-white p-6 rounded-2xl shadow-sm border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+              activeSection === 'proveedores'
+                ? 'border-blue-500 ring-2 ring-blue-500/20'
+                : 'border-gray-100 hover:border-blue-500 hover:shadow-md'
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              activeSection === 'proveedores' ? 'bg-blue-100 text-blue-700' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'
+            }`}>
+              <Truck className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                activeSection === 'proveedores' ? 'text-blue-700' : 'text-gray-900 group-hover:text-blue-700'
+              }`}>
+                Proveedores
+              </h2>
+              <p className="text-sm text-gray-500">
+                Perfil de costeo por defecto: IVA, descuentos, envío y moneda
+              </p>
+            </div>
+          </button>
         )}
       </div>
 
@@ -139,7 +150,7 @@ export default function Configuracion() {
           {activeSection === 'plantas' && <VariedadesPlantas />}
           {activeSection === 'bandejas' && <VariedadesBandejas />}
           {activeSection === 'herramientas' && <ConfiguracionHerramientas />}
-          {activeSection === 'marcas' && <ConfiguracionMarcas />}
+          {activeSection === 'proveedores' && <Proveedores />}
         </div>
       )}
     </div>

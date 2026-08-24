@@ -40,6 +40,10 @@ public class Venta {
     private LocalDateTime fecha;
     private String remitoUrl;
 
+    @ManyToOne
+    @JoinColumn(name = "factura_id")
+    private FacturaCliente factura;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
@@ -78,6 +82,9 @@ public class Venta {
     
     public List<Pago> getPagos() { return pagos; }
     public void setPagos(List<Pago> pagos) { this.pagos = pagos; }
+    
+    public FacturaCliente getFactura() { return factura; }
+    public void setFactura(FacturaCliente factura) { this.factura = factura; }
     
     public void addDetalle(VentaDetalle detalle) {
         detalles.add(detalle);

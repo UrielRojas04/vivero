@@ -66,7 +66,7 @@ export default function Cheques() {
             {/* Tarjetas mobile */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
               {data?.content?.map((cheque) => {
-                const { etiqueta, tono, editable } = describirEstadoCheque(cheque);
+                const { etiqueta, tono, editable, rechazable } = describirEstadoCheque(cheque);
                 const vencimiento = cheque.estado === 'EN_CARTERA' ? describirVencimientoCheque(cheque.fechaCobro) : null;
                 return (
                   <div key={cheque.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
@@ -104,7 +104,7 @@ export default function Cheques() {
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-gray-100">
-                      {editable ? (
+                      {editable || rechazable ? (
                         <button
                           onClick={() => openModal(cheque)}
                           className="w-full flex items-center justify-center gap-2 py-2.5 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer font-semibold text-sm"
@@ -142,7 +142,7 @@ export default function Cheques() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {data?.content?.map((cheque) => {
-                      const { etiqueta, tono, editable } = describirEstadoCheque(cheque);
+                      const { etiqueta, tono, editable, rechazable } = describirEstadoCheque(cheque);
                       return (
                         <tr key={cheque.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -175,7 +175,7 @@ export default function Cheques() {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            {editable ? (
+                            {editable || rechazable ? (
                               <button
                                 onClick={() => openModal(cheque)}
                                 className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"

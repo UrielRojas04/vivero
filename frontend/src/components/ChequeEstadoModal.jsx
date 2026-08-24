@@ -19,10 +19,13 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
   const [fechaEntregaEdit, setFechaEntregaEdit] = useState('');
   const dropdownRef = useRef(null);
 
-  // Inicializar estado cuando se abre el modal y se pasa un cheque
+  // Inicializar estado cuando se abre el modal y se pasa un cheque.
+  // Un cheque ENTREGADO sólo admite una transición (rebote a RECHAZADO,
+  // cheques-rebote-endosado Decisión 2/6): se preselecciona directamente,
+  // el selector queda restringido a esa única opción.
   useEffect(() => {
     if (isOpen && cheque) {
-      setEstadoEdit(cheque.estado);
+      setEstadoEdit(cheque.estado === 'ENTREGADO' ? 'RECHAZADO' : cheque.estado);
       setEntregadoAEdit(cheque.entregadoA || '');
       setFechaEntregaEdit(cheque.fechaEntrega || '');
       setTipoEndoso('TERCERO');
@@ -31,6 +34,13 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
       setIsDropdownOpen(false);
     }
   }, [isOpen, cheque]);
+
+  // Open Question 1 de design.md, opción (c): un cheque ENTREGADO antes de
+  // este change no persistió a su endosatario como relación. Si rebota, el
+  // modal le pide al usuario elegirlo en este mismo momento, con el mismo
+  // buscador de clientes que ya usa para endosar.
+  const esReboteDeChequeEndosado = cheque && cheque.estado === 'ENTREGADO';
+  const necesitaSeleccionarEndosatario = esReboteDeChequeEndosado && !cheque.endosadoAClienteId;
 
   const { data: clientesData } = useQuery({
     queryKey: ['clientes'],
@@ -72,14 +82,55 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
       }
     }
 
-    const payload = {
-      estado: estadoEdit,
-      fechaEntrega: estadoEdit === 'ENTREGADO' ? fechaEntregaEdit : null,
-      entregadoA: estadoEdit === 'ENTREGADO' && tipoEndoso === 'TERCERO' ? entregadoAEdit : null,
-      endosadoAClienteId: estadoEdit === 'ENTREGADO' && tipoEndoso === 'CLIENTE' ? parseInt(endosadoAClienteId, 10) : null
-    };
+    // Open Question 1, opción (c): cheque ENTREGADO preexistente sin endosatario
+    // persistido. El usuario debe elegir el cliente o marcar explícitamente que
+    // fue un tercero antes de poder registrar el rebote.
+    if (necesitaSeleccionarEndosatario && tipoEndoso === 'CLIENTE' && !endosadoAClienteId) {
+      return pushToast('error', 'Debe seleccionar el cliente al que se le había endosado el cheque, o indicar que fue un tercero.');
+    }
+
+    let payload;
+    if (esReboteDeChequeEndosado) {
+      // Rebote de un cheque endosado: no se manda entregadoA ni fechaEntrega en
+      // null (tarea 7.6) — el backend preserva esos datos tal cual estaban.
+      payload = { estado: estadoEdit };
+      if (necesitaSeleccionarEndosatario && tipoEndoso === 'CLIENTE' && endosadoAClienteId) {
+        payload.endosadoAClienteId = parseInt(endosadoAClienteId, 10);
+      }
+    } else {
+      payload = {
+        estado: estadoEdit,
+        fechaEntrega: estadoEdit === 'ENTREGADO' ? fechaEntregaEdit : null,
+        entregadoA: estadoEdit === 'ENTREGADO' && tipoEndoso === 'TERCERO' ? entregadoAEdit : null,
+        endosadoAClienteId: estadoEdit === 'ENTREGADO' && tipoEndoso === 'CLIENTE' ? parseInt(endosadoAClienteId, 10) : null
+      };
+    }
 
     if (estadoEdit === 'RECHAZADO' && cheque.estado !== 'RECHAZADO') {
+      if (esReboteDeChequeEndosado) {
+        const montoTexto = cheque.monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+        const clienteOriginalNombre = cheque.clienteNombre || 'el cliente original';
+        const endosatarioNombre = cheque.endosadoAClienteNombre
+          || (necesitaSeleccionarEndosatario && tipoEndoso === 'CLIENTE' ? searchCliente : null)
+          || cheque.entregadoA
+          || 'el endosatario';
+        const hayEndosatarioCliente = !!cheque.endosadoAClienteId
+          || (necesitaSeleccionarEndosatario && tipoEndoso === 'CLIENTE' && !!endosadoAClienteId);
+
+        const message = hayEndosatarioCliente
+          ? `Vas a registrar el rebote de este cheque endosado, por ${montoTexto}.\n\nSe le AUMENTARÁ LA DEUDA a ${clienteOriginalNombre} en ${montoTexto}, y se le ACREDITARÁ SALDO A FAVOR a ${endosatarioNombre} por ese mismo monto.\n\nEsta acción NO SE PUEDE DESHACER.\n\n¿Estás seguro de que deseas continuar?`
+          : `Vas a registrar el rebote de este cheque endosado, por ${montoTexto}.\n\nSe le AUMENTARÁ LA DEUDA a ${clienteOriginalNombre} en ${montoTexto}. El destinatario del endoso (${endosatarioNombre}) no es un cliente del sistema, así que no tiene cuenta corriente que ajustar: sólo se mueve esa cuenta.\n\nEsta acción NO SE PUEDE DESHACER.\n\n¿Estás seguro de que deseas continuar?`;
+
+        askConfirm({
+          title: 'Atención: Rebote de Cheque Endosado',
+          message,
+          variant: 'danger',
+          confirmLabel: 'Sí, registrar rebote',
+          onConfirm: () => updateMutation.mutate({ id: cheque.id, payload })
+        });
+        return;
+      }
+
       askConfirm({
         title: 'Atención: Reversa Contable',
         message: 'Marcar un cheque como RECHAZADO revertirá los saldos en la cuenta corriente del cliente (afectando deudas y saldos a favor) y NO SE PUEDE DESHACER.\n\n¿Estás seguro de que deseas continuar?',
@@ -151,21 +202,129 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
           </div>
 
           <div className="space-y-4">
+            {esReboteDeChequeEndosado && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                Este cheque está <span className="font-semibold">endosado</span>
+                {cheque.entregadoA ? <> a <span className="font-semibold">{cheque.entregadoA}</span></> : null}.
+                La única acción posible es registrar su rebote.
+              </div>
+            )}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
               <select
                 value={estadoEdit}
                 onChange={(e) => setEstadoEdit(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-shadow"
+                disabled={esReboteDeChequeEndosado}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-shadow disabled:bg-gray-100 disabled:text-gray-500"
               >
-                <option value="EN_CARTERA">{cheque.esEmisionPropia ? "EMITIDO (Pendiente de cobro)" : "EN CARTERA"}</option>
-                <option value="COBRADO">{cheque.esEmisionPropia ? "DEBITADO (Cobrado de tu cuenta)" : "COBRADO (Depositado)"}</option>
-                {!cheque.esEmisionPropia && (
-                  <option value="ENTREGADO">ENTREGADO (Endosado/Tercero)</option>
+                {esReboteDeChequeEndosado ? (
+                  <option value="RECHAZADO">RECHAZADO (Rebote de cheque endosado)</option>
+                ) : (
+                  <>
+                    <option value="EN_CARTERA">{cheque.esEmisionPropia ? "EMITIDO (Pendiente de cobro)" : "EN CARTERA"}</option>
+                    <option value="COBRADO">{cheque.esEmisionPropia ? "DEBITADO (Cobrado de tu cuenta)" : "COBRADO (Depositado)"}</option>
+                    {!cheque.esEmisionPropia && (
+                      <option value="ENTREGADO">ENTREGADO (Endosado/Tercero)</option>
+                    )}
+                    <option value="RECHAZADO">RECHAZADO</option>
+                  </>
                 )}
-                <option value="RECHAZADO">RECHAZADO</option>
               </select>
             </div>
+
+            {necesitaSeleccionarEndosatario && (
+              <div className="space-y-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ¿A quién se le había endosado este cheque?
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Este cheque fue entregado antes de que el sistema pudiera identificar al
+                    endosatario como cliente. Elegilo para que se le acredite el saldo a favor
+                    correspondiente, o indicá que fue un tercero.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className={`flex items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                      tipoEndoso === 'CLIENTE' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="tipoEndosatarioRebote"
+                        value="CLIENTE"
+                        checked={tipoEndoso === 'CLIENTE'}
+                        onChange={() => setTipoEndoso('CLIENTE')}
+                        className="accent-emerald-600"
+                      />
+                      <span className="text-sm font-medium text-gray-800">Fue un cliente</span>
+                    </label>
+                    <label className={`flex items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                      tipoEndoso === 'TERCERO' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="tipoEndosatarioRebote"
+                        value="TERCERO"
+                        checked={tipoEndoso === 'TERCERO'}
+                        onChange={() => setTipoEndoso('TERCERO')}
+                        className="accent-emerald-600"
+                      />
+                      <span className="text-sm font-medium text-gray-800">Fue un tercero, no un cliente</span>
+                    </label>
+                  </div>
+                </div>
+
+                {tipoEndoso === 'CLIENTE' && (
+                  <div ref={dropdownRef} className="relative">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Buscar Cliente</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={searchCliente}
+                        onChange={(e) => {
+                          setSearchCliente(e.target.value);
+                          setIsDropdownOpen(true);
+                          if (e.target.value === '') {
+                            setEndosadoAClienteId('');
+                          }
+                        }}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        placeholder="Buscar cliente..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                      />
+                    </div>
+
+                    {isDropdownOpen && (
+                      <div className="static sm:absolute sm:z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {filteredClientes.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-gray-500">No se encontraron clientes</div>
+                        ) : (
+                          filteredClientes.map(c => (
+                            <div
+                              key={c.id}
+                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-900 border-b border-gray-50 last:border-0"
+                              onClick={() => {
+                                setEndosadoAClienteId(c.id);
+                                setSearchCliente(c.nombreRazonSocial);
+                                setIsDropdownOpen(false);
+                              }}
+                            >
+                              {c.nombreRazonSocial}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      Se le acreditará el monto del cheque como saldo a favor en su cuenta corriente.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {estadoEdit === 'ENTREGADO' && (
               <div className="space-y-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">

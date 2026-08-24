@@ -3,6 +3,8 @@ package com.vivero.gestion.models;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -46,11 +48,23 @@ public class Producto {
     @JoinColumn(name = "marca_id")
     private Marca marca;
 
+    // Vínculo de catálogo nuevo (Decisión 2 de design.md de config-costeo-por-proveedor — OQ1,
+    // migración Marca -> Proveedor, grupo 9). Nullable: los productos nacidos del flujo de
+    // "producto pendiente" de pedidos y los de Vivero pueden no tener proveedor. `marca`/`marca_id`
+    // de arriba se conservan SIN TOCAR como red de rollback (no se leen ni se escriben desde
+    // ninguna ruta de alta/edición a partir de este grupo).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
     @Column(length = 100)
     private String lote;
+
+    @Column(length = 50, name = "numero_siembra")
+    private String numeroSiembra;
 
     @Column(length = 100)
     private String dueno;
@@ -86,8 +100,34 @@ public class Producto {
     @JoinColumn(name = "unidad_negocio_id")
     private UnidadNegocio unidadNegocio;
 
-    @Formula("(SELECT COALESCE(m.costo_unitario, p.costo_producto, 0) FROM movimientos_stock m LEFT JOIN productos p ON p.id = m.producto_id WHERE m.producto_id = id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1)")
+    // Costo de referencia (Decisión 5 de design.md de costeo-fifo-herramientas, grupo 8): el
+    // MÁXIMO costo_unitario entre las capas ACTIVAS (cantidad_restante > 0) del producto — no un
+    // FIFO, no un "último movimiento". COALESCE cae a la expresión vieja (intacta, sin tocar un
+    // carácter) cuando el producto no tiene ninguna capa activa: es el caso de TODOS los
+    // productos de Vivero (nunca tienen capas, flag costeoPorCapasHabilitado en false) y el de
+    // cualquier producto de Herramientas que todavía no tuvo su primer ingreso post-flag. MAX()
+    // sobre el conjunto vacío en PostgreSQL devuelve NULL, no 0 — es justo lo que el COALESCE
+    // necesita para caer a la rama vieja (tarea 8.3, verificado contra la base real).
+    @Formula("(SELECT COALESCE((SELECT MAX(c.costo_unitario) FROM capas_costo_stock c WHERE c.producto_id = id AND c.cantidad_restante > 0), (SELECT COALESCE(m.costo_unitario, p.costo_producto, 0) FROM movimientos_stock m LEFT JOIN productos p ON p.id = m.producto_id WHERE m.producto_id = id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1)))")
     private BigDecimal costoUnitarioHistorico;
+
+    // Moneda en que el proveedor cotiza el costo de este producto (Decisión 5 de design.md de
+    // config-costeo-por-proveedor — OQ2). Dato ESTABLE del producto, distinto de la cotización
+    // específica del dólar (volátil, vive en Pedido.cotizacionDolar). Default ARS, sin valor
+    // ambiguo: un producto existente sin este campo se lee como ARS (tarea 5.1). El paso de
+    // conversión del CostoCalculator (grupo 6, fuera de alcance) todavía no lo usa.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moneda_costo", nullable = false, length = 3, columnDefinition = "varchar(3) default 'ARS'")
+    private MonedaCosto monedaCosto = MonedaCosto.ARS;
+
+    // Marcador de revisión de costos (Decisión 11 de design.md de revision-costos-productos,
+    // tarea 6.2 — adelantada a la tarea 3.1 porque la query de detección de ese grupo la
+    // referencia y no compila/corre sin ella). Nullable, SIN FK declarada y SIN valor por
+    // defecto a propósito: no es una relación del dominio, es un marcador de "ya revisé este
+    // ingreso". null == "nunca se descartó nada". ddl-auto=update la crea sola; sin backfill.
+    // El endpoint de escritura que la sella ("Descartar") es del grupo 6, todavía no implementado.
+    @Column(name = "movimiento_revision_descartado_id")
+    private Long movimientoRevisionDescartadoId;
 
     public Producto() {}
 
@@ -120,11 +160,17 @@ public class Producto {
     public Marca getMarca() { return marca; }
     public void setMarca(Marca marca) { this.marca = marca; }
 
+    public Proveedor getProveedor() { return proveedor; }
+    public void setProveedor(Proveedor proveedor) { this.proveedor = proveedor; }
+
     public boolean isDeleted() { return deleted; }
     public void setDeleted(boolean deleted) { this.deleted = deleted; }
 
     public String getLote() { return lote; }
     public void setLote(String lote) { this.lote = lote; }
+
+    public String getNumeroSiembra() { return numeroSiembra; }
+    public void setNumeroSiembra(String numeroSiembra) { this.numeroSiembra = numeroSiembra; }
 
     public String getDueno() { return dueno; }
     public void setDueno(String dueno) { this.dueno = dueno; }
@@ -152,4 +198,10 @@ public class Producto {
     
     public BigDecimal getCostoUnitarioHistorico() { return costoUnitarioHistorico; }
     // No setter for @Formula field
+
+    public MonedaCosto getMonedaCosto() { return monedaCosto; }
+    public void setMonedaCosto(MonedaCosto monedaCosto) { this.monedaCosto = monedaCosto; }
+
+    public Long getMovimientoRevisionDescartadoId() { return movimientoRevisionDescartadoId; }
+    public void setMovimientoRevisionDescartadoId(Long movimientoRevisionDescartadoId) { this.movimientoRevisionDescartadoId = movimientoRevisionDescartadoId; }
 }

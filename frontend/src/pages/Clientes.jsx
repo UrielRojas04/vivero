@@ -223,22 +223,6 @@ const Clientes = () => {
                 <Trash2 className="w-4 h-4 mr-2" /> Eliminar
               </button>
             </div>
-            {unidadNegocioActiva !== '2' && (
-              <div className="flex gap-2 pt-2 border-t border-gray-50">
-                <button
-                  onClick={() => handleOpenDevolucion(cliente)}
-                  className="flex-1 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  Devolver Bandejas
-                </button>
-                <button
-                  onClick={() => handleOpenHistorial(cliente)}
-                  className="flex-1 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
-                >
-                  Historial Bandejas
-                </button>
-              </div>
-            )}
           </div>
           );
         })}
@@ -323,24 +307,6 @@ const Clientes = () => {
                     >
                       <DollarSign className="w-4 h-4" />
                     </button>
-                    {unidadNegocioActiva !== '2' && (
-                      <>
-                        <button
-                          onClick={() => handleOpenDevolucion(cliente)}
-                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
-                          title="Devolver Bandejas"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line><line x1="8" y1="14.5" x2="12" y2="12"></line></svg>
-                        </button>
-                        <button
-                          onClick={() => handleOpenHistorial(cliente)}
-                          className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
-                          title="Historial de Bandejas"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        </button>
-                      </>
-                    )}
                   </div>
                 </td>
               </tr>

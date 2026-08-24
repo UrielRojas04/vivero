@@ -18,7 +18,9 @@ import NuevaVenta from './pages/NuevaVenta';
 import HistorialVentas from './pages/HistorialVentas';
 import VentasLayout from './pages/VentasLayout';
 import Pedidos from './pages/Pedidos';
-import Proveedores from './pages/Proveedores';
+import PedidoNuevo from './pages/PedidoNuevo';
+import Facturas from './pages/Facturas';
+import FacturaCliente from './pages/FacturaCliente';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 
@@ -66,6 +68,12 @@ function App() {
               </Route>
             </Route>
 
+            {/* Facturas */}
+            <Route element={<ProtectedRoute requiredPermission={['ESCRIBIR_VENTAS', 'LEER_CLIENTES']} />}>
+              <Route path="/facturas" element={<Facturas />} />
+              <Route path="/facturas/:clienteId" element={<FacturaCliente />} />
+            </Route>
+
             <Route element={<ProtectedRoute requiredPermission="LEER_FINANZAS" />}>
               <Route path="/finanzas" element={<Finanzas />} />
               <Route path="/cheques" element={<Cheques />} />
@@ -73,10 +81,20 @@ function App() {
 
             {/* Circuito de pedidos a proveedores: exclusivo del negocio Herramientas (el menú lo
                 oculta con isHerramientas en DashboardLayout.jsx), protegido acá por permiso como
-                el resto de las secciones. */}
+                el resto de las secciones. Proveedores como página standalone (/proveedores) fue
+                retirada (pedido puntual 2026-08-21): la sección ya vive embebida dentro de
+                Configuración (Configuracion.jsx -> activeSection === 'proveedores'), único punto
+                de acceso ahora — evita la redundancia de tenerla también como ítem de menú
+                separado. */}
             <Route element={<ProtectedRoute requiredPermission="LEER_PEDIDOS" />}>
               <Route path="/pedidos" element={<Pedidos />} />
-              <Route path="/proveedores" element={<Proveedores />} />
+            </Route>
+
+            {/* Alta de pedido: página propia (reemplaza el modal), gateada con ESCRIBIR_PEDIDOS
+                (permiso de escritura real del circuito, ver PedidoController) en vez de
+                LEER_PEDIDOS — un usuario sólo-lectura no debería ni llegar al formulario. */}
+            <Route element={<ProtectedRoute requiredPermission="ESCRIBIR_PEDIDOS" />}>
+              <Route path="/pedidos/nuevo" element={<PedidoNuevo />} />
             </Route>
 
             <Route element={<ProtectedRoute requiredPermission="ADMIN_DB" />}>

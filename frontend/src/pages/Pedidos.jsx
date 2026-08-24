@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, Plus, ChevronLeft, ChevronRight, PackageCheck, XCircle, Eye } from 'lucide-react';
 import { pedidosApi } from '../api/pedidos.api';
 import { proveedoresApi } from '../api/proveedores.api';
-import PedidoForm from '../components/PedidoForm';
 import RecepcionPedidoModal from '../components/RecepcionPedidoModal';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
@@ -25,13 +25,13 @@ const estiloEstado = (estado) => {
 export default function Pedidos() {
   const { pushToast, askConfirm, denyAccess } = useUIStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
   const size = 10;
   const [estadoFiltro, setEstadoFiltro] = useState('');
   const [proveedorFiltro, setProveedorFiltro] = useState('');
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
   const [isRecepcionOpen, setIsRecepcionOpen] = useState(false);
 
@@ -51,24 +51,21 @@ export default function Pedidos() {
           proveedorId: proveedorFiltro || undefined,
         });
       } catch (err) {
-        if (err.response?.status === 403) denyAccess();
+        if (err.response?.status === 403) {
+          denyAccess();
+        } else {
+          // Antes, un error no-403 acá (ej. el 500 real encontrado en este change, un pedido con
+          // proveedor/producto dado de baja tumbando el listado) quedaba mudo: la tabla se veía
+          // simplemente "sin pedidos" sin ninguna pista de que en realidad había fallado la
+          // consulta. Avisamos siempre que no sea un 403 (que ya tiene su propio modal dedicado).
+          pushToast('error', getErrorMessage(err, 'No se pudo cargar el listado de pedidos.'));
+        }
         throw err;
       }
     },
   });
 
   const refrescar = () => queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-
-  const handleCrearPedido = async (payload) => {
-    try {
-      await pedidosApi.create(payload);
-      pushToast('success', 'Pedido creado correctamente.');
-      setIsFormOpen(false);
-      refrescar();
-    } catch (err) {
-      pushToast('error', getErrorMessage(err, 'No se pudo crear el pedido.'));
-    }
-  };
 
   const handleAbrirRecepcion = async (pedidoResumen) => {
     try {
@@ -109,7 +106,7 @@ export default function Pedidos() {
           Pedidos a Proveedores
         </h1>
         <button
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => navigate('/pedidos/nuevo')}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
         >
           <Plus className="w-5 h-5" />
@@ -290,12 +287,6 @@ export default function Pedidos() {
           </>
         )}
       </div>
-
-      <PedidoForm
-        isOpen={isFormOpen}
-        onSave={handleCrearPedido}
-        onCancel={() => setIsFormOpen(false)}
-      />
 
       <RecepcionPedidoModal
         pedido={pedidoSeleccionado}

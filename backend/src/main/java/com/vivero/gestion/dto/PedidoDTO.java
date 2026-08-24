@@ -28,4 +28,9 @@ public class PedidoDTO {
     // Calculado (Σ cantidadPedida × costoUnitarioPactado), no persistido — Open Question 5 de
     // design.md, recomendación aplicada.
     private BigDecimal total;
+
+    // Cotización del dólar de ESTE pedido (grupo 5 de tasks.md de config-costeo-por-proveedor,
+    // Decisión 5 — OQ2). Nullable: sólo se informa cuando el pedido tiene al menos una línea en
+    // USD. El flujo que la pide y valida es del grupo 7, fuera de alcance del grupo 5.
+    private BigDecimal cotizacionDolar;
 }

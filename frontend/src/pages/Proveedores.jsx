@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Search, Truck, Phone, User } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Pencil, Trash2, Search, Truck, Phone, User, DollarSign, Percent, Tag } from 'lucide-react';
 import { proveedoresApi } from '../api/proveedores.api';
 import ProveedorForm from '../components/ProveedorForm';
 import { useUIStore } from '../store/useUIStore';
@@ -7,6 +8,16 @@ import { getErrorMessage } from '../utils/errorMessage';
 
 const Proveedores = () => {
   const { pushToast, askConfirm, denyAccess } = useUIStore();
+  // Este componente maneja su propia lista con fetch + useState (no useQuery) por razones
+  // históricas, pero PedidoNuevo.jsx/Pedidos.jsx/ProductoForm.jsx SÍ leen proveedores vía
+  // useQuery(['proveedores']) con staleTime 30s y refetchOnWindowFocus:false (main.jsx). Bug real
+  // encontrado 2026-08-21 ("los descuentos configurados en un proveedor no aparecen precargados
+  // en el pedido"): sin invalidar esa cache compartida, un alta/edición/baja hecha acá quedaba
+  // invisible para esas otras páginas hasta que pasaran los 30s Y remontaran el componente — en
+  // la práctica, casi nunca a tiempo. queryClient.invalidateQueries fuerza el refetch inmediato
+  // en cualquier useQuery(['proveedores']) montado en ese momento, y descarta el caché para el
+  // próximo mount.
+  const queryClient = useQueryClient();
   const [proveedores, setProveedores] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,6 +67,10 @@ const Proveedores = () => {
       }
       handleCloseModal();
       fetchProveedores();
+      // Invalida el caché compartido ['proveedores'] (ver comentario junto a useQueryClient más
+      // arriba): sin esto, PedidoNuevo/Pedidos/ProductoForm seguían mostrando el perfil de costeo
+      // viejo del proveedor (IVA, envío, descuentos) hasta 30s después de guardar acá.
+      queryClient.invalidateQueries({ queryKey: ['proveedores'] });
     } catch (err) {
       pushToast('error', getErrorMessage(err, 'Ocurrió un error al guardar el proveedor.'));
     }
@@ -66,6 +81,7 @@ const Proveedores = () => {
       await proveedoresApi.delete(id);
       pushToast('success', 'Proveedor eliminado.');
       fetchProveedores();
+      queryClient.invalidateQueries({ queryKey: ['proveedores'] });
     } catch (err) {
       pushToast('error', getErrorMessage(err, 'Ocurrió un error al eliminar el proveedor.'));
     }
@@ -80,6 +96,34 @@ const Proveedores = () => {
       onConfirm: () => handleDelete(proveedor.id),
     });
   };
+
+  // Badges del perfil de costeo, reconocibles de un vistazo (tarea 4.6): tratamiento de IVA,
+  // dólares, envío por defecto y cantidad de descuentos cargados.
+  const PerfilBadges = ({ proveedor }) => (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-medium">
+        <Percent className="w-3 h-3" />
+        {proveedor.ivaIncluidoEnPrecio ? 'IVA incluido' : `IVA aparte${proveedor.ivaPorDefectoPorcentaje != null ? ` (${proveedor.ivaPorDefectoPorcentaje}%)` : ''}`}
+      </span>
+      {proveedor.manejaDolares && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-medium">
+          <DollarSign className="w-3 h-3" />
+          USD
+        </span>
+      )}
+      {proveedor.costoEnvioPorDefectoPorcentaje != null && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-medium">
+          Envío {proveedor.costoEnvioPorDefectoPorcentaje}%
+        </span>
+      )}
+      {proveedor.descuentosPorDefecto && proveedor.descuentosPorDefecto.length > 0 && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-medium">
+          <Tag className="w-3 h-3" />
+          {proveedor.descuentosPorDefecto.length} desc.
+        </span>
+      )}
+    </div>
+  );
 
   if (loading) {
     return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>;
@@ -134,6 +178,7 @@ const Proveedores = () => {
                     <Phone className="w-3 h-3" /> {proveedor.telefono}
                   </p>
                 )}
+                <PerfilBadges proveedor={proveedor} />
               </div>
             </div>
             <div className="flex gap-2 pt-2 border-t border-gray-50">
@@ -165,6 +210,7 @@ const Proveedores = () => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
               <th className="p-4 font-semibold">Nombre</th>
+              <th className="p-4 font-semibold">Perfil de costeo</th>
               <th className="p-4 font-semibold">Contacto</th>
               <th className="p-4 font-semibold">Teléfono</th>
               <th className="p-4 font-semibold text-right">Acciones</th>
@@ -181,6 +227,7 @@ const Proveedores = () => {
                     <span className="font-medium text-gray-900">{proveedor.nombre}</span>
                   </div>
                 </td>
+                <td className="p-4"><PerfilBadges proveedor={proveedor} /></td>
                 <td className="p-4 text-gray-600">{proveedor.contacto || '-'}</td>
                 <td className="p-4 text-gray-600">{proveedor.telefono || '-'}</td>
                 <td className="p-4">
@@ -205,7 +252,7 @@ const Proveedores = () => {
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan="4" className="p-8 text-center text-gray-500">
+                <td colSpan="5" className="p-8 text-center text-gray-500">
                   No se encontraron proveedores.
                 </td>
               </tr>

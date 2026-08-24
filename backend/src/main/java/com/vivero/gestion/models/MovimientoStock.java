@@ -63,6 +63,18 @@ public class MovimientoStock {
     @Column(name = "descuento_detalle", length = 500)
     private String descuentoDetalle;
 
+    // Congelado de moneda (Decisión 5/7 de design.md de config-costeo-por-proveedor). Nullable A
+    // PROPÓSITO, sin valor por defecto: los movimientos históricos y los de líneas en pesos
+    // quedan en NULL, que se lee como "no hubo conversión de moneda" — nunca 'ARS' explícito, para
+    // no inventar un dato que el movimiento nunca tuvo (mismo criterio que costoNeto/ivaPorcentaje
+    // de costeo-flexible-por-producto). El paso de conversión que los escribe es del grupo 6/7,
+    // fuera de alcance del grupo 5.
+    @Column(name = "moneda_origen", length = 3)
+    private String monedaOrigen;
+
+    @Column(name = "cotizacion_aplicada", precision = 12, scale = 4)
+    private BigDecimal cotizacionAplicada;
+
     private LocalDateTime fecha;
 
     @ManyToOne
@@ -101,6 +113,12 @@ public class MovimientoStock {
 
     public String getDescuentoDetalle() { return descuentoDetalle; }
     public void setDescuentoDetalle(String descuentoDetalle) { this.descuentoDetalle = descuentoDetalle; }
+
+    public String getMonedaOrigen() { return monedaOrigen; }
+    public void setMonedaOrigen(String monedaOrigen) { this.monedaOrigen = monedaOrigen; }
+
+    public BigDecimal getCotizacionAplicada() { return cotizacionAplicada; }
+    public void setCotizacionAplicada(BigDecimal cotizacionAplicada) { this.cotizacionAplicada = cotizacionAplicada; }
 
     public LocalDateTime getFecha() { return fecha; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }

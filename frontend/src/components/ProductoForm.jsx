@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { X, Tag, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Truck } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
 import { useAuthStore } from '../store/useAuthStore';
+import { useUIStore } from '../store/useUIStore';
 import { useQuery } from '@tanstack/react-query';
 import { negociosApi } from '../api/negocios.api';
-import { marcasApi } from '../api/marcas.api';
+import { proveedoresApi } from '../api/proveedores.api';
 import { calcularCosto, resolverEfectivo } from '../utils/costeo';
+
+// Equivalencia porcentaje ↔ multiplicador (OQ8/Decisión 11), mismo helper que ProveedorForm.jsx
+// (tarea 4.4, replicado acá en la 8.9): sólo texto de ayuda, el valor guardado sigue siendo el
+// porcentaje.
+const multiplicadorDescuento = (porcentajeVal) => {
+  if (porcentajeVal === '' || porcentajeVal === null || porcentajeVal === undefined) return null;
+  const p = parseFloat(porcentajeVal);
+  if (Number.isNaN(p)) return null;
+  return (1 - p / 100).toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+};
 
 const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const { unidadNegocioActiva } = useAuthStore();
+  const { askConfirm } = useUIStore();
 
   const { data: negocios } = useQuery({
     queryKey: ['negocios'],
@@ -35,12 +47,20 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const [stock, setStock] = useState('');
   const [lote, setLote] = useState('');
   const [dueno, setDueno] = useState('');
-  const [marcaId, setMarcaId] = useState('');
+  // Proveedor elegido en el <select> que reemplaza al de marca (tarea 8.1, conectado de punta a
+  // punta en el grupo 9): dispara la copia de valores por defecto al formulario (una sola vez,
+  // OQ3) Y es el vínculo de catálogo real que viaja en el payload como proveedorId
+  // (Producto.proveedor/ProductoDTO.proveedorId, agregados en el grupo 9). `marca`/`marcaId`
+  // dejaron de enviarse desde este formulario: quedan como red de rollback sólo en el backend.
+  const [proveedorSeleccionadoId, setProveedorSeleccionadoId] = useState('');
+  // Moneda en que el proveedor cotiza el costo de este producto (grupo 5/8): 'ARS' por defecto,
+  // sin valor ambiguo — mismo criterio que el backend (Producto.monedaCosto).
+  const [monedaCosto, setMonedaCosto] = useState('ARS');
   const [errors, setErrors] = useState({});
 
-  const { data: marcas = [] } = useQuery({
-    queryKey: ['marcas'],
-    queryFn: () => marcasApi.getAll(),
+  const { data: proveedores = [] } = useQuery({
+    queryKey: ['proveedores'],
+    queryFn: () => proveedoresApi.getAll(),
     enabled: isOpen && unidadNegocioActiva === '2',
   });
 
@@ -61,20 +81,30 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setStock(producto.stock || '');
       setLote(producto.lote || '');
       setDueno(producto.dueno || '');
-      setMarcaId(producto.marcaId ? producto.marcaId.toString() : '');
+      setMonedaCosto(producto.monedaCosto || 'ARS');
+      // Producto.proveedor ya existe (grupo 9): el select nace mostrando el proveedor
+      // efectivamente vinculado, sin disparar la copia de valores (eso sólo pasa vía
+      // handleProveedorChange, ante una elección explícita del usuario — tarea 8.3).
+      setProveedorSeleccionadoId(producto.proveedorId ? producto.proveedorId.toString() : '');
     } else {
       setNombre('');
       setDescripcion('');
       setPrecio('');
       setCostoProducto('');
-      setPorcentajeGanancia('');
+      // Problema 4 de la tanda de fixes del 2026-08-20 (pedido explícito del usuario, para TODOS
+      // los productos, Vivero y Herramientas): un producto NUEVO nace con 30% de ganancia
+      // precargado en vez de vacío, para que el precio salga bien calculado desde el arranque.
+      // Sólo en alta — un producto EXISTENTE (rama `if (producto)` de arriba) conserva su propio
+      // valor real tal cual venga de la base, nunca se le pisa nada acá.
+      setPorcentajeGanancia('30');
       setDescuentos([]);
       setIvaPropio('');
       setEnvioPropio('');
       setStock('');
       setLote('');
       setDueno('');
-      setMarcaId('');
+      setMonedaCosto('ARS');
+      setProveedorSeleccionadoId('');
     }
     setErrors({});
   }, [producto, isOpen]);
@@ -153,6 +183,66 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     const next = descuentos.filter((_, i) => i !== index);
     setDescuentos(next);
     recalcPrecio(costoProducto, next, ivaPropio, envioPropio, porcentajeGanancia);
+  };
+
+  // Copia visible del perfil de costeo del proveedor a los campos del formulario (grupo 8, tarea
+  // 8.1/8.2): SIEMPRE de una sola vez (OQ3) — de acá en más los campos son completamente
+  // independientes, el backend no vuelve a consultar al proveedor. Con IVA incluido se escribe
+  // '0' explícito (nunca vacío/null — tarea 8.2), porque vacío heredaría el 21% de la unidad.
+  const aplicarPerfilProveedor = (proveedor) => {
+    const ivaVal = proveedor.ivaIncluidoEnPrecio
+      ? '0'
+      : (proveedor.ivaPorDefectoPorcentaje !== null && proveedor.ivaPorDefectoPorcentaje !== undefined
+          ? String(proveedor.ivaPorDefectoPorcentaje) : '');
+    const envioVal = proveedor.costoEnvioPorDefectoPorcentaje !== null && proveedor.costoEnvioPorDefectoPorcentaje !== undefined
+      ? String(proveedor.costoEnvioPorDefectoPorcentaje) : '';
+    const nuevosDescuentos = (proveedor.descuentosPorDefecto || []).map((d) => ({
+      nombre: d.nombre || '',
+      porcentaje: d.porcentaje ?? '',
+    }));
+    const nuevaMoneda = proveedor.manejaDolares ? 'USD' : 'ARS';
+
+    setIvaPropio(ivaVal);
+    setEnvioPropio(envioVal);
+    setDescuentos(nuevosDescuentos);
+    setMonedaCosto(nuevaMoneda);
+    recalcPrecio(
+      costoProducto,
+      nuevosDescuentos,
+      ivaVal,
+      envioVal,
+      porcentajeGanancia,
+    );
+  };
+
+  // Al elegir proveedor: en un producto NUEVO se copia directo (tarea 8.1); en uno YA EXISTENTE
+  // se pide confirmación explícita antes de pisar sus valores (tarea 8.3, vía askConfirm — nunca
+  // confirm() nativo).
+  const handleProveedorChange = (e) => {
+    const nuevoId = e.target.value;
+    if (!nuevoId) {
+      setProveedorSeleccionadoId('');
+      return;
+    }
+    const proveedor = proveedores.find((p) => String(p.id) === nuevoId);
+    if (!proveedor) return;
+
+    if (!producto) {
+      setProveedorSeleccionadoId(nuevoId);
+      aplicarPerfilProveedor(proveedor);
+      return;
+    }
+
+    askConfirm({
+      title: 'Traer valores del proveedor',
+      message: `¿Traer los valores de costeo de "${proveedor.nombre}" (IVA, envío, descuentos y moneda)? Van a reemplazar los que tiene cargados este producto ahora. Vas a poder editarlos después.`,
+      variant: 'warning',
+      confirmLabel: 'Traer valores',
+      onConfirm: () => {
+        setProveedorSeleccionadoId(nuevoId);
+        aplicarPerfilProveedor(proveedor);
+      },
+    });
   };
 
   // Desglose en vivo (tarea 9.6): una línea por descuento (cascada, en el orden cargado), línea
@@ -247,7 +337,13 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         stock: parseInt(stock, 10),
         lote: lote.trim() || null,
         dueno: dueno.trim() || null,
-        marcaId: marcaId ? parseInt(marcaId, 10) : null
+        // Vínculo de catálogo real (grupo 9): reemplaza a marcaId, que este formulario ya no
+        // envía. '' (sin proveedor elegido) -> null, igual criterio que el resto de los campos
+        // opcionales de este formulario.
+        proveedorId: proveedorSeleccionadoId ? parseInt(proveedorSeleccionadoId, 10) : null,
+        // Moneda de costeo del producto (grupo 5/8): siempre viaja informada (nunca null), igual
+        // criterio que el resto de los campos de costeo de este formulario.
+        monedaCosto,
       });
     }
   };
@@ -367,21 +463,24 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
 
             {unidadNegocioActiva === '2' && (
               <div className="col-span-1">
-                <label htmlFor="marcaId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Tag className="w-3 h-3 text-emerald-600" />
-                  Marca (Opcional)
+                <label htmlFor="proveedorId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Truck className="w-3 h-3 text-emerald-600" />
+                  Proveedor (Opcional)
                 </label>
                 <select
-                  id="marcaId"
-                  value={marcaId}
-                  onChange={(e) => setMarcaId(e.target.value)}
+                  id="proveedorId"
+                  value={proveedorSeleccionadoId}
+                  onChange={handleProveedorChange}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white/70"
                 >
-                  <option value="">-- Sin Marca --</option>
-                  {marcas.map(m => (
-                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  <option value="">-- Sin proveedor --</option>
+                  {proveedores.map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
                   ))}
                 </select>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Al elegirlo se copian IVA, envío, descuentos y moneda a los campos de abajo — editables después.
+                </p>
               </div>
             )}
 
@@ -448,6 +547,31 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                   </div>
                 </div>
 
+                {/* Moneda del costo de catálogo (grupo 5/8): ARS por defecto, editable siempre —
+                    seleccionar un proveedor que maneja dólares la sugiere en USD (tarea 8.1),
+                    pero queda libre para corregir producto por producto. */}
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    Moneda del costo de catálogo
+                  </label>
+                  <div className="flex gap-2">
+                    {['ARS', 'USD'].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setMonedaCosto(m)}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold border cursor-pointer transition-colors ${
+                          monedaCosto === m
+                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-300'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Descuentos estables (Proveedor, Volumen, Pronto pago...)
@@ -467,33 +591,41 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 )}
 
                 <div className="space-y-2 mb-3">
-                  {descuentos.map((d, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={d.nombre}
-                        onChange={(e) => handleDescuentoNombreChange(index, e.target.value)}
-                        placeholder="Ej: Proveedor, Volumen, Pronto pago"
-                        className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                      />
-                      <div className="w-24 shrink-0">
-                        <FormattedNumberInput
-                          value={d.porcentaje}
-                          onChange={(val) => handleDescuentoPorcentajeChange(index, val)}
-                          placeholder="%"
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                  {descuentos.map((d, index) => {
+                    const mult = multiplicadorDescuento(d.porcentaje);
+                    return (
+                    <div key={index}>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={d.nombre}
+                          onChange={(e) => handleDescuentoNombreChange(index, e.target.value)}
+                          placeholder="Ej: Proveedor, Volumen, Pronto pago"
+                          className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                         />
+                        <div className="w-24 shrink-0">
+                          <FormattedNumberInput
+                            value={d.porcentaje}
+                            onChange={(val) => handleDescuentoPorcentajeChange(index, val)}
+                            placeholder="%"
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDescuento(index)}
+                          className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                          aria-label="Quitar descuento"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDescuento(index)}
-                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
-                        aria-label="Quitar descuento"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {mult !== null && (
+                        <p className="pl-1 mt-0.5 text-[11px] text-gray-400">= × {mult}</p>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {errors.descuentos && (
                   <p className="mb-3 text-xs text-red-500 font-medium">{errors.descuentos}</p>
@@ -565,8 +697,6 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               </div>
             </div>
           )}
-
-          {/* Removed marcaId from here as it was moved up */}
 
           </div>
 

@@ -43,3 +43,22 @@ Thumbs.db
 *.db
 *.sqlite
 docker-data/
+
+# --- Imágenes y adjuntos ---
+img/
+
+# --- Scripts y dumps de prueba locales ---
+test_*.py
+login.json
+*_logs*.txt
+
+# --- Específicos del Stack ---
+frontend/coverage/
+frontend/.eslintcache
+docker-compose.override.yml
+.settings/
+.project
+.classpath
+.factorypath
+venv/
+.venv/

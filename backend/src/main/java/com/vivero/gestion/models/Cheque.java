@@ -35,6 +35,10 @@ public class Cheque {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pago_id")
+    private Pago pagoOrigen;
+
     @Column(length = 50)
     private String numeroInterno;
 
@@ -57,6 +61,10 @@ public class Cheque {
 
     @Column(length = 150)
     private String entregadoA;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "endosado_a_cliente_id")
+    private Cliente endosadoACliente;
 
     @Column(columnDefinition = "boolean default false")
     private Boolean esEmisionPropia = false;
@@ -90,6 +98,13 @@ public class Cheque {
     public Venta getVenta() {
         return venta;
     }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public Pago getPagoOrigen() { return pagoOrigen; }
+    public void setPagoOrigen(Pago pagoOrigen) { this.pagoOrigen = pagoOrigen; }
 
     public void setVenta(Venta venta) {
         this.venta = venta;
@@ -165,6 +180,14 @@ public class Cheque {
 
     public void setEntregadoA(String entregadoA) {
         this.entregadoA = entregadoA;
+    }
+
+    public Cliente getEndosadoACliente() {
+        return endosadoACliente;
+    }
+
+    public void setEndosadoACliente(Cliente endosadoACliente) {
+        this.endosadoACliente = endosadoACliente;
     }
 
     public Boolean getEsEmisionPropia() {

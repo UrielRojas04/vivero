@@ -1,6 +1,7 @@
 package com.vivero.gestion.models;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,14 @@ public class Pedido {
     @Column(length = 500)
     private String observaciones;
 
+    // Cotización del dólar tipeada/confirmada para ESTE pedido (Decisión 5 de design.md de
+    // config-costeo-por-proveedor — OQ2). Volátil, propiedad del momento: se pide en CADA pedido
+    // con líneas en USD, nunca se hereda de Proveedor.ultimaCotizacionConocida (que es sólo un
+    // prellenado visible, no un fallback). El flujo que la pide y la persiste es del grupo 7,
+    // fuera de alcance del grupo 5 — acá sólo se agrega la columna.
+    @Column(name = "cotizacion_dolar", precision = 12, scale = 4)
+    private BigDecimal cotizacionDolar;
+
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PedidoDetalle> detalles = new ArrayList<>();
 
@@ -78,6 +87,9 @@ public class Pedido {
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
+    public BigDecimal getCotizacionDolar() { return cotizacionDolar; }
+    public void setCotizacionDolar(BigDecimal cotizacionDolar) { this.cotizacionDolar = cotizacionDolar; }
 
     public List<PedidoDetalle> getDetalles() { return detalles; }
     public void setDetalles(List<PedidoDetalle> detalles) { this.detalles = detalles; }

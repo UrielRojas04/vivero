@@ -4,7 +4,7 @@ import ProductoForm from '../components/ProductoForm';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, Leaf } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Productos = () => {
@@ -14,7 +14,11 @@ const Productos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMarca, setSelectedMarca] = useState('Todas');
+  // Filtro de la sección Productos (grupo 10 de tasks.md de config-costeo-por-proveedor, OQ7):
+  // reemplaza al filtro por marca — un solo filtro, por proveedor, no dos equivalentes conviviendo.
+  const [selectedProveedor, setSelectedProveedor] = useState('Todos');
+  const [searchMode, setSearchMode] = useState('TODO');
+  const [expandedMobileId, setExpandedMobileId] = useState(null);
   
   const liveStocks = useStockStore(state => state.liveStocks);
 
@@ -90,19 +94,26 @@ const Productos = () => {
     }
   };
 
-  const marcasDisponibles = Array.from(new Set(
+  const proveedoresDisponibles = Array.from(new Set(
     productos
-      .filter(p => p.marcaNombre && p.marcaNombre.trim() !== '')
-      .map(p => p.marcaNombre.trim().toUpperCase())
+      .filter(p => p.proveedorNombre && p.proveedorNombre.trim() !== '')
+      .map(p => p.proveedorNombre.trim().toUpperCase())
   )).sort();
 
   const filteredProductos = productos.filter((p) => {
-    const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()));
+    let matchSearch = false;
+    if (searchMode === 'NUMERO_SIEMBRA') {
+      matchSearch = p.numeroSiembra && p.numeroSiembra.toLowerCase().includes(searchTerm.toLowerCase());
+    } else {
+      matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (p.numeroSiembra && p.numeroSiembra.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (p.lote && p.lote.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
 
-    if (unidadNegocioActiva === '2' && selectedMarca !== 'Todas') {
-      const pMarca = p.marcaNombre ? p.marcaNombre.trim().toUpperCase() : '';
-      return matchSearch && pMarca === selectedMarca;
+    if (unidadNegocioActiva === '2' && selectedProveedor !== 'Todos') {
+      const pProveedor = p.proveedorNombre ? p.proveedorNombre.trim().toUpperCase() : '';
+      return matchSearch && pProveedor === selectedProveedor;
     }
 
     return matchSearch;
@@ -133,49 +144,72 @@ const Productos = () => {
       </div>
 
       {/* Search and Feedback Area */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
         <div className="relative w-full md:max-w-md">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="h-5 h-5 text-gray-400" />
           </span>
           <input
             type="text"
-            placeholder="Buscar por nombre o descripción..."
+            placeholder={searchMode === 'NUMERO_SIEMBRA' ? 'Buscar sólo por número de siembra...' : 'Buscar por nombre, lote o Nº de siembra...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50/50 transition-all"
           />
         </div>
 
-        <div className="text-sm text-gray-500 font-medium whitespace-nowrap">
+        {unidadNegocioActiva === '1' && (
+          <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl p-1 shrink-0 self-start md:self-auto w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setSearchMode('TODO')}
+              className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                searchMode === 'TODO' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Todo
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchMode('NUMERO_SIEMBRA')}
+              className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                searchMode === 'NUMERO_SIEMBRA' ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sólo Nº Siembra
+            </button>
+          </div>
+        )}
+
+        <div className="text-sm text-gray-500 font-medium whitespace-nowrap self-end md:self-auto">
           Total: <span className="text-gray-900 font-semibold">{filteredProductos.length}</span> {unidadNegocioActiva === '2' ? 'herramientas' : 'plantas'}
         </div>
       </div>
 
-      {/* Marcas Tabs (solo Herramientas) */}
+      {/* Proveedores Tabs (solo Herramientas) — reemplaza el filtro por marca (OQ7, grupo 10) */}
       {unidadNegocioActiva === '2' && (
         <div className="flex flex-wrap gap-2 mb-2">
           <button
-            onClick={() => setSelectedMarca('Todas')}
+            onClick={() => setSelectedProveedor('Todos')}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
-              selectedMarca === 'Todas' 
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' 
+              selectedProveedor === 'Todos'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
-            Todas las Marcas
+            Todos los Proveedores
           </button>
-          {marcasDisponibles.map(marca => (
+          {proveedoresDisponibles.map(proveedor => (
             <button
-              key={marca}
-              onClick={() => setSelectedMarca(marca)}
+              key={proveedor}
+              onClick={() => setSelectedProveedor(proveedor)}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
-                selectedMarca === marca
+                selectedProveedor === proveedor
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              {marca}
+              {proveedor}
             </button>
           ))}
         </div>
@@ -227,7 +261,11 @@ const Productos = () => {
           {/* MOBILE VIEW: Cards Layout */}
           <div className="grid grid-cols-1 gap-4 sm:hidden">
             {filteredProductos.map((producto) => (
-              <div key={producto.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+              <div 
+                key={producto.id} 
+                className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all cursor-pointer hover:shadow-md"
+                onClick={() => setExpandedMobileId(expandedMobileId === producto.id ? null : producto.id)}
+              >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-semibold shrink-0">
@@ -236,72 +274,96 @@ const Productos = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900 text-base leading-tight">
                         {producto.nombre}
-                        {unidadNegocioActiva === '2' && producto.marcaNombre && (
+                        {unidadNegocioActiva === '2' && producto.proveedorNombre && (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-2">
-                            {producto.marcaNombre.toUpperCase()}
+                            {producto.proveedorNombre.toUpperCase()}
                           </span>
                         )}
                       </h3>
-                      <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                        ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-sm font-semibold text-gray-900">
+                          ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        </p>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                          producto.stock === 0 
+                            ? 'bg-red-50 text-red-700 border border-red-100' 
+                            : producto.stock <= 5 
+                              ? 'bg-yellow-50 text-yellow-700 border border-yellow-100' 
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                        }`}>
+                          Stock: {producto.stock}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold shrink-0 ${
-                    producto.stock === 0 
-                      ? 'bg-red-50 text-red-700 border border-red-100' 
-                      : producto.stock <= 5 
-                        ? 'bg-yellow-50 text-yellow-700 border border-yellow-100' 
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                  }`}>
-                    Stock: {producto.stock}
-                  </span>
+                  <button className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
+                    {expandedMobileId === producto.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
                 </div>
                 
-                {producto.descripcion && (
-                  <p className="text-sm text-gray-500 line-clamp-2 leading-snug">
-                    {producto.descripcion}
-                  </p>
-                )}
-
-                {unidadNegocioActiva === '2' ? (
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                    <span className="font-semibold">Costo: ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
-                    <span>•</span>
-                    <span className="font-semibold text-emerald-600">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-0.5 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                    <span className="font-medium">Lote: {producto.lote || 'Sin lote'}</span>
-                    <span>Dueño: {producto.dueno || 'Manual'}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 mt-1">
-                  <button
-                    onClick={() => {
-                      setSelectedProducto(producto);
-                      setIsFormOpen(true);
-                    }}
-                    className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                {expandedMobileId === producto.id && (
+                  <div 
+                    className="flex flex-col gap-3 pt-2 border-t border-gray-100 mt-1 animate-in slide-in-from-top-2 duration-200"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Edit2 className="w-4 h-4" /> Editar
-                  </button>
-                  <button
-                    onClick={() =>
-                      askConfirm({
-                        title: '¿Confirmar Eliminación?',
-                        message: 'Esta acción no se puede deshacer. Se removerá la planta de forma permanente.',
-                        variant: 'danger',
-                        confirmLabel: 'Eliminar Planta',
-                        onConfirm: () => handleDelete(producto.id),
-                      })
-                    }
-                    className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                  </button>
-                </div>
+                    {producto.descripcion && (
+                      <p className="text-sm text-gray-500 leading-snug">
+                        {producto.descripcion}
+                      </p>
+                    )}
+
+                    {unidadNegocioActiva === '2' ? (
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <span className="font-semibold">Costo: ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-emerald-600">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-500">Siembra</span>
+                          <span className="font-semibold text-gray-900">{producto.numeroSiembra ? `${producto.numeroSiembra}` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-500">Lote</span>
+                          <span className="font-semibold text-gray-900">{producto.lote || 'Sin lote'}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-500">Dueño</span>
+                          <span className="font-semibold text-gray-900">{producto.dueno || 'Manual'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProducto(producto);
+                          setIsFormOpen(true);
+                        }}
+                        className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 border border-gray-200"
+                      >
+                        <Edit2 className="w-4 h-4" /> Editar
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          askConfirm({
+                            title: '¿Confirmar Eliminación?',
+                            message: 'Esta acción no se puede deshacer. Se removerá la planta de forma permanente.',
+                            variant: 'danger',
+                            confirmLabel: 'Eliminar Planta',
+                            onConfirm: () => handleDelete(producto.id),
+                          });
+                        }}
+                        className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 border border-red-100"
+                      >
+                        <Trash2 className="w-4 h-4" /> Eliminar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -320,7 +382,10 @@ const Productos = () => {
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">% Gan.</th>
                     </>
                   ) : (
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Lote / Dueño</th>
+                    <>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Siembra</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Lote / Dueño</th>
+                    </>
                   )}
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Precio</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock</th>
@@ -336,9 +401,9 @@ const Productos = () => {
                           <Leaf className="w-5 h-5" />
                         </div>
                         <span className="font-semibold text-gray-900 text-sm">{producto.nombre}</span>
-                        {unidadNegocioActiva === '2' && producto.marcaNombre && (
+                        {unidadNegocioActiva === '2' && producto.proveedorNombre && (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-1">
-                            {producto.marcaNombre.toUpperCase()}
+                            {producto.proveedorNombre.toUpperCase()}
                           </span>
                         )}
                       </div>
@@ -362,16 +427,23 @@ const Productos = () => {
                         </td>
                       </>
                     ) : (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-gray-900">
-                            {producto.lote ? `Lote ${producto.lote}` : <span className="text-gray-300 italic">Sin lote</span>}
+                            {producto.numeroSiembra ? `${producto.numeroSiembra}` : '-'}
                           </span>
-                          <span className="text-xs text-gray-500">
-                            {producto.dueno ? producto.dueno : <span className="text-gray-300 italic">Manual</span>}
-                          </span>
-                        </div>
-                      </td>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {producto.lote ? `Lote ${producto.lote}` : <span className="text-gray-300 italic">Sin lote</span>}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {producto.dueno ? producto.dueno : <span className="text-gray-300 italic">Manual</span>}
+                            </span>
+                          </div>
+                        </td>
+                      </>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-gray-900">

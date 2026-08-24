@@ -38,6 +38,7 @@ public class VentaServiceImpl implements VentaService {
     private final SseService sseService;
     private final ChequeRepository chequeRepository;
     private final UnidadNegocioRepository unidadNegocioRepository;
+    private final FacturaClienteRepository facturaClienteRepository;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
@@ -48,7 +49,8 @@ public class VentaServiceImpl implements VentaService {
                             BandejasService bandejasService,
                             SseService sseService,
                             ChequeRepository chequeRepository,
-                            UnidadNegocioRepository unidadNegocioRepository) {
+                            UnidadNegocioRepository unidadNegocioRepository,
+                            FacturaClienteRepository facturaClienteRepository) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
@@ -59,6 +61,7 @@ public class VentaServiceImpl implements VentaService {
         this.sseService = sseService;
         this.chequeRepository = chequeRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
+        this.facturaClienteRepository = facturaClienteRepository;
     }
 
     @Override
@@ -86,6 +89,20 @@ public class VentaServiceImpl implements VentaService {
         if (unidadId != null) {
             UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
             venta.setUnidadNegocio(unidad);
+
+            if (unidadId == 1L && unidad != null) {
+                FacturaCliente factura = facturaClienteRepository
+                    .findByClienteIdAndEstadoAndUnidadNegocioId(cliente.getId(), "ABIERTA", unidadId)
+                    .orElseGet(() -> {
+                        FacturaCliente nueva = new FacturaCliente();
+                        nueva.setCliente(cliente);
+                        nueva.setUnidadNegocio(unidad);
+                        nueva.setEstado("ABIERTA");
+                        nueva.setFechaApertura(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+                        return facturaClienteRepository.save(nueva);
+                    });
+                venta.setFactura(factura);
+            }
         }
 
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -143,6 +160,9 @@ public class VentaServiceImpl implements VentaService {
                 pago.setMonto(pReq.getMonto());
                 pago.setMetodoPago(pReq.getMetodoPago());
                 pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+                if (venta.getFactura() != null) {
+                    pago.setFactura(venta.getFactura());
+                }
                 venta.addPago(pago);
                 totalPagado = totalPagado.add(pReq.getMonto());
 
@@ -153,6 +173,7 @@ public class VentaServiceImpl implements VentaService {
                             LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")).toLocalDate();
                     cheque.setFechaRecepcion(fechaRec);
                     cheque.setCliente(cliente);
+                    cheque.setPagoOrigen(pago);
                     // venta se setea después de guardar la venta para evitar TransientObjectException
                     cheque.setMonto(pReq.getMonto());
                     cheque.setBanco(pReq.getBanco());
@@ -267,6 +288,9 @@ public class VentaServiceImpl implements VentaService {
         pago.setMonto(request.getMonto());
         pago.setMetodoPago(metodo);
         pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        if (venta.getFactura() != null) {
+            pago.setFactura(venta.getFactura());
+        }
         venta.addPago(pago);
 
         // Recalcular el estado sumando TODOS los pagos de la venta (los previos más este).
