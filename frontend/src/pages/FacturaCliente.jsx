@@ -253,7 +253,7 @@ const FacturaCliente = () => {
         </div>
 
         {!isExporting && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 no-export">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-export">
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
               <p className="text-xs font-semibold text-gray-500 uppercase">Total Ventas</p>
               <p className="text-lg font-bold text-gray-900">{formatearDinero(f.totalVentas)}</p>

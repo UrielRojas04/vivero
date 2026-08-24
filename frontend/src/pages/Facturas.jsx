@@ -57,54 +57,56 @@ const Facturas = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
-              <th className="p-4 font-semibold">Cliente</th>
-              <th className="p-4 font-semibold text-right">Saldo en CC</th>
-              <th className="p-4 font-semibold text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredClientes.map((cliente) => {
-              const saldo = describirSaldo(cliente.balanceDinero);
-              return (
-                <tr key={cliente.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm">
-                        {cliente.nombreRazonSocial.charAt(0).toUpperCase()}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
+                <th className="p-4 font-semibold">Cliente</th>
+                <th className="p-4 font-semibold text-right">Saldo en CC</th>
+                <th className="p-4 font-semibold text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredClientes.map((cliente) => {
+                const saldo = describirSaldo(cliente.balanceDinero);
+                return (
+                  <tr key={cliente.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
+                          {cliente.nombreRazonSocial.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-gray-900">{cliente.nombreRazonSocial}</span>
                       </div>
-                      <span className="font-medium text-gray-900">{cliente.nombreRazonSocial}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-right">
-                    <span title={saldo.etiqueta} className={`px-2.5 py-1 rounded-full text-sm font-medium ${saldo.tono.chip}`}>
-                      $ {saldo.monto} · {saldo.etiqueta}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => navigate(`/facturas/${cliente.id}`)}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-2 cursor-pointer font-medium text-sm"
-                      >
-                        <FileText className="w-4 h-4" /> Factura Activa
-                      </button>
-                    </div>
+                    </td>
+                    <td className="p-4 text-right whitespace-nowrap">
+                      <span title={saldo.etiqueta} className={`px-2.5 py-1 rounded-full text-sm font-medium ${saldo.tono.chip}`}>
+                        $ {saldo.monto} · {saldo.etiqueta}
+                      </span>
+                    </td>
+                    <td className="p-4 whitespace-nowrap">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => navigate(`/facturas/${cliente.id}`)}
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-2 cursor-pointer font-medium text-sm"
+                        >
+                          <FileText className="w-4 h-4" /> Factura Activa
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredClientes.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="p-8 text-center text-gray-500">
+                    No se encontraron clientes
                   </td>
                 </tr>
-              );
-            })}
-            {filteredClientes.length === 0 && (
-              <tr>
-                <td colSpan="3" className="p-8 text-center text-gray-500">
-                  No se encontraron clientes.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
