@@ -15,13 +15,11 @@ public class Rol {
     @Column(unique = true, nullable = false)
     private String nombre; // ej: JEFE, EMPLEADO_VIVERO
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "rol_permiso",
-            joinColumns = @JoinColumn(name = "rol_id"),
-            inverseJoinColumns = @JoinColumn(name = "permiso_id")
-    )
-    private Set<Permiso> permisos = new HashSet<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "rol_permisos", joinColumns = @JoinColumn(name = "rol_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "permiso")
+    private Set<PermisoEnum> permisos = new HashSet<>();
 
     public Rol() {}
 
@@ -35,6 +33,6 @@ public class Rol {
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public Set<Permiso> getPermisos() { return permisos; }
-    public void setPermisos(Set<Permiso> permisos) { this.permisos = permisos; }
+    public Set<PermisoEnum> getPermisos() { return permisos; }
+    public void setPermisos(Set<PermisoEnum> permisos) { this.permisos = permisos; }
 }

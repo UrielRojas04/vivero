@@ -1,9 +1,8 @@
 package com.vivero.gestion.config;
 
-import com.vivero.gestion.models.Permiso;
+import com.vivero.gestion.models.PermisoEnum;
 import com.vivero.gestion.models.Rol;
 import com.vivero.gestion.models.Usuario;
-import com.vivero.gestion.repositories.PermisoRepository;
 import com.vivero.gestion.repositories.RolRepository;
 import com.vivero.gestion.repositories.UsuarioRepository;
 import com.vivero.gestion.repositories.UnidadNegocioRepository;
@@ -21,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -30,7 +30,6 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
-    private final PermisoRepository permisoRepository;
     private final UnidadNegocioRepository unidadNegocioRepository;
     private final ProductoRepository productoRepository;
     private final MovimientoStockRepository movimientoStockRepository;
@@ -44,7 +43,6 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     public DataInitializer(UsuarioRepository usuarioRepository,
                            RolRepository rolRepository,
-                           PermisoRepository permisoRepository,
                            UnidadNegocioRepository unidadNegocioRepository,
                            ProductoRepository productoRepository,
                            MovimientoStockRepository movimientoStockRepository,
@@ -55,7 +53,6 @@ public class DataInitializer implements CommandLineRunner {
                            com.vivero.gestion.repositories.VentaRepository ventaRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
-        this.permisoRepository = permisoRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
         this.productoRepository = productoRepository;
         this.movimientoStockRepository = movimientoStockRepository;
@@ -79,52 +76,21 @@ public class DataInitializer implements CommandLineRunner {
             unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false));
         }
 
-        // 1. Crear Permisos
-        Permiso pLeerStock = crearPermiso("LEER_STOCK");
-        Permiso pEscribirStock = crearPermiso("ESCRIBIR_STOCK");
-        Permiso pEscribirVentas = crearPermiso("ESCRIBIR_VENTAS");
-        Permiso pAdminDb = crearPermiso("ADMIN_DB");
-        Permiso pLeerClientes = crearPermiso("LEER_CLIENTES");
-        Permiso pEscribirClientes = crearPermiso("ESCRIBIR_CLIENTES");
-        Permiso pLeerInsumos = crearPermiso("LEER_INSUMOS");
-        Permiso pEscribirInsumos = crearPermiso("ESCRIBIR_INSUMOS");
-        Permiso pLeerFinanzas = crearPermiso("LEER_FINANZAS");
-        Permiso pLeerBandejas = crearPermiso("LEER_BANDEJAS");
-        Permiso pEscribirBandejas = crearPermiso("ESCRIBIR_BANDEJAS");
-        Permiso pLeerPedidos = crearPermiso("LEER_PEDIDOS");
-        Permiso pEscribirPedidos = crearPermiso("ESCRIBIR_PEDIDOS");
+        // 1. Permisos ahora viven como PermisoEnum — no requieren tabla ni seeding.
 
         // 2. Crear Roles y asignar permisos
-        Set<Permiso> permisosJefe = new HashSet<>();
-        permisosJefe.add(pLeerStock);
-        permisosJefe.add(pEscribirStock);
-        permisosJefe.add(pEscribirVentas);
-        permisosJefe.add(pAdminDb);
-        permisosJefe.add(pLeerClientes);
-        permisosJefe.add(pEscribirClientes);
-        permisosJefe.add(pLeerInsumos);
-        permisosJefe.add(pEscribirInsumos);
-        permisosJefe.add(pLeerFinanzas);
-        permisosJefe.add(pLeerBandejas);
-        permisosJefe.add(pEscribirBandejas);
-        // Permisos del circuito de pedidos a proveedores (herramientas-pedidos-proveedores):
-        // sólo JEFE los recibe por defecto. permisosEmpleado (más abajo) queda intacto a propósito
-        // — ver Decisión 8 de design.md y el precedente de bandejas-acceso-limitado. El rol
-        // "ADMIN 2" (creado a mano desde UsuariosAdmin.jsx) NO se toca acá: DataInitializer sólo
-        // tiene autoridad sobre JEFE/EMPLEADO_VIVERO; otorgarle estos permisos a ADMIN 2 se hace
-        // vía la API real de roles, en la verificación en vivo del grupo 11.
-        permisosJefe.add(pLeerPedidos);
-        permisosJefe.add(pEscribirPedidos);
+        Set<PermisoEnum> permisosJefe = EnumSet.allOf(PermisoEnum.class);
 
         Rol rolJefe = crearRol("JEFE", permisosJefe);
         // Asegurar que el jefe siempre tenga todos los permisos, incluso si el rol ya existía
         rolJefe.setPermisos(permisosJefe);
         rolRepository.save(rolJefe);
 
-        Set<Permiso> permisosEmpleado = new HashSet<>();
-        permisosEmpleado.add(pLeerStock);
-        permisosEmpleado.add(pEscribirStock);
-        permisosEmpleado.add(pEscribirVentas);
+        Set<PermisoEnum> permisosEmpleado = EnumSet.of(
+                PermisoEnum.LEER_STOCK,
+                PermisoEnum.ESCRIBIR_STOCK,
+                PermisoEnum.ESCRIBIR_VENTAS
+        );
         Rol rolEmpleado = crearRol("EMPLEADO_VIVERO", permisosEmpleado);
         rolEmpleado.setPermisos(permisosEmpleado);
         rolRepository.save(rolEmpleado);
@@ -253,13 +219,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private Permiso crearPermiso(String nombre) {
-        Optional<Permiso> opt = permisoRepository.findByNombre(nombre);
-        if (opt.isPresent()) return opt.get();
-        return permisoRepository.save(new Permiso(nombre));
-    }
-    
-    private Rol crearRol(String nombre, Set<Permiso> permisos) {
+    private Rol crearRol(String nombre, Set<PermisoEnum> permisos) {
         Optional<Rol> opt = rolRepository.findByNombre(nombre);
         if (opt.isPresent()) return opt.get();
         

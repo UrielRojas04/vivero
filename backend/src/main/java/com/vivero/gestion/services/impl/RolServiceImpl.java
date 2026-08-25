@@ -1,6 +1,8 @@
 package com.vivero.gestion.services.impl;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -9,9 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.vivero.gestion.dto.PermisoDTO;
 import com.vivero.gestion.dto.RolDTO;
 import com.vivero.gestion.dto.RolRequestDTO;
-import com.vivero.gestion.models.Permiso;
+import com.vivero.gestion.models.PermisoEnum;
 import com.vivero.gestion.models.Rol;
-import com.vivero.gestion.repositories.PermisoRepository;
 import com.vivero.gestion.repositories.RolRepository;
 import com.vivero.gestion.services.RolService;
 
@@ -22,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 public class RolServiceImpl implements RolService {
 
     private final RolRepository rolRepository;
-    private final PermisoRepository permisoRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -51,8 +51,10 @@ public class RolServiceImpl implements RolService {
         Rol rol = new Rol();
         rol.setNombre(dto.getNombre());
         
-        List<Permiso> permisos = permisoRepository.findAllById(dto.getPermisoIds());
-        rol.getPermisos().addAll(permisos);
+        Set<PermisoEnum> permisos = dto.getPermisoIds().stream()
+                .map(PermisoEnum::fromId)
+                .collect(Collectors.toSet());
+        rol.setPermisos(permisos);
         
         Rol saved = rolRepository.save(rol);
         return mapToDTO(saved);
@@ -70,7 +72,9 @@ public class RolServiceImpl implements RolService {
 
         rol.setNombre(dto.getNombre());
         
-        List<Permiso> permisos = permisoRepository.findAllById(dto.getPermisoIds());
+        Set<PermisoEnum> permisos = dto.getPermisoIds().stream()
+                .map(PermisoEnum::fromId)
+                .collect(Collectors.toSet());
         rol.getPermisos().clear();
         rol.getPermisos().addAll(permisos);
         
@@ -99,7 +103,7 @@ public class RolServiceImpl implements RolService {
     @Override
     @Transactional(readOnly = true)
     public List<PermisoDTO> getAllPermisos() {
-        return permisoRepository.findAll().stream()
+        return Arrays.stream(PermisoEnum.values())
                 .map(p -> new PermisoDTO(p.getId(), p.getNombre()))
                 .collect(Collectors.toList());
     }

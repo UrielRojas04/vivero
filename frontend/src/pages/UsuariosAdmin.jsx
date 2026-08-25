@@ -38,7 +38,7 @@ export default function UsuariosAdmin() {
     const SECTIONS = [
         { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES', 'LEER_STOCK'] },
         { id: 'productos', name: isHerramientas ? 'Productos' : 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
-        ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_STOCK'] }] : []),
+        ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_SIEMBRAS', 'ESCRIBIR_SIEMBRAS', 'ADMIN_SIEMBRAS'] }] : []),
         ...(!isHerramientas ? [{ id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] }] : []),
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
         { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'] },

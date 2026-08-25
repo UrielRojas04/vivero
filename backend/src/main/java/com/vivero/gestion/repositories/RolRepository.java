@@ -21,6 +21,6 @@ public interface RolRepository extends JpaRepository<Rol, Long> {
     void deleteUsuarioRolAssociations(@Param("rolId") Long rolId);
 
     @Modifying
-    @Query(value = "DELETE FROM rol_permiso WHERE rol_id = :rolId", nativeQuery = true)
+    @Query(value = "DELETE FROM rol_permisos WHERE rol_id = :rolId", nativeQuery = true)
     void deleteRolPermisoAssociations(@Param("rolId") Long rolId);
 }

@@ -63,7 +63,7 @@ public class Usuario implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .flatMap(rol -> rol.getPermisos().stream()
-                        .map(permiso -> new SimpleGrantedAuthority(permiso.getNombre())))
+                        .map(permiso -> new SimpleGrantedAuthority(permiso.name())))
                 .collect(Collectors.toSet());
     }
 
