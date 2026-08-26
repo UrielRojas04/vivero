@@ -35,8 +35,6 @@ El pedido SHALL registrar la cotización informada para esa compra cuando alguno
 - **WHEN** un usuario intenta crear un pedido sin indicar proveedor, o indicando un proveedor inexistente o de otra unidad de negocio
 - **THEN** el sistema rechaza la operación y no persiste ningún pedido
 
-## ADDED Requirements
-
 ### Requirement: Alta de producto nuevo durante el armado del pedido
 El sistema SHALL permitir indicar, durante el armado del pedido, un producto que todavía no existe en el catálogo, sin abandonar el armado y sin darlo de alta en ese momento. El producto real SHALL crearse recién al confirmar la recepción, y únicamente para los ítems de los que efectivamente llegó mercadería.
 
@@ -209,7 +207,69 @@ El sistema SHALL mostrar la sección de Pedidos en la navegación únicamente cu
 - **THEN** el sistema lo redirige al dashboard
 
 ### Requirement: Pantallas del circuito de pedidos
-El sistema SHALL ofrecer una pantalla de listado de pedidos, un flujo de creación que permita elegir proveedor y agregar ítems —eligiendo un producto existente o creando uno nuevo en el momento— con su cantidad y su costo unitario, y una pantalla o diálogo de confirmación de recepción donde se cargue por ítem la cantidad realmente recibida. En la confirmación, la cantidad recibida SHALL venir precargada con la cantidad pedida y SHALL ser editable, y el usuario SHALL poder ver el remanente resultante antes de confirmar. Los listados SHALL presentarse como tabla en anchos `md` o mayores y como tarjetas apiladas en anchos menores. El feedback y las confirmaciones SHALL usar el mecanismo de diálogos y avisos de la aplicación, y SHALL NOT usar diálogos nativos del navegador.
+El sistema SHALL ofrecer una pantalla de listado de pedidos, un flujo de creación que permita elegir proveedor y agregar ítems —eligiendo un producto existente o creando uno nuevo en el momento— con su cantidad y su costo unitario, y una pantalla o diálogo de confirmación de recepción donde se cargue por ítem la cantidad realmente recibida.
+
+En el flujo de creación, elegir un proveedor SHALL ser condición previa para cargar ítems: mientras no haya proveedor seleccionado, la carga de ítems SHALL estar deshabilitada y el sistema SHALL explicar el motivo. Un borrador restaurado que ya tenía ítems cargados antes de elegir proveedor SHALL mostrar esos ítems visibles pero no editables, junto al mismo aviso, en vez de descartarlos.
+
+Los ítems SHALL presentarse como una grilla tabular de ancho completo, una fila por ítem, donde cada fila exponga en columnas propias el producto, la cantidad, si el proveedor elegido maneja moneda extranjera también si la línea está expresada en esa moneda, el costo unitario pactado, los descuentos aplicables, el porcentaje de IVA, el porcentaje de costo de envío y el costo total de esa fila. La columna de moneda extranjera SHALL mostrarse únicamente cuando el proveedor elegido maneja esa moneda. El costo total de cada fila y el total del pedido SHALL calcularse aplicando la cadena de costeo vigente (descuentos en cascada, IVA sobre el neto, envío en cadena sobre neto+IVA, y conversión de moneda cuando la línea es en moneda extranjera) y SHALL NOT mostrarse como el costo unitario pactado sin procesar.
+
+Al elegir en una línea un producto que ya existe en el catálogo, el sistema SHALL precargar en esa línea el porcentaje de IVA, el porcentaje de envío y los descuentos **efectivos vigentes en la ficha del producto**, y SHALL permitir editarlos línea por línea igual que en una línea de producto pendiente de crear. Si al confirmar la recepción esos valores quedan distintos de los que tenía la ficha en el momento de precargarse, el sistema SHALL actualizar la ficha del producto con los nuevos valores; si el usuario los deja iguales, la ficha SHALL NOT modificarse.
+
+El editor de descuentos de una línea SHALL desplegarse como un panel flotante anclado a la celda de descuentos de esa línea, sin ocupar el ancho completo de la grilla ni insertar una fila adicional entre ítems, y SHALL cerrarse al hacer clic afuera del panel o al presionar Escape, sin que ese Escape afecte al resto del formulario de pedido.
+
+En la confirmación, la cantidad recibida SHALL venir precargada con la cantidad pedida y SHALL ser editable, y el usuario SHALL poder ver el remanente resultante antes de confirmar. Los listados SHALL presentarse como tabla en anchos `md` o mayores y como tarjetas apiladas en anchos menores; en el flujo de creación de pedido, el umbral de colapso de la grilla a tarjetas SHALL ser `xl`. El feedback y las confirmaciones SHALL usar el mecanismo de diálogos y avisos de la aplicación, y SHALL NOT usar diálogos nativos del navegador.
+
+#### Scenario: El total del pedido refleja el costo real, no el pactado crudo
+- **WHEN** el usuario carga un único ítem con cantidad 1, costo unitario pactado $3.000, IVA 21% y envío 5%, y la fila muestra un costo final de $3.811,50
+- **THEN** tanto el total del encabezado de la grilla como el total del pie del formulario muestran $3.811,50, y ninguno de los dos muestra $3.000
+
+#### Scenario: El total suma el costo real de todas las filas
+- **WHEN** el pedido tiene dos ítems, uno con costo final de fila $3.811,50 y cantidad 2, y otro con costo final de fila $1.000 y cantidad 3
+- **THEN** el total mostrado es $10.623,00 — la suma de costo final de fila por cantidad de cada ítem
+
+#### Scenario: Los descuentos de la línea impactan en el total
+- **WHEN** el usuario agrega un descuento a una fila de producto pendiente y el costo final de esa fila baja
+- **THEN** el total del encabezado y el del pie bajan en el mismo instante, sin necesidad de guardar ni recargar
+
+#### Scenario: Una línea en dólares aporta al total convertida a pesos
+- **WHEN** el pedido tiene una línea en USD y el usuario carga la cotización del pedido
+- **THEN** esa línea aporta al total su costo final ya convertido a pesos por esa cotización, con la misma cadena de costeo que el resto
+
+#### Scenario: Una línea en dólares sin cotización no inventa un total
+- **WHEN** el pedido tiene una línea en USD y todavía no se cargó la cotización del pedido
+- **THEN** esa línea aporta cero al total en vez de sumar su importe en dólares como si fueran pesos, y el sistema advierte que falta la cotización
+
+#### Scenario: No se pueden cargar ítems sin proveedor
+- **WHEN** el usuario entra a la pantalla de nuevo pedido y todavía no eligió proveedor
+- **THEN** la grilla de ítems aparece bloqueada, la acción de agregar ítem está deshabilitada y el sistema muestra un mensaje que indica que primero hay que elegir un proveedor
+
+#### Scenario: Elegir el proveedor habilita la carga de ítems
+- **WHEN** el usuario selecciona un proveedor en la pantalla de nuevo pedido
+- **THEN** la grilla de ítems queda habilitada con una primera fila lista para completar, precargada con el perfil de costeo por defecto de ese proveedor
+
+#### Scenario: Cada fila muestra su composición de costo en columnas
+- **WHEN** el usuario carga un ítem con descuentos, IVA y costo de envío
+- **THEN** la fila muestra el nombre del producto, la cantidad, los descuentos aplicados, el porcentaje de IVA, el porcentaje de envío y el costo total de la fila, cada uno en su propia columna alineada con las del resto de las filas
+
+#### Scenario: Una fila con varios descuentos no rompe la alineación de la grilla
+- **WHEN** un ítem tiene tres descuentos cargados y los demás ítems no tienen ninguno
+- **THEN** todas las filas conservan la misma estructura de columnas y la grilla no desborda horizontalmente la pantalla
+
+#### Scenario: La columna de moneda extranjera aparece sólo si el proveedor la maneja
+- **WHEN** el usuario tiene elegido un proveedor que no maneja moneda extranjera
+- **THEN** la grilla no muestra la columna de moneda de línea y todos los ítems quedan en pesos; al cambiar a un proveedor que sí maneja esa moneda, la columna aparece y las líneas pueden marcarse en esa moneda
+
+#### Scenario: Los descuentos, el IVA y el envío de un producto existente son editables y pueden actualizar su ficha
+- **WHEN** el usuario elige en una fila un producto que ya existe en el catálogo, la línea se precarga con el IVA, el envío y los descuentos vigentes de la ficha de ese producto, y el usuario edita el descuento pactado de esa línea antes de confirmar la recepción
+- **THEN** el costo de la fila se recalcula en el momento con el valor editado, y al confirmarse la recepción la ficha del producto queda actualizada con el nuevo valor; si el usuario no cambia ninguno de los valores precargados, la ficha del producto no se modifica
+
+#### Scenario: El editor de descuentos no ocupa el ancho completo de la grilla
+- **WHEN** el usuario abre el editor de descuentos de una fila del medio de la grilla
+- **THEN** el editor se muestra como un panel flotante angosto anclado a esa celda, sin desplazar ni ocultar las demás columnas de esa fila ni las de las filas vecinas
+
+#### Scenario: Cerrar el editor de descuentos no cancela el pedido
+- **WHEN** el editor de descuentos de una línea está abierto y el usuario presiona Escape
+- **THEN** el editor se cierra y el formulario de pedido permanece intacto, sin navegar fuera de la pantalla
 
 #### Scenario: Precarga de cantidades en la confirmación
 - **WHEN** el usuario abre la confirmación de recepción de un pedido
@@ -227,6 +287,104 @@ El sistema SHALL ofrecer una pantalla de listado de pedidos, un flujo de creaci�
 - **WHEN** un usuario abre el listado de pedidos en una pantalla de ancho menor a `md`
 - **THEN** los pedidos se muestran como tarjetas apiladas de ancho completo, con proveedor, fecha y estado, sin desbordar horizontalmente
 
+### Requirement: Continuidad del borrador de pedido en curso
+El sistema SHALL preservar el pedido que el usuario está armando ante una recarga de la página o una navegación de ida y vuelta, restaurando el proveedor, los ítems con todo su costeo pactado, la cotización y las observaciones. El borrador SHALL descartarse al crear el pedido y al cancelar explícitamente. Un borrador restaurado que contenga ítems pero no tenga proveedor SHALL conservar esos ítems y SHALL mantenerlos bloqueados hasta que se elija un proveedor, sin descartarlos en silencio.
+
+#### Scenario: El borrador sobrevive a una recarga
+- **WHEN** el usuario carga proveedor y dos ítems, recarga la página y vuelve a la pantalla de nuevo pedido
+- **THEN** el proveedor y los dos ítems aparecen tal como estaban, con su cantidad, costo pactado, IVA, envío y descuentos
+
+#### Scenario: Borrador anterior sin proveedor
+- **WHEN** se restaura un borrador que tiene ítems cargados pero ningún proveedor seleccionado
+- **THEN** los ítems se conservan visibles y bloqueados, y el sistema pide elegir un proveedor para poder seguir editándolos
+
+#### Scenario: El borrador se descarta al cancelar
+- **WHEN** el usuario cancela el armado del pedido
+- **THEN** el borrador se elimina y la próxima vez que entre a nuevo pedido la pantalla arranca vacía
+
+### Requirement: Legibilidad de la grilla de carga de ítems del pedido
+
+La pantalla de creación de pedido SHALL presentar los ítems como una grilla estructurada que permita atribuir cada valor a su ítem y a su columna sin ambigüedad, incluso con decenas de ítems cargados.
+
+La grilla SHALL delimitar sus celdas con separadores visibles tanto entre filas como entre columnas. Los encabezados de columna SHALL permanecer visibles mientras el usuario recorre la lista de ítems. Cada ítem SHALL leerse como una unidad visual única junto con todo el contenido auxiliar que dependa de él —los avisos propios de esa línea, como el de auto-ratchet de costo—, de modo que ese contenido auxiliar SHALL NOT presentarse como si fuera un ítem independiente. El editor de descuentos de una línea y, cuando corresponde, el sub-formulario de producto pendiente de crear NO SHALL presentarse como una sub-fila que ocupe el ancho completo de la grilla: SHALL desplegarse como paneles flotantes angostos anclados a su celda de origen (ver Requirement: Pantallas del circuito de pedidos).
+
+Los valores numéricos de una misma columna SHALL alinear sus dígitos entre filas. Cuando el espacio disponible obligue a recortar un texto compuesto por una etiqueta y un valor —como un descuento con su nombre y su porcentaje—, el recorte SHALL aplicarse a la etiqueta y SHALL NOT ocultar el valor.
+
+La grilla SHALL entrar completa en el ancho disponible en los anchos de pantalla en los que se muestra como grilla, incluida la variante con columna de moneda extranjera, sin recortar ninguna columna y sin recurrir a desplazamiento horizontal.
+
+Todo elemento desplegable de la grilla que pueda quedar cerca del borde inferior de la pantalla —el editor de descuentos y la lista de resultados del buscador de producto— SHALL abrirse hacia arriba en vez de hacia abajo cuando no haya espacio suficiente debajo, para no quedar cortado ni tapado.
+
+Esta presentación SHALL NOT alterar ningún comportamiento existente de la pantalla: la carga y edición de cada campo por línea, la exigencia de elegir proveedor antes de cargar ítems, la continuidad del borrador en curso y el contenido enviado al servidor SHALL permanecer idénticos.
+
+#### Scenario: Atribución de un valor a su ítem con la lista cargada
+
+- **WHEN** el usuario tiene 30 ítems cargados y mira el valor de la columna de costo total de un ítem del medio de la lista
+- **THEN** separadores visibles de fila y de columna delimitan esa celda, y la fila completa se distingue de las adyacentes al recorrerla con el puntero
+
+#### Scenario: Los encabezados siguen disponibles al recorrer la lista
+
+- **WHEN** el usuario desplaza la pantalla hasta el ítem 25 de un pedido de 30 ítems
+- **THEN** la fila de encabezados de columna sigue visible sobre la grilla y ninguna fila de ítems se ve a través de ella
+
+#### Scenario: El buscador de producto no queda tapado por los encabezados
+
+- **WHEN** el usuario abre el buscador de producto de la primera fila visible mientras los encabezados están fijos arriba
+- **THEN** la lista de resultados se muestra por encima de los encabezados y todas sus opciones son alcanzables
+
+#### Scenario: El buscador de producto se abre hacia arriba si no hay lugar abajo
+
+- **WHEN** el usuario abre el buscador de producto de una fila cercana al borde inferior de la pantalla, donde no entra la lista de resultados por debajo
+- **THEN** la lista de resultados se despliega hacia arriba en su lugar, sin quedar cortada ni tapada por el borde de la pantalla
+
+#### Scenario: Abrir los descuentos no parte el ítem en dos
+
+- **WHEN** el usuario hace clic en la celda de descuentos de un ítem
+- **THEN** el editor se despliega como panel flotante anclado a esa celda, sin insertar ninguna fila ni separador entre ese ítem y el siguiente, que sigue leyéndose como una fila distinta
+
+#### Scenario: El editor de descuentos se abre hacia arriba si no hay lugar abajo
+
+- **WHEN** el usuario abre el editor de descuentos de una fila cercana al borde inferior de la pantalla, donde no entra el contenido del editor por debajo
+- **THEN** el editor se despliega hacia arriba en su lugar, sin quedar cortado ni tapado por el borde de la pantalla
+
+#### Scenario: Un aviso propio de la línea no se lee como otro ítem
+
+- **WHEN** un ítem dispara el aviso de que su costo es mayor al de la ficha del producto
+- **THEN** el aviso se presenta asociado visualmente a ese ítem y no como una fila independiente de la grilla
+
+#### Scenario: Comparación de importes entre filas
+
+- **WHEN** el usuario recorre verticalmente la columna de costo total de un pedido con importes de distinta cantidad de dígitos
+- **THEN** los dígitos de todos los importes quedan alineados entre sí
+
+#### Scenario: Un descuento angosto no oculta su porcentaje
+
+- **WHEN** un descuento con nombre largo no entra completo en el ancho de su celda
+- **THEN** el nombre se recorta con puntos suspensivos y el porcentaje se sigue viendo completo
+
+#### Scenario: La grilla entra completa en una pantalla de laptop
+
+- **WHEN** el usuario abre la creación de pedido en una pantalla de 1366 píxeles de ancho con un proveedor que maneja dólares, es decir con la columna de moneda presente
+- **THEN** todas las columnas —incluida la acción de quitar ítem— se muestran completas dentro de la pantalla, sin recorte y sin desplazamiento horizontal
+
+#### Scenario: Las filas mantienen sus columnas alineadas entre sí
+
+- **WHEN** el pedido combina ítems con nombres de producto largos y cortos, con y sin descuentos, en pesos y en dólares, y con algún editor de descuentos abierto
+- **THEN** cada columna ocupa exactamente la misma posición horizontal en todas las filas y en la fila de encabezados
+
+#### Scenario: El pulido visual no cambia lo que se envía
+
+- **WHEN** el usuario carga un pedido con una línea de producto existente y una línea de producto nuevo y lo confirma
+- **THEN** el contenido enviado al servidor es idéntico al que se enviaba antes del rediseño visual, con los mismos campos y valores por línea
+
+#### Scenario: El estado no editable sigue siendo evidente
+
+- **WHEN** se restaura un borrador con ítems y todavía sin proveedor elegido
+- **THEN** las filas se muestran con un aspecto claramente no editable, junto al aviso de que hace falta elegir un proveedor, y ningún campo acepta edición
+
+#### Scenario: Las pantallas angostas siguen mostrando tarjetas
+
+- **WHEN** el usuario abre la creación de pedido en un ancho menor al umbral en el que la grilla se muestra
+- **THEN** cada ítem se presenta como tarjeta apilada de ancho completo, con el mismo tratamiento visual de separadores y tamaños, sin desbordar horizontalmente
 
 ### Requirement: Cotización del Pedido con Ítems en Moneda Extranjera
 El sistema SHALL solicitar la cotización del dólar al armar un pedido que contenga al menos un ítem expresado en moneda extranjera, y SHALL NOT solicitarla cuando todos los ítems están expresados en pesos.

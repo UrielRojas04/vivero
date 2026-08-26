@@ -15,14 +15,36 @@ import { costoFinalDeLinea } from '../utils/pedidoCosteo';
 import FilaItemPedido from '../components/pedidos/FilaItemPedido';
 
 // Plantilla de columnas de la grilla de ítems (change pedido-planilla-editable, grupo 3 —
-// Decisión 2 de design.md): se define UNA SOLA VEZ, a nivel de módulo, y la comparten la fila de
-// encabezados y todas las filas de ítem (`FilaItemPedido`, variant="grid") — así nunca pueden
-// desalinearse entre sí. Orden: producto · cant · [USD] · costo unit. · descuentos · IVA% ·
-// envío% · total · quitar. La columna USD sólo existe si el proveedor elegido maneja dólares
-// (Decisión 2: es una decisión de PROVEEDOR, nunca por fila — la plantilla entera cambia, no una
-// celda suelta).
-const GRID_COLS = 'grid-cols-[minmax(200px,2.2fr)_84px_110px_minmax(170px,1.1fr)_76px_76px_120px_40px]';
-const GRID_COLS_USD = 'grid-cols-[minmax(200px,2.2fr)_84px_56px_110px_minmax(170px,1.1fr)_76px_76px_120px_40px]';
+// Decisión 2 de design.md; anchos reajustados por el change pedido-grilla-visual, grupo 7 —
+// Decisión 7 de su design.md): se define UNA SOLA VEZ, a nivel de módulo, y la comparten la fila
+// de encabezados y cada fila de ítem (`FilaItemPedido`, variant="grid") — así nunca pueden
+// desalinearse entre sí. Orden: # · producto · cant · [USD] · costo unit. · descuentos · IVA% ·
+// envío% · total · quitar.
+//
+// DOS plantillas, elegidas según `manejaDolares` del proveedor (revertido en la ronda de ajustes
+// posterior al checkpoint 12.3 de pedido-grilla-visual — ver Decisión 10 de design.md y su
+// reversión documentada en la sección "Ampliación 2" al final de ese mismo archivo). Hubo un
+// intento intermedio de unificar en una sola plantilla de 10 columnas con la celda USD siempre
+// presente pero deshabilitada (Decisión 10); en la siguiente ronda de feedback el dueño del
+// negocio pidió explícitamente volver atrás sobre ese punto puntual, confirmando que prefiere que
+// la columna USD aparezca/desaparezca según el proveedor, como era originalmente en
+// pedido-planilla-editable — el resto de esa ampliación (botón de eliminar más chico, borde del
+// campo de producto sólo en hover) se mantiene sin cambios.
+//
+// IVA%/Envío% pasan de 60/60 a 56/64 (ajuste puntual de la misma ronda): a 60px, el encabezado
+// "Envío %" (7 caracteres) envolvía en dos líneas mientras "IVA %" (5 caracteres) sobraba espacio
+// en la suya. Se le sacan 4px a IVA (que tenía margen) y se los da a Envío — la SUMA de ambas
+// columnas no cambia, así que el presupuesto de ancho medido en design.md (868px mínimo con USD,
+// exacto a 1280px) sigue siendo válido sin volver a remedirlo entero.
+//
+// INVARIANTE (Decisión 4 de design.md de pedido-grilla-visual): esta plantilla NO PUEDE CONTENER
+// NUNCA una pista `auto`, `min-content`, `max-content` ni `fit-content()`. Cada fila (encabezado,
+// ítem) es su propio grid independiente — ya no hay un grid padre único con `display: contents`
+// por fila — y grids independientes sólo resuelven al MISMO resultado si (a) comparten el mismo
+// ancho de contenedor y (b) ninguna pista depende de su contenido. Si alguna vez hiciera falta una
+// pista de contenido, las filas dejarían de alinearse entre sí en silencio.
+const GRID_COLS = 'grid-cols-[32px_minmax(190px,2.2fr)_64px_100px_minmax(150px,1.1fr)_56px_64px_132px_36px]';
+const GRID_COLS_USD = 'grid-cols-[32px_minmax(190px,2.2fr)_64px_44px_100px_minmax(150px,1.1fr)_56px_64px_132px_36px]';
 
 const generarIdLinea = () => (
   typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -239,13 +261,13 @@ const PedidoNuevo = () => {
   // cuántas veces React decida invocar el efecto de montaje.
   const proveedorIdAnteriorRef = useRef(proveedorId);
 
-  // Sub-formulario de "producto pendiente de crear" (grupo 13 de tasks.md), abierto para una
-  // línea puntual. Ya NO llama a la API: sólo captura el nombre y lo guarda en la línea local —
-  // el Producto real recién nace al confirmar la recepción del pedido. Ya NO pide precio de
-  // venta (Decisión de la sesión del 2026-08-20): el precio se calcula después, en Productos, a
-  // partir del costo pactado + % de ganancia.
-  const [creandoParaLinea, setCreandoParaLinea] = useState(null);
-  const [nuevoNombre, setNuevoNombre] = useState('');
+  // Sub-formulario de "producto pendiente de crear": ELIMINADO en esta ronda de
+  // pedido-grilla-visual (grupo 17 de tasks.md — pedido explícito del usuario: no quiere
+  // confirmar "Usar en esta línea" por cada producto nuevo). Ya no existe un estado intermedio
+  // `creandoParaLinea`/`nuevoNombre` ni un popover de confirmación: elegir "+ Crear producto
+  // nuevo…" en `ProductoSearchSelect` marca la línea como pendiente de inmediato, con el texto ya
+  // tipeado en el buscador — ver la rama `productoId === '__nuevo__'` de `seleccionarProducto`
+  // más abajo, que reemplaza al viejo `confirmarProductoPendiente`.
 
   // Estado de expansión de la sub-fila de descuentos (grupo 4, tarea 4.4 — Decisión 4 de
   // design.md): un `Set` de `lineaId`, para que varias filas puedan estar abiertas a la vez.
@@ -261,10 +283,18 @@ const PedidoNuevo = () => {
     });
   };
 
-  // Auto-expandir (tarea 4.6): al presionar "+" en la celda de descuentos, y al confirmar una
-  // línea pendiente que ya trae descuentos por defecto del proveedor (ver
-  // confirmarProductoPendiente más abajo) — para compensar el clic extra que introduce la sub-fila
-  // expandible. No hace nada si la fila ya estaba expandida.
+  // Auto-expandir (tarea 4.6): al presionar "+" en la celda de descuentos — un clic explícito del
+  // usuario sobre esa celda — para compensar el clic extra que introduce el popover expandible.
+  // No hace nada si la fila ya estaba expandida.
+  //
+  // Ya NO se llama también al confirmar una línea "producto nuevo" (grupo 17 de tasks.md, bug
+  // reportado por el usuario: "se abre el modal de descuentos por una razon" al crear un producto
+  // desde el pedido). Esa segunda llamada vivía en el viejo `confirmarProductoPendiente`
+  // (eliminado, ver el comentario junto a `seleccionarProducto`) y abría el popover de descuentos
+  // SOLO — sin que el usuario tocara la celda de descuentos — cada vez que el proveedor tenía
+  // descuentos por defecto configurados. Tenía sentido cuando el panel era una sub-fila inline
+  // discreta (diseño previo a este change); desde que pasó a ser un popover flotante (grupo 15),
+  // la misma auto-expansión se sentía como una ventana apareciendo sola.
   const expandirLinea = (lineaId) => {
     setLineasExpandidas((prev) => {
       if (prev.has(lineaId)) return prev;
@@ -299,8 +329,8 @@ const PedidoNuevo = () => {
   const manejaDolares = !!proveedorSeleccionado?.manejaDolares;
   const hayLineaUsd = items.some((it) => it.monedaLinea === 'USD');
   const antiguedadCotizacion = formatAntiguedad(proveedorSeleccionado?.fechaUltimaCotizacion);
-  // Plantilla de columnas de la grilla (tarea 3.2): la columna USD existe o no para la grilla
-  // entera, según el proveedor — nunca por fila.
+  // Plantilla de columnas de la grilla: vuelve a depender del proveedor (revertido, ver comentario
+  // junto a GRID_COLS/GRID_COLS_USD más arriba) — 10 columnas con USD, 9 sin ella.
   const gridColsClass = manejaDolares ? GRID_COLS_USD : GRID_COLS;
 
   // Al elegir (o cambiar) el proveedor: precargar el perfil de costeo por defecto en todas las
@@ -351,7 +381,7 @@ const PedidoNuevo = () => {
   // no escribir en localStorage en cada tecla. Se dispara ante cualquier cambio del estado que
   // compone al pedido — proveedor, observaciones, ítems (con todos sus campos: producto, cantidad,
   // costo, moneda, costeo pactado), cotización del dólar. Deliberadamente NO depende de
-  // errors/isSubmitting/creandoParaLinea/nuevoNombre: son estado transitorio de UI, no del pedido.
+  // errors/isSubmitting: son estado transitorio de UI, no del pedido.
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       guardarBorrador({ proveedorId, observaciones, items, cotizacionDolar, cotizacionTocada });
@@ -368,14 +398,19 @@ const PedidoNuevo = () => {
     navigate('/pedidos');
   };
 
+  // Guard `!creandoParaLinea` retirado (ya no existe ese estado, ver comentario más arriba): ya
+  // no hace falta distinguir "hay un sub-formulario de producto nuevo abierto" porque ese
+  // sub-formulario dejó de existir. El popover de descuentos tiene su PROPIO guard de Escape
+  // (`e.stopPropagation()` en `FilaItemPedido.jsx`), así que este listener global no necesita
+  // saber nada de él tampoco.
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !creandoParaLinea) handleVolver();
+      if (e.key === 'Escape') handleVolver();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creandoParaLinea]);
+  }, []);
 
   const actualizarLinea = (lineaId, campo, valor) => {
     setItems((prev) => prev.map((it) => (it.lineaId === lineaId ? { ...it, [campo]: valor } : it)));
@@ -409,12 +444,29 @@ const PedidoNuevo = () => {
   };
 
   const seleccionarProducto = (lineaId, productoId, textoBuscado = '') => {
+    // "+ Crear producto nuevo…" (grupo 17 de tasks.md, reemplaza el popover de confirmación
+    // "Usar en esta línea" que existía hasta esta ronda): pedido explícito del usuario — no
+    // quiere confirmar por cada producto nuevo que no encuentra en el buscador. El nombre YA se
+    // tipeó en `ProductoSearchSelect` (`textoBuscado`, el mismo `busqueda` en el momento del
+    // clic) — pedirlo una segunda vez en un popover aparte era fricción pura sin ganar nada. Un
+    // solo clic alcanza para marcar la línea como "pendiente de crear" con ese nombre y la
+    // etiqueta "Nuevo" puesta de inmediato (ver el estado `esPendiente` de
+    // `ProductoSearchSelect.jsx`, sin cambios). El nombre sigue siendo editable después: el botón
+    // "Cambiar" (mismo que ya existía para reemplazar cualquier producto elegido) reabre el
+    // buscador — no es un gate obligatorio antes de poder seguir cargando cantidad/costo/etc.
+    // Único caso que se rechaza: buscar sólo espacios en blanco y confirmar igual.
     if (productoId === '__nuevo__') {
-      setCreandoParaLinea(lineaId);
-      // Bug reportado 2026-08-21: al elegir "+ Crear producto nuevo…" se perdía el texto que el
-      // usuario ya había tipeado en el buscador, obligándolo a escribirlo de nuevo. Se precarga
-      // con lo que estaba buscando en vez de arrancar vacío.
-      setNuevoNombre(textoBuscado);
+      const nombreNuevo = textoBuscado.trim();
+      if (!nombreNuevo) {
+        pushToast('error', 'El nombre del producto nuevo es requerido.');
+        return;
+      }
+      setItems((prev) => prev.map((it) => (it.lineaId === lineaId ? {
+        ...it,
+        productoId: '',
+        productoNombre: '',
+        productoNombreNuevo: nombreNuevo,
+      } : it)));
       return;
     }
     const producto = productos.find((p) => String(p.id) === String(productoId));
@@ -486,32 +538,18 @@ const PedidoNuevo = () => {
     setItems((prev) => (prev.length > 1 ? prev.filter((it) => it.lineaId !== lineaId) : prev));
   };
 
-  // Grupo 13 de tasks.md (reemplaza la Decisión 3 original): ya NO se crea el Producto acá.
-  // Sólo se captura el nombre y queda guardado en la línea local (productoNombreNuevo, sin
-  // productoId) — el alta real ocurre recién al confirmar la recepción del pedido, y sólo para
-  // lo que efectivamente llegó. Ya NO se pide precio de venta (Decisión de la sesión del
-  // 2026-08-20): el costoUnitarioPactado de la línea se usa como costoProducto y precio inicial.
-  const confirmarProductoPendiente = () => {
-    if (!nuevoNombre.trim()) {
-      pushToast('error', 'El nombre del producto nuevo es requerido.');
-      return;
-    }
-    const lineaId = creandoParaLinea;
-    setItems((prev) => prev.map((it) => (it.lineaId === lineaId ? {
-      ...it,
-      productoId: '',
-      productoNombre: '',
-      productoNombreNuevo: nuevoNombre.trim(),
-    } : it)));
-    setCreandoParaLinea(null);
-    // Auto-expandir (tarea 4.6): si la línea recién confirmada como "pendiente" ya trae
-    // descuentos precargados por defecto del proveedor, mostrarlos de entrada en vez de dejarlos
-    // escondidos detrás de un clic extra.
-    const lineaActual = items.find((it) => it.lineaId === lineaId);
-    if (lineaActual && lineaActual.descuentosPactados.length > 0) {
-      expandirLinea(lineaId);
-    }
-  };
+  // `confirmarProductoPendiente` ELIMINADO en esta ronda (grupo 17 de tasks.md): su
+  // responsabilidad (marcar la línea como pendiente) pasó a la rama `__nuevo__` de
+  // `seleccionarProducto`, de arriba. Con él se fue también el auto-expandir el popover de
+  // descuentos "si la línea recién confirmada ya trae descuentos por defecto del proveedor"
+  // (tarea 4.6 original de `pedido-planilla-editable`): tenía sentido cuando el panel de
+  // descuentos era una sub-fila inline discreta, pero desde que pasó a ser un POPOVER FLOTANTE
+  // (grupo 15 de esta misma pantalla) esa auto-expansión se sentía como una ventana apareciendo
+  // sola, sin que el usuario hubiera hecho clic en nada — bug reportado por el usuario
+  // ("se abre el modal de descuentos por una razon" al crear un producto nuevo). La
+  // auto-expansión al presionar el `+` explícito de la celda de descuentos (ver `onAgregarDescuento`
+  // en `propsFila`, más abajo) SÍ se conserva: ese es un clic directo del usuario sobre la propia
+  // celda de descuentos, no un efecto colateral de otra acción.
 
   // Fix del bug del total (change pedido-planilla-editable, grupo 1): ANTES este `reduce` sumaba
   // `cantidad × costoUnitarioPactado` crudo, sin pasar por la cadena de costeo (IVA, envío,
@@ -659,11 +697,9 @@ const PedidoNuevo = () => {
     onQuitarDescuento: (index) => quitarDescuentoLinea(it.lineaId, index),
     onActualizarDescuento: (index, campo, valor) => actualizarDescuentoLinea(it.lineaId, index, campo, valor),
     onRecargarDefaultsProveedor: () => recargarDefaultsProveedorLinea(it.lineaId),
-    creandoAqui: creandoParaLinea === it.lineaId,
-    nuevoNombre,
-    onChangeNuevoNombre: setNuevoNombre,
-    onCancelarCrear: () => setCreandoParaLinea(null),
-    onConfirmarCrear: confirmarProductoPendiente,
+    // `creandoAqui`/`nuevoNombre`/`onChangeNuevoNombre`/`onCancelarCrear`/`onConfirmarCrear`
+    // ELIMINADOS en esta ronda (grupo 17 de tasks.md): ya no existe un sub-formulario de
+    // confirmación de producto nuevo, ver el comentario junto a `seleccionarProducto` más arriba.
     expandida: lineasExpandidas.has(it.lineaId),
     onToggleExpansion: () => toggleExpansionLinea(it.lineaId),
     // Gate de proveedor (grupo 5 — Decisión 7 de design.md): sólo puede ser true con `items` no
@@ -811,44 +847,88 @@ const PedidoNuevo = () => {
 
           {items.length > 0 && (
             <>
-              {/* Grilla tipo planilla (change pedido-planilla-editable, grupo 3 — Decisión 2 de
-                  design.md): una única plantilla de columnas (`gridColsClass`, tarea 3.1/3.2)
-                  compartida por la fila de encabezados y por cada `FilaItemPedido` variant="grid",
-                  que se renderiza como `className="contents"` para volverse hijas directas de ESTE
-                  `div` grid — nunca redefinen la plantilla (así nunca pueden desalinearse).
-                  Breakpoint de colapso `xl` (1280px), NO `lg` (tarea 3.12, verificado con Playwright
-                  contra el dev stack real): el shell de la app (`DashboardLayout.jsx`, fuera del
-                  alcance de este change) envuelve toda página en un contenedor `overflow-x-hidden`
-                  fijo; con 9 columnas (caso USD) el ancho mínimo de la grilla (~1028px de columnas +
-                  gaps) no entra en el área de contenido disponible entre `lg` y `xl` (sidebar fija de
-                  256px descontada), así que a `lg` la grilla queda RECORTADA en silencio —sin
-                  scrollbar, columnas de la derecha (IVA %, Envío %, Costo total y hasta el botón de
-                  quitar) invisibles e inalcanzables— en vez de colapsar a tarjetas. Es exactamente el
-                  riesgo "Densidad visual en 1024–1280px" de design.md, con la salida que el propio
-                  documento pre-autoriza: bajar el breakpoint de colapso, nunca agregar scroll
-                  horizontal (Decisión 6 lo prohíbe explícitamente por el dropdown/panel absolutos). */}
-              <div className={`hidden xl:grid ${gridColsClass} gap-x-3 items-end pb-2 mb-1 border-b border-gray-200`}>
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Producto</span>
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Cant.</span>
-                {manejaDolares && (
-                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-center">USD</span>
-                )}
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Costo unit.</span>
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Descuentos</span>
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">IVA %</span>
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Envío %</span>
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Costo total</span>
-                <span aria-hidden="true" />
+              {/* Grilla tipo planilla (change pedido-planilla-editable, grupo 3; pulido visual del
+                  change pedido-grilla-visual, grupos 2/3/6/7/8 — Decisiones 1/2/4/6/7/8 de su
+                  design.md): el contenedor deja de ser un único grid con todas las celdas adentro
+                  (`display: contents` por fila) y pasa a ser un contenedor vertical
+                  (`xl:flex xl:flex-col`) que apila dos bloques, CADA UNO su propio grid con la
+                  MISMA plantilla de columnas (`gridColsClass`, ver invariante junto a GRID_COLS):
+                  la fila de encabezados (sticky) y las filas de ítem (`FilaItemPedido`
+                  variant="grid", que ahora recibe `gridColsClass` por prop en vez de heredar el
+                  grid del padre). Sin fila de totales al pie de la grilla (punto (d)
+                  del checkpoint 9.1: el usuario la pidió sacar por redundante con el total del
+                  footer de la página, línea ~905 — ese footer se mantiene intacto). Marco exterior
+                  (`border rounded-xl`, Decisión 1) SIN `overflow-hidden` — recortaría el dropdown
+                  de `ProductoSearchSelect` y `PanelDescuentosLinea`, ambos `absolute`/expandidos
+                  fuera del flujo (invariante de la Decisión 6 del change pedido-planilla-editable).
+                  Sangrado hasta los bordes de la tarjeta (`-mx-5 sm:-mx-6`, Decisión 7) para
+                  compensar el `p-5 sm:p-6` de la tarjeta y ganar ancho.
 
-                {items.map((it) => (
-                  <FilaItemPedido key={it.lineaId} variant="grid" {...propsFila(it)} />
+                  Breakpoint de colapso `xl` (1280px), NO `lg` (tarea 3.12 del change anterior,
+                  intocable — Decisión 6 de aquel design.md): el shell de la app
+                  (`DashboardLayout.jsx`, fuera del alcance de estos dos changes) envuelve toda
+                  página en un contenedor `overflow-x-hidden` fijo; a `lg` la grilla de 9-10
+                  columnas quedaría recortada en silencio —sin scrollbar— en vez de colapsar a
+                  tarjetas. El presupuesto de ancho de la Decisión 7 de pedido-grilla-visual cierra
+                  el recorte medido a 1366px con proveedor USD, pero el umbral de colapso NO se
+                  mueve: reabrirlo sería reabrir un problema ya pagado. */}
+              <div className="hidden xl:flex xl:flex-col -mx-5 sm:-mx-6 border border-gray-300 rounded-xl">
+                {/* Encabezado (pedido-grilla-visual, ronda de ajustes post-12.3, puntos 2 y 3b):
+                    fondo `bg-gray-100`/texto `gray-700`/`font-bold` en vez de `bg-gray-50`/
+                    `gray-600`/`font-semibold` — mismo patrón "encabezado con más peso" que ya usa
+                    `FacturaCliente.jsx` (`thead className="bg-gray-100 ... text-gray-700 ...
+                    border-b-2 border-gray-300"`), reusado acá en vez de inventar un color nuevo.
+                    Separador inferior del header sube un escalón más que el resto de las reglas de
+                    la grilla (`border-gray-400` vs `border-gray-300` del resto, punto 4) para que
+                    la frontera header/filas quede la más marcada de todas — jerarquía visual
+                    esperada. Cada `<span>` pasa a `flex items-center` (+ `justify-end`/`-center`
+                    donde corresponde) para centrarse verticalmente sin depender de que todas las
+                    celdas compartan exactamente el mismo padding — necesario porque IVA%/Envío%
+                    ahora tienen menos padding horizontal que el resto (ver abajo). */}
+                <div className={`grid ${gridColsClass} sticky top-0 z-10 bg-gray-100 rounded-t-xl border-b-2 border-gray-400`}>
+                  <span aria-hidden="true" />
+                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider border-l border-gray-300 flex items-center">Producto</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right border-l border-gray-300 flex items-center justify-end">Cant.</span>
+                  {/* Columna USD condicional (revertido — ver comentario junto a GRID_COLS/
+                      GRID_COLS_USD): sólo se renderiza cuando el proveedor elegido maneja
+                      dólares, igual que antes de la ampliación que la había hecho siempre
+                      presente. */}
+                  {manejaDolares && (
+                    <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-center border-l border-gray-300 flex items-center justify-center">USD</span>
+                  )}
+                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right border-l border-gray-300 flex items-center justify-end">Costo unit.</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider border-l border-gray-300 flex items-center">Descuentos</span>
+                  {/* IVA %/Envío % (punto 2 de la ronda de ajustes): menos padding horizontal
+                      (`px-1` en vez de `px-2`) y sin `tracking-wider` sólo en estas dos columnas
+                      angostas, para ganar el ancho que "Envío %" (7 caracteres) necesita para
+                      entrar en una sola línea — antes envolvía en dos ("Envío" arriba, "%" abajo).
+                      `whitespace-nowrap` como garantía dura: si el cálculo de ancho quedara corto
+                      por un puñado de píxeles en algún viewport, el texto se recorta visualmente
+                      contra el borde de la columna vecina en vez de volver a partirse en dos
+                      líneas — muy preferible. Ancho de columna 56/64 en vez de 60/60 (ver
+                      GRID_COLS): la suma no cambió, sólo se le sacaron 4px a IVA (le sobraba) para
+                      dárselos a Envío. */}
+                  <span className="px-1 py-1.5 text-xs font-bold text-gray-700 uppercase text-right border-l border-gray-300 flex items-center justify-end whitespace-nowrap">IVA %</span>
+                  <span className="px-1 py-1.5 text-xs font-bold text-gray-700 uppercase text-right border-l border-gray-300 flex items-center justify-end whitespace-nowrap">Envío %</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right border-l border-gray-300 flex items-center justify-end">Costo total</span>
+                  <span aria-hidden="true" className="border-l border-gray-300" />
+                </div>
+
+                {items.map((it, idx) => (
+                  <FilaItemPedido
+                    key={it.lineaId}
+                    variant="grid"
+                    gridColsClass={gridColsClass}
+                    indice={idx + 1}
+                    {...propsFila(it)}
+                  />
                 ))}
               </div>
 
-              {/* Colapso mobile/tablet/laptop chica (Decisión 6, breakpoint `xl` — ver comentario de
-                  arriba): mismas filas, tarjeta apilada — nunca visible al mismo tiempo que la
-                  grilla. */}
-              <div className="xl:hidden divide-y divide-gray-100">
+              {/* Colapso mobile/tablet/laptop chica (Decisión 6 del change anterior, breakpoint
+                  `xl` — ver comentario de arriba): mismas filas, tarjeta apilada — nunca visible al
+                  mismo tiempo que la grilla. */}
+              <div className="xl:hidden flex flex-col gap-3">
                 {items.map((it) => (
                   <FilaItemPedido key={it.lineaId} variant="card" {...propsFila(it)} />
                 ))}

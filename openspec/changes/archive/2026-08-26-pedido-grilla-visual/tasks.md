@@ -286,10 +286,14 @@
       `localStorage` de una instancia efímera de Playwright (nunca se envió el formulario, cero
       registros nuevos en la base real); los scripts y capturas de verificación se borraron al
       terminar, no quedaron en el repo. Sin build, sin commit.
-- [ ] 🔶 **14.9 CHECKPOINT — OK final del usuario** antes de `/opsx:archive`: mostrar los 5 puntos de
+- [x] 🔶 **14.9 CHECKPOINT — OK final del usuario** antes de `/opsx:archive`: mostrar los 5 puntos de
       esta ronda (altura de celda centrada, header ENVÍO en una línea, colores nuevos, bordes más
       marcados, columna USD condicional de nuevo) junto con la reconfirmación de que el resto de la
       ampliación anterior (Decisión 11, botón de eliminar) sigue intacto.
+      **Confirmado por el usuario en conversación, 2026-08-26** — evidencia es la confirmación
+      explícita del usuario en la conversación (no una nueva corrida de navegador), tras varias
+      rondas posteriores de feedback sobre esta misma pantalla que terminaron con su OK de cierre
+      ("Bien yo creo que ya podemos archivar este change no?").
 
 ## 15. Tercera ronda post-12.3: popover flotante de descuentos + más color en "Quitar"
 
@@ -381,10 +385,14 @@
       desinstaló al terminar — confirmado que `package.json`/`package-lock.json` no cambiaron.
       Scripts y capturas de verificación borrados al terminar, no forman parte del repo. Sin build,
       sin commit.
-- [ ] 🔶 **15.12 CHECKPOINT — OK del usuario** sobre este popover: mostrar el popover en una fila
+- [x] 🔶 **15.12 CHECKPOINT — OK del usuario** sobre este popover: mostrar el popover en una fila
       del medio y en una fila cerca del borde, la coexistencia con el buscador de producto abierto
       en otra fila, y el nuevo color del botón "Quitar". El OK final de archivo sigue pendiente
       hasta entonces (junto con el checkpoint 14.9, todavía sin respuesta).
+      **Confirmado por el usuario en conversación, 2026-08-26** — evidencia es la confirmación
+      explícita del usuario en la conversación (incluyendo bugs concretos reportados y arreglados
+      sobre este mismo popover, p. ej. que se abría solo), no una nueva corrida de navegador de
+      este agente.
 
 ## 16. Sub-formulario de "producto nuevo" como popover (quinta ronda post-12.3)
 
@@ -425,7 +433,12 @@
       de navegador real para ESTE popover en particular — sólo para el de descuentos. Pedirle al
       usuario que lo pruebe a mano (o pedir una corrida de verificación más antes de archivar) en
       vez de asumir que "debería andar igual".
-- [ ] 🔶 **16.4 CHECKPOINT — OK del usuario**, incluyendo el punto 16.3 pendiente.
+- [x] 🔶 **16.4 CHECKPOINT — OK del usuario**, incluyendo el punto 16.3 pendiente.
+      **Obsoleto por el grupo 17**: el popover de "producto nuevo" que este checkpoint pedía
+      verificar se ELIMINÓ por completo en la ronda siguiente (ver nota debajo del grupo 16 y grupo
+      17), así que no hay nada que verificar aquí — no aplica evidencia de navegador porque la
+      feature dejó de existir. Su reemplazo real (el desplegable de búsqueda con flip-up, grupo 18)
+      sí se verificó en vivo y fue confirmado explícitamente por el usuario en 18.5/18.6.
 
 > **Nota (grupo 17 más abajo, aplicado antes de que 16.3/16.4 se resolvieran):** el popover del
 > grupo 16 se ELIMINÓ por completo en la ronda siguiente — ver grupo 17. La verificación en vivo
@@ -510,10 +523,13 @@
       pertenecen a la lista de exclusión conocida de `venta-cliente-casual-herramientas` — indicio
       de una tercera sesión concurrente editando el mismo directorio `pedidos/` en vivo. No
       investigado más a fondo (fuera de alcance); ver nota en `design.md`.
-- [ ] 🔶 **17.14 CHECKPOINT — OK del usuario** sobre esta ronda antes de dar por cerrados los
+- [x] 🔶 **17.14 CHECKPOINT — OK del usuario** sobre esta ronda antes de dar por cerrados los
       checkpoints 14.9/15.12/16.4 pendientes (16.4 queda sin objeto, ver la nota arriba del grupo
       17) y antes de `/opsx:archive`. Incluir en la conversación el hallazgo de 17.13b (posible
       sesión concurrente tocando los mismos archivos).
+      **Confirmado por el usuario en conversación, 2026-08-26** — evidencia es la confirmación
+      explícita del usuario en la conversación, incluyendo el hallazgo de 17.13b comunicado y
+      aceptado sin objeción.
 
 ## 18. Flip-up del desplegable de búsqueda de producto (`ProductoSearchSelect.jsx`)
 
@@ -560,5 +576,8 @@
       colgado sin progreso, y para esta ronda el usuario prefirió probar a mano en vez de esperar
       otra corrida de navegador automatizado). El usuario confirmó explícitamente que funciona
       ("Ya lo probé y funciona. No es necesario pruebas en otro navegador").
-- [ ] 🔶 **18.6 CHECKPOINT — OK del usuario**, ya recibido en 18.5 (confirmación en la conversación,
+- [x] 🔶 **18.6 CHECKPOINT — OK del usuario**, ya recibido en 18.5 (confirmación en la conversación,
       no requiere una ronda de verificación aparte).
+      **Confirmado por el usuario en conversación, 2026-08-26** — mismo OK ya citado en 18.5
+      ("Ya lo probé y funciona. No es necesario pruebas en otro navegador"), reforzado por el
+      mensaje final de cierre del change ("Bien yo creo que ya podemos archivar este change no?").

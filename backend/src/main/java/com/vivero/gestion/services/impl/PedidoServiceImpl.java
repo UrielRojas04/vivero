@@ -168,19 +168,25 @@ public class PedidoServiceImpl implements PedidoService {
     // grupo 13: creación diferida de producto nuevo, reemplaza la Decisión 3 original).
     //
     // Secuencia exacta acordada en el checkpoint de la tarea 6.5 (y confirmada de nuevo en 13.5
-    // para la extensión de producto pendiente):
+    // para la extensión de producto pendiente; REVISADA el 2026-08-26, fuera de OpenSpec, ver
+    // fix puntual más abajo en el cuerpo del método):
     //   1) Validar TODO primero, sin tocar nada (pedido, payload completo, cantidades válidas).
-    //   2) Por cada ítem con cantidadRecibida > 0:
-    //        2a) Si detalle.getProducto() == null (línea "pendiente de crear"): crear el
+    //   2) Por cada ítem del pedido, SIN IMPORTAR cantidadRecibida:
+    //        2a) Si detalle.getProducto() == null (línea "pendiente de crear"): crear SIEMPRE el
     //            Producto reutilizando ProductoService.crearProducto() (nombre/precio de la
     //            línea, stock=0, unidadNegocio = la del contexto activo — ya genera su propio
-    //            AJUSTE_INICIAL) y enlazarlo con detalle.setProducto(...). Si cantidadRecibida
-    //            es 0, esta línea NO se toca: no se crea Producto ni movimiento (tarea 13.7).
-    //        2b) A partir de ahí, MISMO bloque de ingreso que para un producto existente, sin
-    //            distinguir camino (tarea 13.6):
+    //            AJUSTE_INICIAL de cantidad 0) y enlazarlo con detalle.setProducto(...). Esto pasa
+    //            SIEMPRE para una línea pendiente, incluso con cantidadRecibida == 0 (el
+    //            proveedor no mandó ese ítem): el producto igual nace en el catálogo, con
+    //            stock 0 — antes (tarea 13.7 original) esta línea no se tocaba en absoluto si
+    //            recibida era 0, lo que hacía que el Producto jamás naciera, en silencio.
+    //   2b) SÓLO si cantidadRecibida > 0 (línea pendiente recién creada arriba, o línea de
+    //       producto ya existente — mismo bloque de ingreso, sin distinguir camino, tarea 13.6):
     //              producto.setStock(stock + recibida)
     //              movimientoStockService.registrarMovimiento(producto, recibida, INGRESO,
     //                                                           usuario, detalle.getCostoUnitarioPactado())
+    //       Si recibida == 0, este bloque NO corre para ninguna línea (pendiente o existente): no
+    //       hay stock físico que respalde un MovimientoStock ni una CapaCostoStock.
     //   3) Calcular el estado resultante (COMPLETO/PARCIAL) a partir de las cantidades reales.
     //   4) Setear fechaRecepcion.
     // Todo dentro de esta única transacción, sin REQUIRES_NEW ni flush() intermedio (tarea 13.8):
@@ -248,61 +254,72 @@ public class PedidoServiceImpl implements PedidoService {
             Integer recibida = cantidadPorDetalle.get(detalle.getId());
             detalle.setCantidadRecibida(recibida);
 
-            if (recibida > 0) {
-                // Línea "pendiente de crear" (tarea 13.6): el Producto real nace acá, recién
-                // ahora que se sabe que efectivamente llegó algo. A partir de este punto no hay
-                // distinción de camino con un producto existente — mismo bloque de ingreso abajo.
-                if (detalle.getProducto() == null) {
-                    // Revisión puntual del 2026-08-20 (post-mortem de la Decisión original de la
-                    // misma fecha, fuera de OpenSpec): el usuario NO decide el precio de venta al
-                    // armar el pedido — eso sigue firme — pero dejar porcentajeGanancia en null
-                    // hacía que el producto naciera con precio == costo crudo (margen 0%), que el
-                    // usuario reportó como incorrecto ("el precio de venta no lo decido al hacer
-                    // el pedido, pero tampoco quiero que nazca sin margen"). Ahora nace con un %
-                    // de ganancia por defecto (30, ver Problema 4 de la tanda de fixes) para que
-                    // calcularPrecioSiAplica() (llamado dentro de crearProducto()) calcule el
-                    // precio real desde el arranque — costo × 1.30 con IVA/envío/descuentos ya
-                    // aplicados — en vez de dejarlo pegado al costo. setPrecio(...) de acá abajo
-                    // sigue siendo sólo el placeholder pre-cálculo (Producto.precio es NOT NULL en
-                    // la base): calcularPrecioSiAplica lo pisa apenas porcentajeGanancia > 0.
-                    //
-                    // Grupo 8 (tarea 8.6, Decisión 8 de design.md): el producto nace además con
-                    // los valores PACTADOS DE LA LÍNEA (iva/envío/descuento/moneda), NUNCA leyendo
-                    // el perfil del proveedor en ese momento — si el perfil del proveedor cambió
-                    // entre armar el pedido y confirmar la recepción, gana lo que quedó congelado
-                    // en la línea (tarea 8.11). ⚠️ ivaPactadoPorcentaje viaja tal cual (incluido 0
-                    // explícito cuando el proveedor tiene IVA incluido — tarea 8.2): nunca se
-                    // convierte a null, porque null heredaría el 21% de la unidad de negocio.
-                    ProductoDTO nuevoProductoDTO = new ProductoDTO();
-                    nuevoProductoDTO.setNombre(detalle.getProductoNombreNuevo());
-                    nuevoProductoDTO.setCostoProducto(detalle.getCostoUnitarioPactado());
-                    nuevoProductoDTO.setPrecio(detalle.getCostoUnitarioPactado());
-                    nuevoProductoDTO.setPorcentajeGanancia(ProductoServiceImpl.PORCENTAJE_GANANCIA_DEFECTO);
-                    nuevoProductoDTO.setStock(0);
-                    nuevoProductoDTO.setIvaPorcentaje(detalle.getIvaPactadoPorcentaje());
-                    nuevoProductoDTO.setCostoEnvioPorcentaje(detalle.getEnvioPactadoPorcentaje());
-                    nuevoProductoDTO.setMonedaCosto(detalle.getMonedaLinea());
-                    if (detalle.getDescuentoPactadoPorcentaje() != null
-                            && detalle.getDescuentoPactadoPorcentaje().compareTo(BigDecimal.ZERO) > 0) {
-                        // Único descuento colapsado de la línea, mismo criterio que la migración
-                        // de la OQ1 (todas las filas migradas quedan con un único descuento
-                        // "Proveedor") — el desglose original (si el proveedor tenía más de un
-                        // descuento) sólo sobrevive como texto en descuentoPactadoDetalle.
-                        nuevoProductoDTO.setDescuentos(List.of(
-                                new ProductoDescuentoDTO("Proveedor", detalle.getDescuentoPactadoPorcentaje())));
-                    }
-                    // Grupo 9 (tarea 8.6/9.2): el producto nace con el proveedor DEL PEDIDO, ya
-                    // que Producto.proveedor existe. Puede ser null si el pedido no tiene
-                    // proveedor asignado (caso hoy inexistente en el flujo normal, pero sin
-                    // romper si pasara) — mismo criterio de nullability que el resto del campo.
-                    if (pedido.getProveedor() != null) {
-                        nuevoProductoDTO.setProveedorId(pedido.getProveedor().getId());
-                    }
-                    ProductoDTO creado = productoService.crearProducto(nuevoProductoDTO);
-                    Producto productoCreado = productoRepository.getReferenceById(creado.getId());
-                    detalle.setProducto(productoCreado);
+            // Fix puntual del 2026-08-26 (pedido explícito del usuario, fuera de OpenSpec): antes
+            // esta creación vivía DENTRO del "if (recibida > 0)" de más abajo — si el proveedor no
+            // mandó un ítem "pendiente de crear" y se confirmaba la recepción con cantidad 0 para
+            // esa línea, el Producto NUNCA nacía, sin ningún error visible (fallaba en silencio:
+            // el usuario esperaba ver el producto en el catálogo con stock 0 y no aparecía). Ahora
+            // la creación de la FICHA del producto es incondicional para toda línea "pendiente"
+            // (detalle.getProducto() == null), pase lo que pase con recibida — nace con stock=0
+            // (nuevoProductoDTO.setStock(0) más abajo) — mientras que el INGRESO físico de stock
+            // (bloque siguiente: producto.setStock(+recibida) + movimientoStockService + eventual
+            // CapaCostoStock) se sigue disparando sólo si recibida > 0, sin cambios: si no llegó
+            // nada, no hay stock físico que respalde un movimiento ni una capa de costo.
+            if (detalle.getProducto() == null) {
+                // Línea "pendiente de crear" (tarea 13.6): el Producto real nace acá, recién ahora
+                // que se confirma la recepción (llegue o no llegue stock).
+                //
+                // Revisión puntual del 2026-08-20 (post-mortem de la Decisión original de la
+                // misma fecha, fuera de OpenSpec): el usuario NO decide el precio de venta al
+                // armar el pedido — eso sigue firme — pero dejar porcentajeGanancia en null
+                // hacía que el producto naciera con precio == costo crudo (margen 0%), que el
+                // usuario reportó como incorrecto ("el precio de venta no lo decido al hacer
+                // el pedido, pero tampoco quiero que nazca sin margen"). Ahora nace con un %
+                // de ganancia por defecto (30, ver Problema 4 de la tanda de fixes) para que
+                // calcularPrecioSiAplica() (llamado dentro de crearProducto()) calcule el
+                // precio real desde el arranque — costo × 1.30 con IVA/envío/descuentos ya
+                // aplicados — en vez de dejarlo pegado al costo. setPrecio(...) de acá abajo
+                // sigue siendo sólo el placeholder pre-cálculo (Producto.precio es NOT NULL en
+                // la base): calcularPrecioSiAplica lo pisa apenas porcentajeGanancia > 0.
+                //
+                // Grupo 8 (tarea 8.6, Decisión 8 de design.md): el producto nace además con
+                // los valores PACTADOS DE LA LÍNEA (iva/envío/descuento/moneda), NUNCA leyendo
+                // el perfil del proveedor en ese momento — si el perfil del proveedor cambió
+                // entre armar el pedido y confirmar la recepción, gana lo que quedó congelado
+                // en la línea (tarea 8.11). ⚠️ ivaPactadoPorcentaje viaja tal cual (incluido 0
+                // explícito cuando el proveedor tiene IVA incluido — tarea 8.2): nunca se
+                // convierte a null, porque null heredaría el 21% de la unidad de negocio.
+                ProductoDTO nuevoProductoDTO = new ProductoDTO();
+                nuevoProductoDTO.setNombre(detalle.getProductoNombreNuevo());
+                nuevoProductoDTO.setCostoProducto(detalle.getCostoUnitarioPactado());
+                nuevoProductoDTO.setPrecio(detalle.getCostoUnitarioPactado());
+                nuevoProductoDTO.setPorcentajeGanancia(ProductoServiceImpl.PORCENTAJE_GANANCIA_DEFECTO);
+                nuevoProductoDTO.setStock(0);
+                nuevoProductoDTO.setIvaPorcentaje(detalle.getIvaPactadoPorcentaje());
+                nuevoProductoDTO.setCostoEnvioPorcentaje(detalle.getEnvioPactadoPorcentaje());
+                nuevoProductoDTO.setMonedaCosto(detalle.getMonedaLinea());
+                if (detalle.getDescuentoPactadoPorcentaje() != null
+                        && detalle.getDescuentoPactadoPorcentaje().compareTo(BigDecimal.ZERO) > 0) {
+                    // Único descuento colapsado de la línea, mismo criterio que la migración
+                    // de la OQ1 (todas las filas migradas quedan con un único descuento
+                    // "Proveedor") — el desglose original (si el proveedor tenía más de un
+                    // descuento) sólo sobrevive como texto en descuentoPactadoDetalle.
+                    nuevoProductoDTO.setDescuentos(List.of(
+                            new ProductoDescuentoDTO("Proveedor", detalle.getDescuentoPactadoPorcentaje())));
                 }
+                // Grupo 9 (tarea 8.6/9.2): el producto nace con el proveedor DEL PEDIDO, ya
+                // que Producto.proveedor existe. Puede ser null si el pedido no tiene
+                // proveedor asignado (caso hoy inexistente en el flujo normal, pero sin
+                // romper si pasara) — mismo criterio de nullability que el resto del campo.
+                if (pedido.getProveedor() != null) {
+                    nuevoProductoDTO.setProveedorId(pedido.getProveedor().getId());
+                }
+                ProductoDTO creado = productoService.crearProducto(nuevoProductoDTO);
+                Producto productoCreado = productoRepository.getReferenceById(creado.getId());
+                detalle.setProducto(productoCreado);
+            }
 
+            if (recibida > 0) {
                 Producto producto = detalle.getProducto();
                 int stockActual = producto.getStock() != null ? producto.getStock() : 0;
                 producto.setStock(stockActual + recibida);

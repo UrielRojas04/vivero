@@ -32,15 +32,27 @@ const CeldaDescuentos = ({
   const chips = hayDescuentos ? (
     <span className="flex items-center gap-1 min-w-0 overflow-hidden">
       {descuentos.map((d, i) => (
+        // Chip partido en dos <span> (pedido-grilla-visual, tarea 4.4): el nombre trunca
+        // (`truncate min-w-0`), el porcentaje es `shrink-0` y NUNCA se trunca — es el dato, el
+        // nombre es la etiqueta. Antes `max-w-[110px] truncate` sobre el texto completo se comía
+        // el "%" a 1366px y se leía "Volumen" a secas.
+        //
+        // Color (ronda de ajustes post-12.3, punto 3a — "dale color a las etiquetas de
+        // descuentos"): `bg-gray-100 text-gray-600` (neutro) pasa a `bg-emerald-50 text-emerald-700`
+        // — no es un color inventado para esta pantalla: es el mismo par que ya usa la app para un
+        // badge de "condición del proveedor" en `Proveedores.jsx` (`PerfilBadges`, badge "USD"),
+        // así que un descuento pactado se lee con el mismo lenguaje que el resto del sistema usa
+        // para "atributo positivo/activo".
         <span
           key={i}
-          className="shrink-0 max-w-[110px] truncate px-1.5 py-0.5 rounded-full bg-gray-100 text-[10px] font-medium text-gray-600"
+          className="shrink-0 flex items-center gap-0.5 max-w-[110px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-[11px] font-medium text-emerald-700"
         >
-          {d.nombre} {parseFloat(d.porcentaje)}%
+          <span className="truncate min-w-0">{d.nombre}</span>
+          <span className="shrink-0">{parseFloat(d.porcentaje)}%</span>
         </span>
       ))}
       {efectivoPorcentaje != null && (
-        <span className="shrink-0 text-[10px] font-semibold text-emerald-700">
+        <span className="shrink-0 text-[11px] font-semibold text-emerald-700">
           (-{efectivoPorcentaje.toLocaleString('es-AR', { maximumFractionDigits: 2 })}%)
         </span>
       )}

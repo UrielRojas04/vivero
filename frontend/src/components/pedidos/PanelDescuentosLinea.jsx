@@ -17,23 +17,33 @@ import FormattedNumberInput from '../FormattedNumberInput';
 // casos: para una línea existente pisa lo precargado de la ficha con los defaults del proveedor,
 // que puede ser justo lo que el usuario quiere si el proveedor cambió sus condiciones (mismo botón,
 // mismo criterio que ya vale para IVA/envío en esa misma línea).
+//
+// Contenedor (pedido-grilla-visual, ronda posterior al checkpoint 12.3): en variant="grid" de
+// FilaItemPedido.jsx este componente ya no se renderiza inline como sub-fila — su contenedor
+// padre es un popover flotante (`position: fixed`, ver `panelDescuentosPopover` en
+// FilaItemPedido.jsx). Fondo sólido (`bg-white`, antes `bg-gray-50/70`) y `shadow-lg` en vez de
+// sin sombra: flotando por encima de otras filas necesita despegarse visualmente del contenido de
+// abajo, cosa que no hacía falta cuando vivía embebido en el flujo de la grilla. El borde sigue
+// siendo el mismo (`gray-200`→`gray-300` de la ronda anterior, "remarcá los bordes aun más") — en
+// variant="card" este mismo componente se sigue viendo inline, sin popover, y el fondo sólido +
+// sombra no molestan ahí tampoco (la tarjeta ya tiene su propio fondo blanco).
 const PanelDescuentosLinea = ({ descuentos, error, onAgregar, onQuitar, onActualizar, onRecargarDefaultsProveedor }) => (
-  <div className="pt-2 pb-3 px-3 bg-gray-50/70 border border-gray-100 rounded-lg">
+  <div className="pt-2 pb-3 px-3 bg-white border border-gray-300 rounded-lg shadow-lg">
     <div className="flex items-center justify-between">
-      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Descuentos pactados</label>
+      <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Descuentos pactados</label>
       <div className="flex items-center gap-2.5">
         <button
           type="button"
           onClick={onRecargarDefaultsProveedor}
           title="Volver a traer IVA/envío/descuentos por defecto del proveedor (por si cambiaron después de seleccionarlo)"
-          className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 cursor-pointer"
+          className="flex items-center gap-0.5 text-[11px] font-semibold text-gray-500 hover:text-gray-700 cursor-pointer"
         >
           <RefreshCw className="w-3 h-3" /> Recargar del proveedor
         </button>
         <button
           type="button"
           onClick={onAgregar}
-          className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer"
+          className="flex items-center gap-0.5 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer"
         >
           <Plus className="w-3 h-3" /> Agregar
         </button>
@@ -72,7 +82,7 @@ const PanelDescuentosLinea = ({ descuentos, error, onAgregar, onQuitar, onActual
         ))}
       </div>
     )}
-    {error && <p className="mt-1 text-[10px] text-red-500 leading-tight">{error}</p>}
+    {error && <p className="mt-1 text-[11px] text-red-500 leading-tight">{error}</p>}
   </div>
 );
 
