@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, X, Plus, Trash2, PackagePlus, Search, Sparkles, DollarSign, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, PackageSearch, AlertTriangle } from 'lucide-react';
 import FormattedNumberInput from '../components/FormattedNumberInput';
 import { proveedoresApi } from '../api/proveedores.api';
 import { productosApi } from '../api/productos.api';
@@ -10,13 +10,62 @@ import { negociosApi } from '../api/negocios.api';
 import { useUIStore } from '../store/useUIStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { calcularCosto, resolverEfectivo } from '../utils/costeo';
+import { resolverEfectivo } from '../utils/costeo';
+import { costoFinalDeLinea } from '../utils/pedidoCosteo';
+import FilaItemPedido from '../components/pedidos/FilaItemPedido';
+
+// Plantilla de columnas de la grilla de ítems (change pedido-planilla-editable, grupo 3 —
+// Decisión 2 de design.md): se define UNA SOLA VEZ, a nivel de módulo, y la comparten la fila de
+// encabezados y todas las filas de ítem (`FilaItemPedido`, variant="grid") — así nunca pueden
+// desalinearse entre sí. Orden: producto · cant · [USD] · costo unit. · descuentos · IVA% ·
+// envío% · total · quitar. La columna USD sólo existe si el proveedor elegido maneja dólares
+// (Decisión 2: es una decisión de PROVEEDOR, nunca por fila — la plantilla entera cambia, no una
+// celda suelta).
+const GRID_COLS = 'grid-cols-[minmax(200px,2.2fr)_84px_110px_minmax(170px,1.1fr)_76px_76px_120px_40px]';
+const GRID_COLS_USD = 'grid-cols-[minmax(200px,2.2fr)_84px_56px_110px_minmax(170px,1.1fr)_76px_76px_120px_40px]';
 
 const generarIdLinea = () => (
   typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `linea-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 );
+
+const BORRADOR_KEY = 'pedido-nuevo-borrador';
+
+// Persistencia del borrador en localStorage (pedido puntual del usuario, 2026-08-25): el pedido que
+// se está armando no debe perderse si el usuario recarga la página (F5) o navega a otra sección y
+// vuelve. Se guarda SOLO el estado que compone al pedido en sí (proveedor, ítems, cotización,
+// observaciones) — nunca estado transitorio de UI (combobox de búsqueda abierto, texto a medio
+// tipear en el sub-formulario de "crear producto nuevo", errores de validación, isSubmitting), que
+// no tiene sentido que sobreviva a un F5. Todo acceso a localStorage va envuelto en try/catch: en
+// modo incógnito estricto o con la cuota llena puede tirar — el borrador es una comodidad, nunca
+// debe romper la página si falla.
+const cargarBorrador = () => {
+  try {
+    const raw = localStorage.getItem(BORRADOR_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const guardarBorrador = (borrador) => {
+  try {
+    localStorage.setItem(BORRADOR_KEY, JSON.stringify(borrador));
+  } catch {
+    // Silencioso a propósito: el borrador es una comodidad, no una garantía.
+  }
+};
+
+const limpiarBorrador = () => {
+  try {
+    localStorage.removeItem(BORRADOR_KEY);
+  } catch {
+    // Silencioso a propósito, mismo criterio que guardarBorrador.
+  }
+};
 
 // Colapsa una lista de descuentos ({porcentaje, ...}) en un único porcentaje efectivo (cascada:
 // producto de factores, mismo criterio que CostoCalculator/costeo.js). Se usa en DOS momentos
@@ -122,197 +171,21 @@ const formatAntiguedad = (fechaIso) => {
   return `hace ${dias} días`;
 };
 
-// Combobox de búsqueda de producto para una línea del pedido (grupo 12, pedido puntual
-// post-apply del usuario: reemplaza el <select> nativo, incómodo con catálogos grandes).
-// Sigue el estilo visual del buscador de productos de NuevaVenta.jsx (icono Search, input
-// con pl-10, lista de resultados filtrados debajo), pero cada línea tiene su PROPIO estado
-// de búsqueda — no hay un buscador global compartido. Definido a nivel de módulo (no anidado
-// dentro de PedidoNuevo) para que su estado interno no se resetee en cada render del padre.
-// No reimplementa selección/alta: delega en `onSelect` (que en PedidoNuevo es `seleccionarProducto`).
-//
-// Fix de desborde (rediseño página completa, 2026-08-20): el nombre de producto ahora SIEMPRE
-// trunca con ellipsis en vez de empujar el layout. La causa real del bug del modal viejo era que
-// el <span> del nombre no tenía min-w-0 — en un flex row los hijos no se achican por debajo de su
-// ancho de contenido (min-width:auto por default), así que `truncate` nunca llegaba a aplicarse
-// y el botón (y sus ancestros) se estiraban para acomodar el texto completo. Acá se agrega
-// min-w-0 explícito en el span truncado y un `title` nativo con el nombre completo.
-const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoNombreNuevo, onSelect, hasError }) => {
-  const [busqueda, setBusqueda] = useState('');
-  const [editando, setEditando] = useState(false);
-
-  const esPendiente = !productoId && !!productoNombreNuevo;
-  const buscando = editando || (!productoId && !esPendiente);
-
-  const abrirBusqueda = () => {
-    setBusqueda('');
-    setEditando(true);
-  };
-
-  const handleSeleccionar = (id) => {
-    onSelect(id, busqueda);
-    setBusqueda('');
-    setEditando(false);
-  };
-
-  const filtrados = busqueda
-    ? productos.filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
-    : productos;
-
-  if (!buscando) {
-    if (esPendiente) {
-      // Grupo 13: el producto NO existe todavía en el catálogo. Tratamiento sobrio (rediseño
-      // 2026-08-20): el botón ya NO es una tarjeta amarilla entera — fondo/borde neutros, la
-      // única señal de color es el badge chico "Nuevo", igual que para cualquier otra línea.
-      return (
-        <button
-          type="button"
-          onClick={abrirBusqueda}
-          title={productoNombreNuevo}
-          className={`w-full min-w-0 px-3 py-2 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-left flex items-center justify-between gap-2 cursor-pointer hover:border-emerald-300 transition-colors ${
-            hasError ? 'border-red-300' : 'border-gray-200'
-          }`}
-        >
-          <span className="flex items-center gap-1.5 min-w-0">
-            <span className="truncate min-w-0 text-gray-800">{productoNombreNuevo}</span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 rounded-full px-1.5 py-0.5 shrink-0">
-              <Sparkles className="w-2.5 h-2.5" />
-              Nuevo
-            </span>
-          </span>
-          <span className="text-xs font-medium text-emerald-600 shrink-0">Cambiar</span>
-        </button>
-      );
-    }
-    return (
-      <button
-        type="button"
-        onClick={abrirBusqueda}
-        title={productoNombre}
-        className={`w-full min-w-0 px-3 py-2 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-left flex items-center justify-between gap-2 cursor-pointer hover:border-emerald-300 transition-colors ${
-          hasError ? 'border-red-300' : 'border-gray-200'
-        }`}
-      >
-        <span className="truncate min-w-0">{productoNombre}</span>
-        <span className="text-xs font-medium text-emerald-600 shrink-0">Cambiar</span>
-      </button>
-    );
-  }
-
-  return (
-    <div>
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-400" />
-        </div>
-        <input
-          type="text"
-          autoFocus
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar producto..."
-          className={`w-full pl-8 pr-8 py-2 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${
-            hasError ? 'border-red-300' : 'border-gray-200'
-          }`}
-        />
-        {(productoId || esPendiente) && (
-          <button
-            type="button"
-            onClick={() => setEditando(false)}
-            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
-            title="Cancelar búsqueda"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {busqueda && (
-        <div className="mt-1 max-h-40 overflow-y-auto border border-gray-200 rounded-lg bg-white shadow-sm divide-y divide-gray-50">
-          {filtrados.length > 0 ? (
-            filtrados.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => handleSeleccionar(p.id)}
-                className="px-3 py-2 text-sm hover:bg-emerald-50 cursor-pointer flex items-center justify-between gap-2"
-              >
-                <span className="truncate min-w-0">{p.nombre}</span>
-                <span className="text-xs text-gray-400 shrink-0">stock: {p.stock}</span>
-              </div>
-            ))
-          ) : (
-            <p className="px-3 py-2 text-xs text-gray-400">No se encontraron productos.</p>
-          )}
-          <div
-            onClick={() => handleSeleccionar('__nuevo__')}
-            className="px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 cursor-pointer"
-          >
-            + Crear producto nuevo…
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 // Página de alta de pedido a proveedor (rediseño 2026-08-20, reemplaza el modal PedidoForm):
 // proveedor, ítems (producto existente o creado en el momento con stock 0 — Decisión 3), cantidad
 // y costo unitario pactado por ítem, con total en vivo. Extendido por config-costeo-por-proveedor
 // (grupos 7/8 de tasks.md) con moneda por línea, cotización del pedido y precarga del perfil de
-// costeo del proveedor. Mismo comportamiento funcional que el modal anterior — sólo cambia la
-// presentación: página completa en vez de modal (más ancho para la tabla de ítems, que era
-// justamente lo que faltaba) y un lenguaje visual más sobrio (menos bordes/colores por ítem,
-// jerarquía por tipografía y espaciado).
-// Bloque de solo lectura ("Configuración actual del producto") para una línea de pedido cuyo
-// producto YA EXISTE en el catálogo (arreglo 2026-08-21, Decisión OQ3 de config-costeo-por-
-// proveedor: "el proveedor no es una tercera capa de fallback en vivo"). Un producto existente se
-// rige por SU PROPIA configuración ya cargada en ProductoForm.jsx (sus propios descuentos, IVA,
-// envío) — nunca por los defaults del proveedor del pedido. Este bloque sólo la HACE VISIBLE acá,
-// de solo lectura (sin inputs): no la gobierna, no la edita. Usa el mismo calcularCosto/
-// resolverEfectivo que ProductoForm.jsx (sin conversión de moneda — mismo criterio que el
-// desglose en vivo de ProductoForm, que tampoco convierte) para que el costo final coincida al
-// centavo con lo que ProductoForm ya muestra para ese producto y con CostoCalculator en backend.
-const ConfiguracionProductoExistente = ({ producto, ivaDefaultUnidad, costoEnvioDefaultUnidad }) => {
-  if (!producto) return null;
-
-  const ivaEfectivo = resolverEfectivo(producto.ivaPorcentaje, ivaDefaultUnidad);
-  const envioEfectivo = resolverEfectivo(producto.costoEnvioPorcentaje, costoEnvioDefaultUnidad);
-  const ivaHereda = producto.ivaPorcentaje === null || producto.ivaPorcentaje === undefined;
-  const envioHereda = producto.costoEnvioPorcentaje === null || producto.costoEnvioPorcentaje === undefined;
-  const porcentajesDescuento = (producto.descuentos || [])
-    .map((d) => (d.porcentaje !== null && d.porcentaje !== undefined && d.porcentaje !== '' ? parseFloat(d.porcentaje) : NaN))
-    .filter((p) => !Number.isNaN(p));
-  const costoBase = producto.costoProducto ? parseFloat(producto.costoProducto) : 0;
-  const desglose = calcularCosto(costoBase, porcentajesDescuento, ivaEfectivo, envioEfectivo);
-
-  return (
-    <div className="mt-2 text-[11px] text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5 space-y-0.5">
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-        Configuración actual del producto (no editable acá — se gobierna desde Productos)
-      </p>
-      {producto.descuentos && producto.descuentos.length > 0 ? (
-        <p>
-          Descuentos: {producto.descuentos.map((d) => `${d.nombre} ${parseFloat(d.porcentaje).toFixed(2)}%`).join('; ')}
-        </p>
-      ) : (
-        <p className="italic text-gray-400">Sin descuentos cargados.</p>
-      )}
-      <p>
-        IVA: <span className="font-semibold text-gray-700">{ivaEfectivo}%</span>
-        {ivaHereda && <span className="text-gray-400"> (hereda de la unidad)</span>}
-      </p>
-      <p>
-        Envío: <span className="font-semibold text-gray-700">{envioEfectivo}%</span>
-        {envioHereda && <span className="text-gray-400"> (hereda de la unidad)</span>}
-      </p>
-      <p>
-        Costo final: <span className="font-semibold text-gray-800">
-          ${desglose.costoFinal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
-        {' '}<span className="text-gray-400">({producto.monedaCosto || 'ARS'})</span>
-      </p>
-    </div>
-  );
-};
+// costeo del proveedor.
+//
+// Rediseño a grilla tipo planilla (change pedido-planilla-editable, grupo 2-3, design.md
+// Decisiones 2/3/8): `ProductoSearchSelect` (grupo 12) y `TablaCosteoProductoExistente` (reapertura
+// puntual de la Decisión 6, 2026-08-25) vivían acá adentro. `ProductoSearchSelect` se extrajo tal
+// cual a `components/pedidos/ProductoSearchSelect.jsx` (tarea 2.2, misma API). El bloque de ítems
+// se reescribió como grilla CSS Grid (`FilaItemPedido` en `components/pedidos/`, tarea 3.4);
+// `TablaCosteoProductoExistente` se eliminó (tarea 3.13): sus cuatro columnas (Costo unit. · IVA %
+// · Envío % · Costo final) son ahora columnas de la grilla principal, con el mismo cálculo único
+// (`costoFinalDeLinea`/`desgloseDeLinea` de utils/pedidoCosteo.js) y el mismo aviso de auto-ratchet
+// conservado dentro de `FilaItemPedido`.
 
 const PedidoNuevo = () => {
   const navigate = useNavigate();
@@ -320,16 +193,51 @@ const PedidoNuevo = () => {
   const { pushToast } = useUIStore();
   const { unidadNegocioActiva } = useAuthStore();
 
-  const [proveedorId, setProveedorId] = useState('');
-  const [observaciones, setObservaciones] = useState('');
-  const [items, setItems] = useState([lineaVacia()]);
+  // Restauración del borrador (ver cargarBorrador arriba): si hay un borrador guardado en
+  // localStorage, arranca desde ahí en vez de vacío. Los inicializadores son funciones (lazy
+  // initial state) para que cargarBorrador() sólo corra una vez, en el primer render.
+  const [proveedorId, setProveedorId] = useState(() => cargarBorrador()?.proveedorId ?? '');
+  const [observaciones, setObservaciones] = useState(() => cargarBorrador()?.observaciones ?? '');
+  // Gate de proveedor obligatorio (change pedido-planilla-editable, grupo 5 — Decisión 7 de
+  // design.md): el estado inicial de `items` ya NO es `[lineaVacia()]` — arranca vacío cuando no
+  // hay proveedor (caso normal, entrada limpia). La primera fila se crea recién al elegir
+  // proveedor (ver el useEffect de precarga de defaults, más abajo). Único caso donde `items`
+  // arranca con contenido sin haber elegido proveedor todavía: un borrador viejo restaurado que
+  // se guardó ANTES de este gate — esos ítems NUNCA se descartan (Decisión 7), se muestran
+  // deshabilitados hasta que el usuario elija proveedor.
+  const [items, setItems] = useState(() => {
+    const borrador = cargarBorrador();
+    return Array.isArray(borrador?.items) && borrador.items.length > 0 ? borrador.items : [];
+  });
   // Cotización del dólar de ESTE pedido (grupo 7, tarea 7.2 — OQ2). SIEMPRE se pide de nuevo:
   // nace vacía al entrar a la página y sólo se sugiere un prellenado editable cuando aparece la
-  // primera línea en USD — nunca se aplica sola.
-  const [cotizacionDolar, setCotizacionDolar] = useState('');
-  const [cotizacionTocada, setCotizacionTocada] = useState(false);
+  // primera línea en USD — nunca se aplica sola. Excepción: si había un borrador con una
+  // cotización ya cargada por el propio usuario en esta sesión de armado, esa sí se restaura (no
+  // es el prellenado automático — es lo que el usuario ya había tipeado antes del F5).
+  const [cotizacionDolar, setCotizacionDolar] = useState(() => cargarBorrador()?.cotizacionDolar ?? '');
+  const [cotizacionTocada, setCotizacionTocada] = useState(() => cargarBorrador()?.cotizacionTocada ?? false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Evita que el useEffect de reset-por-cambio-de-proveedor (más abajo) pise el borrador recién
+  // restaurado: ese efecto corre también en el primer render (dispara con [proveedorId] apenas se
+  // monta), y sin este guard reemplazaría los ivaPactadoPorcentaje/envioPactadoPorcentaje/
+  // descuentosPactados/cotizacionDolar ya restaurados por los defaults "en blanco" del proveedor.
+  //
+  // Bug encontrado y corregido en el grupo 6 de este change (tarea 6.1, verificación de F5): la
+  // guarda ORIGINAL era un booleano consumido una sola vez (`useRef(true)` + "si true, poner en
+  // false y salir"). Bajo `React.StrictMode` (activo en `main.jsx`), React invoca cada efecto de
+  // montaje DOS veces en desarrollo para detectar código no idempotente — el `.current` del ref
+  // sobrevive esa doble invocación (es el mismo fiber, no un remount real), así que la PRIMERA
+  // invocación consumía la guarda (true→false) y la SEGUNDA (inmediata, antes de que
+  // `['proveedores']` siquiera resolviera) pasaba de largo y ejecutaba el reset de verdad —
+  // pisando el borrador recién restaurado con los defaults de `proveedorSeleccionado` (que en ese
+  // instante todavía era `null`, por eso el borrador quedaba con IVA/envío/descuentos en blanco
+  // después de cada F5, reproducido con Playwright contra el dev stack real). La guarda nueva
+  // compara el `proveedorId` ANTERIOR contra el actual (inicializada con el valor del primer
+  // render, restaurado o no) en vez de un flag que se consume para siempre: ambas invocaciones de
+  // StrictMode ven el mismo `proveedorId` sin cambios reales y saltean por igual — inmune a
+  // cuántas veces React decida invocar el efecto de montaje.
+  const proveedorIdAnteriorRef = useRef(proveedorId);
 
   // Sub-formulario de "producto pendiente de crear" (grupo 13 de tasks.md), abierto para una
   // línea puntual. Ya NO llama a la API: sólo captura el nombre y lo guarda en la línea local —
@@ -338,6 +246,33 @@ const PedidoNuevo = () => {
   // partir del costo pactado + % de ganancia.
   const [creandoParaLinea, setCreandoParaLinea] = useState(null);
   const [nuevoNombre, setNuevoNombre] = useState('');
+
+  // Estado de expansión de la sub-fila de descuentos (grupo 4, tarea 4.4 — Decisión 4 de
+  // design.md): un `Set` de `lineaId`, para que varias filas puedan estar abiertas a la vez.
+  // Deliberadamente NO se persiste en el borrador (ver el useEffect de guardado más abajo): es
+  // estado transitorio de UI, no del pedido — no tiene sentido que sobreviva a un F5.
+  const [lineasExpandidas, setLineasExpandidas] = useState(() => new Set());
+
+  const toggleExpansionLinea = (lineaId) => {
+    setLineasExpandidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(lineaId)) next.delete(lineaId); else next.add(lineaId);
+      return next;
+    });
+  };
+
+  // Auto-expandir (tarea 4.6): al presionar "+" en la celda de descuentos, y al confirmar una
+  // línea pendiente que ya trae descuentos por defecto del proveedor (ver
+  // confirmarProductoPendiente más abajo) — para compensar el clic extra que introduce la sub-fila
+  // expandible. No hace nada si la fila ya estaba expandida.
+  const expandirLinea = (lineaId) => {
+    setLineasExpandidas((prev) => {
+      if (prev.has(lineaId)) return prev;
+      const next = new Set(prev);
+      next.add(lineaId);
+      return next;
+    });
+  };
 
   const { data: proveedores = [] } = useQuery({
     queryKey: ['proveedores'],
@@ -364,6 +299,9 @@ const PedidoNuevo = () => {
   const manejaDolares = !!proveedorSeleccionado?.manejaDolares;
   const hayLineaUsd = items.some((it) => it.monedaLinea === 'USD');
   const antiguedadCotizacion = formatAntiguedad(proveedorSeleccionado?.fechaUltimaCotizacion);
+  // Plantilla de columnas de la grilla (tarea 3.2): la columna USD existe o no para la grilla
+  // entera, según el proveedor — nunca por fila.
+  const gridColsClass = manejaDolares ? GRID_COLS_USD : GRID_COLS;
 
   // Al elegir (o cambiar) el proveedor: precargar el perfil de costeo por defecto en todas las
   // líneas actuales (grupo 8, tarea 8.5), editable línea por línea a partir de acá. Si el
@@ -371,16 +309,29 @@ const PedidoNuevo = () => {
   // ARS. La cotización del pedido se resetea: es un dato de ESTE proveedor, nunca sobrevive a un
   // cambio de proveedor dentro del mismo formulario.
   useEffect(() => {
+    if (proveedorIdAnteriorRef.current === proveedorId) {
+      return;
+    }
+    proveedorIdAnteriorRef.current = proveedorId;
     const defaults = defaultsCosteoDesdeProveedor(proveedorSeleccionado);
-    setItems((prev) => prev.map((it) => ({
-      ...it,
-      monedaLinea: proveedorSeleccionado?.manejaDolares ? it.monedaLinea : 'ARS',
-      ivaPactadoPorcentaje: defaults.ivaPactadoPorcentaje,
-      envioPactadoPorcentaje: defaults.envioPactadoPorcentaje,
-      // Copia una nueva instancia de array por línea (nunca la misma referencia compartida entre
-      // ítems: cada línea edita su propia lista de descuentos sin pisar la de las demás).
-      descuentosPactados: defaults.descuentosPactados.map((d) => ({ ...d })),
-    })));
+    setItems((prev) => {
+      // Gate de proveedor (grupo 5, tarea 5.1): caso normal — no había ítems (entrada limpia sin
+      // proveedor todavía) — elegir proveedor crea la primera fila en vez de dejar la grilla
+      // vacía. Si `prev` ya tenía ítems (borrador restaurado con o sin proveedor previo), se
+      // preserva la rama de abajo tal cual estaba: precargar los defaults en cada línea.
+      if (prev.length === 0) {
+        return proveedorSeleccionado ? [lineaVacia(defaults)] : prev;
+      }
+      return prev.map((it) => ({
+        ...it,
+        monedaLinea: proveedorSeleccionado?.manejaDolares ? it.monedaLinea : 'ARS',
+        ivaPactadoPorcentaje: defaults.ivaPactadoPorcentaje,
+        envioPactadoPorcentaje: defaults.envioPactadoPorcentaje,
+        // Copia una nueva instancia de array por línea (nunca la misma referencia compartida
+        // entre ítems: cada línea edita su propia lista de descuentos sin pisar la de las demás).
+        descuentosPactados: defaults.descuentosPactados.map((d) => ({ ...d })),
+      }));
+    });
     setCotizacionDolar('');
     setCotizacionTocada(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -396,7 +347,26 @@ const PedidoNuevo = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hayLineaUsd]);
 
-  const handleVolver = () => navigate('/pedidos');
+  // Guardado del borrador (ver cargarBorrador/guardarBorrador arriba) con debounce de 400ms para
+  // no escribir en localStorage en cada tecla. Se dispara ante cualquier cambio del estado que
+  // compone al pedido — proveedor, observaciones, ítems (con todos sus campos: producto, cantidad,
+  // costo, moneda, costeo pactado), cotización del dólar. Deliberadamente NO depende de
+  // errors/isSubmitting/creandoParaLinea/nuevoNombre: son estado transitorio de UI, no del pedido.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      guardarBorrador({ proveedorId, observaciones, items, cotizacionDolar, cotizacionTocada });
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [proveedorId, observaciones, items, cotizacionDolar, cotizacionTocada]);
+
+  // Cancelar (botón "Cancelar", flecha "Volver" y tecla Escape comparten este mismo handler): es
+  // una señal explícita de "no quiero este pedido" — se limpia el borrador para que la próxima vez
+  // que entren a "Nuevo Pedido" no aparezca este intento descartado. No hay confirmación previa acá
+  // (no existía en el flujo original; no se agrega una nueva por fuera del alcance de este cambio).
+  const handleVolver = () => {
+    limpiarBorrador();
+    navigate('/pedidos');
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -454,6 +424,23 @@ const PedidoNuevo = () => {
       productoNombre: producto ? producto.nombre : '',
       // Si la línea venía "pendiente de crear", elegir un producto existente la reemplaza.
       productoNombreNuevo: '',
+      // Reapertura puntual de la Decisión 6, sólo IVA/envío (pedido explícito del usuario, sesión
+      // del 2026-08-25): al elegir un producto YA EXISTENTE, estos dos campos (ahora editables,
+      // ver TablaCosteoProductoExistente) se precargan con el valor EFECTIVO actual de la ficha
+      // (mismo resolverEfectivo que el resto del archivo) — nunca con el default del proveedor,
+      // que sólo gobierna líneas "pendiente de crear". Si el usuario los deja igual al precargarse,
+      // el backend no toca la ficha del producto al confirmar la recepción; si los cambia, sí.
+      ivaPactadoPorcentaje: producto ? String(resolverEfectivo(producto.ivaPorcentaje, ivaDefaultUnidad)) : it.ivaPactadoPorcentaje,
+      envioPactadoPorcentaje: producto ? String(resolverEfectivo(producto.costoEnvioPorcentaje, costoEnvioDefaultUnidad)) : it.envioPactadoPorcentaje,
+      // Ampliación 2026-08-25 (mismo pedido del dueño del negocio, ahora también descuentos): al
+      // elegir un producto YA EXISTENTE, precargar `descuentosPactados` con los descuentos
+      // ACTUALES de la ficha (`producto.descuentos`, ya viene como [{nombre, porcentaje}] desde el
+      // backend) — mismo momento que IVA/envío arriba. Si el usuario los deja igual, el backend no
+      // toca la ficha al confirmar la recepción (ver actualizarDescuentosSiDistinto); si los
+      // cambia, sí.
+      descuentosPactados: producto
+        ? (producto.descuentos || []).map((d) => ({ nombre: d.nombre || '', porcentaje: d.porcentaje ?? '' }))
+        : it.descuentosPactados,
     } : it)));
   };
 
@@ -509,27 +496,34 @@ const PedidoNuevo = () => {
       pushToast('error', 'El nombre del producto nuevo es requerido.');
       return;
     }
-    setItems((prev) => prev.map((it) => (it.lineaId === creandoParaLinea ? {
+    const lineaId = creandoParaLinea;
+    setItems((prev) => prev.map((it) => (it.lineaId === lineaId ? {
       ...it,
       productoId: '',
       productoNombre: '',
       productoNombreNuevo: nuevoNombre.trim(),
     } : it)));
     setCreandoParaLinea(null);
+    // Auto-expandir (tarea 4.6): si la línea recién confirmada como "pendiente" ya trae
+    // descuentos precargados por defecto del proveedor, mostrarlos de entrada en vez de dejarlos
+    // escondidos detrás de un clic extra.
+    const lineaActual = items.find((it) => it.lineaId === lineaId);
+    if (lineaActual && lineaActual.descuentosPactados.length > 0) {
+      expandirLinea(lineaId);
+    }
   };
 
+  // Fix del bug del total (change pedido-planilla-editable, grupo 1): ANTES este `reduce` sumaba
+  // `cantidad × costoUnitarioPactado` crudo, sin pasar por la cadena de costeo (IVA, envío,
+  // descuentos) — mientras cada fila SÍ mostraba su costo final real. El total de acá (usado tanto
+  // en el header como en el footer, misma variable) ahora suma el costo final real de cada línea,
+  // vía `costoFinalDeLinea` de utils/pedidoCosteo.js — la misma función que usan
+  // TablaCosteoProductoExistente y la vista previa de línea pendiente, para que los tres puntos no
+  // puedan volver a divergir (design.md, Decisión 1). Una línea a medio cargar o USD sin
+  // cotización aporta 0, igual que antes.
   const total = items.reduce((acc, it) => {
     const cant = parseFloat(it.cantidadPedida) || 0;
-    const costo = parseFloat(it.costoUnitarioPactado) || 0;
-    // Vista previa consistente con el backend (CostoCalculator/confirmarRecepcion): una línea en
-    // USD se convierte a ARS por la cotización del pedido antes de sumar al total. Sin cotización
-    // cargada todavía, la línea aporta 0 al total (no se puede mostrar un ARS inventado) en vez de
-    // sumar el número crudo en USD como si fueran pesos.
-    if (it.monedaLinea === 'USD') {
-      const cotizacion = parseFloat(cotizacionDolar) || 0;
-      return acc + cant * costo * cotizacion;
-    }
-    return acc + cant * costo;
+    return acc + cant * costoFinalDeLinea(it, productos, cotizacionDolar);
   }, 0);
 
   const validate = () => {
@@ -553,12 +547,12 @@ const PedidoNuevo = () => {
         newErrors[`iva-${it.lineaId}`] = 'Este proveedor no tiene un IVA por defecto: completá el % de esta línea (o 0 si no aplica).';
       }
       // Validación de la lista de descuentos pactados (arreglo 2026-08-21, mismo criterio que
-      // ProductoForm.jsx): sólo aplica a líneas "pendiente de crear" — un producto existente no
-      // edita descuentos acá. Cada fila cargada necesita nombre y un % >= 0; una fila vacía a
-      // medio completar (sólo nombre o sólo %) también se marca inválida, no se ignora en
-      // silencio.
-      const esPendienteValidate = !it.productoId && !!it.productoNombreNuevo;
-      if (esPendienteValidate && it.descuentosPactados.length > 0) {
+      // ProductoForm.jsx): aplica a CUALQUIER línea con descuentos cargados (ampliación
+      // 2026-08-25 — antes sólo aplicaba a "pendiente de crear"; ahora un producto existente
+      // también edita descuentos acá, mismo criterio que IVA/envío). Cada fila cargada necesita
+      // nombre y un % >= 0; una fila vacía a medio completar (sólo nombre o sólo %) también se
+      // marca inválida, no se ignora en silencio.
+      if (it.descuentosPactados.length > 0) {
         const nombreFaltante = it.descuentosPactados.some((d) => !d.nombre || !d.nombre.trim());
         const porcentajeInvalido = it.descuentosPactados.some((d) => {
           const p = d.porcentaje === '' || d.porcentaje === null || d.porcentaje === undefined ? NaN : parseFloat(d.porcentaje);
@@ -591,26 +585,29 @@ const PedidoNuevo = () => {
       // Cotización del pedido (tarea 7.3): sólo viaja si hay alguna línea en USD; si no, null —
       // no tiene sentido guardar una cotización que ningún ítem usa.
       cotizacionDolar: hayLineaUsd ? parseFloat(cotizacionDolar) : null,
-      // Tarea 13.11 (ajustada por la Decisión de la sesión del 2026-08-20): una línea a producto
-      // existente manda productoId y NO manda datos de producto nuevo; una línea "pendiente de
-      // crear" manda productoNombreNuevo y NO manda productoId ni precio de venta (ya no se
-      // pide — el producto nace a costo pactado, sin margen, y el precio se ajusta después en
-      // Productos). Ambos casos mandan moneda de la línea (grupo 7); sólo una línea "pendiente"
-      // manda además el costeo pactado (iva/envío/descuento — grupo 8, Decisión 8): para un
-      // producto ya existente esos valores no se usan (gobierna su propia configuración).
+      // Tarea 13.11 (ajustada por la Decisión de la sesión del 2026-08-20, reabierta 2026-08-25
+      // para IVA/envío y AHORA TAMBIÉN descuentos — ver TablaCosteoProductoExistente/
+      // seleccionarProducto): una línea a producto existente manda productoId y NO manda datos de
+      // producto nuevo; una línea "pendiente de crear" manda productoNombreNuevo y NO manda
+      // productoId ni precio de venta (ya no se pide — el producto nace a costo pactado, sin
+      // margen, y el precio se ajusta después en Productos). Ambos casos mandan moneda de la línea
+      // (grupo 7), ivaPactadoPorcentaje/envioPactadoPorcentaje Y AHORA TAMBIÉN
+      // descuentoPactadoPorcentaje/Detalle (ampliación de hoy, mismo criterio): para un producto
+      // existente el backend decide en confirmarRecepcion si esos valores se persisten como nuevo
+      // default de la ficha (sólo si son distintos del efectivo con el que se precargó la línea).
       detalles: items.map((it) => {
         const base = it.productoId ? {
           productoId: parseInt(it.productoId, 10),
         } : {
           productoNombreNuevo: it.productoNombreNuevo,
         };
-        // Colapso de la lista de descuentos pactados (arreglo 2026-08-21): el backend sólo
-        // necesita el % efectivo total de la cascada (descuentoPactadoPorcentaje) + el desglose
-        // textual (descuentoPactadoDetalle) — mismo contrato que ya usa
-        // MovimientoStock.descuentoPorcentaje/descuentoDetalle. La lista con nombre vive sólo acá,
-        // en el frontend.
+        // Colapso de la lista de descuentos pactados (arreglo 2026-08-21, ahora para AMBOS tipos
+        // de línea): el backend sólo necesita el % efectivo total de la cascada
+        // (descuentoPactadoPorcentaje) + el desglose textual (descuentoPactadoDetalle) — mismo
+        // contrato que ya usa MovimientoStock.descuentoPorcentaje/descuentoDetalle. La lista con
+        // nombre vive sólo acá, en el frontend.
         const descuentoColapsadoStr = descuentoColapsado(it.descuentosPactados);
-        const pactado = it.productoId ? {} : {
+        const pactado = {
           ivaPactadoPorcentaje: it.ivaPactadoPorcentaje !== '' ? parseFloat(it.ivaPactadoPorcentaje) : null,
           envioPactadoPorcentaje: it.envioPactadoPorcentaje !== '' ? parseFloat(it.envioPactadoPorcentaje) : null,
           descuentoPactadoPorcentaje: descuentoColapsadoStr !== '' ? parseFloat(descuentoColapsadoStr) : null,
@@ -629,6 +626,9 @@ const PedidoNuevo = () => {
     try {
       setIsSubmitting(true);
       await pedidosApi.create(payload);
+      // Pedido creado con éxito: limpiar el borrador para que el próximo "Nuevo Pedido" arranque
+      // limpio en vez de mostrar este pedido ya creado.
+      limpiarBorrador();
       pushToast('success', 'Pedido creado correctamente.');
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       navigate('/pedidos');
@@ -639,9 +639,45 @@ const PedidoNuevo = () => {
     }
   };
 
+  // Arma las props comunes que consume `FilaItemPedido` en cualquiera de sus dos variantes
+  // (grid/card, tarea 3.4): un único punto que arma los handlers cerrados sobre `it.lineaId` en
+  // vez de duplicar la lista de props en los dos `.map()` de abajo (uno por variante, Decisión 6).
+  const propsFila = (it) => ({
+    linea: it,
+    productos,
+    manejaDolares,
+    cotizacionDolar,
+    errors,
+    onActualizarCampo: (campo, valor) => actualizarLinea(it.lineaId, campo, valor),
+    onSeleccionarProducto: (productoId, textoBuscado) => seleccionarProducto(it.lineaId, productoId, textoBuscado),
+    onToggleMoneda: () => toggleMonedaLinea(it.lineaId),
+    onEliminar: () => eliminarLinea(it.lineaId),
+    canEliminar: items.length > 1,
+    // Auto-expandir la sub-fila al presionar "+" (tarea 4.6): agregar el descuento y expandir son
+    // dos pasos separados en el estado, pero un único gesto para el usuario.
+    onAgregarDescuento: () => { agregarDescuentoLinea(it.lineaId); expandirLinea(it.lineaId); },
+    onQuitarDescuento: (index) => quitarDescuentoLinea(it.lineaId, index),
+    onActualizarDescuento: (index, campo, valor) => actualizarDescuentoLinea(it.lineaId, index, campo, valor),
+    onRecargarDefaultsProveedor: () => recargarDefaultsProveedorLinea(it.lineaId),
+    creandoAqui: creandoParaLinea === it.lineaId,
+    nuevoNombre,
+    onChangeNuevoNombre: setNuevoNombre,
+    onCancelarCrear: () => setCreandoParaLinea(null),
+    onConfirmarCrear: confirmarProductoPendiente,
+    expandida: lineasExpandidas.has(it.lineaId),
+    onToggleExpansion: () => toggleExpansionLinea(it.lineaId),
+    // Gate de proveedor (grupo 5 — Decisión 7 de design.md): sólo puede ser true con `items` no
+    // vacío y `!proveedorId` — el caso de un borrador restaurado sin proveedor todavía elegido.
+    disabled: !proveedorId,
+  });
+
   return (
-    <div className="max-w-4xl mx-auto pb-10">
-      <div className="flex items-center gap-3 mb-6">
+    // Rediseño a ancho completo (change pedido-planilla-editable, tarea 3.3, Decisión 3 de
+    // design.md): la página deja de estar centrada en `max-w-4xl` — sólo la tarjeta de ítems usa
+    // todo el ancho disponible. El header y los bloques de proveedor/observaciones/cotización
+    // conservan su propio `max-w-4xl mx-auto`, igual que antes.
+    <div className="w-full pb-10">
+      <div className="max-w-4xl mx-auto flex items-center gap-3 mb-6">
         <button
           type="button"
           onClick={handleVolver}
@@ -659,7 +695,7 @@ const PedidoNuevo = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-5">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
@@ -740,285 +776,85 @@ const PedidoNuevo = () => {
             <button
               type="button"
               onClick={agregarLinea}
-              className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 cursor-pointer shrink-0"
+              disabled={!proveedorId}
+              title={!proveedorId ? 'Elegí un proveedor antes de agregar ítems' : undefined}
+              className={`flex items-center gap-1 text-sm font-medium shrink-0 ${
+                !proveedorId ? 'text-gray-300 cursor-not-allowed' : 'text-emerald-600 hover:text-emerald-700 cursor-pointer'
+              }`}
             >
               <Plus className="w-4 h-4" /> Agregar ítem
             </button>
           </div>
 
-          <div className="mt-3 divide-y divide-gray-100">
-            {items.map((it) => {
-              const esPendiente = !it.productoId && !!it.productoNombreNuevo;
-              return (
-                <div key={it.lineaId} className="py-4 first:pt-2">
-                  {/* Fila del producto: SIEMPRE en su propia línea, ancho completo — decoupleada
-                      de los campos numéricos de abajo (que viven en su propia fila con anchos
-                      fijos). Esto es lo que elimina el desborde horizontal del modal viejo: nada
-                      depende de comprimirse dentro de una grilla compartida. */}
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <ProductoSearchSelect
-                        productos={productos}
-                        productoId={it.productoId}
-                        productoNombre={it.productoNombre}
-                        productoNombreNuevo={it.productoNombreNuevo}
-                        onSelect={(productoId, textoBuscado) => seleccionarProducto(it.lineaId, productoId, textoBuscado)}
-                        hasError={!!errors[`producto-${it.lineaId}`]}
-                      />
-                      {errors[`producto-${it.lineaId}`] && (
-                        <p className="mt-1 text-xs text-red-500 font-medium">{errors[`producto-${it.lineaId}`]}</p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => eliminarLinea(it.lineaId)}
-                      disabled={items.length === 1}
-                      title="Quitar ítem"
-                      className={`shrink-0 p-2 rounded-lg transition-colors ${
-                        items.length === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer'
-                      }`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+          {/* Gate de proveedor obligatorio (grupo 5 — Decisión 7 de design.md): sin proveedor Y
+              sin ítems (caso normal, entrada limpia) se muestra un estado vacío en vez de la
+              grilla — ninguna fila se renderiza todavía. */}
+          {!proveedorId && items.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <PackageSearch className="w-9 h-9 text-gray-300" />
+              <p className="text-sm font-medium text-gray-500">Elegí un proveedor para empezar a cargar ítems</p>
+              <p className="text-xs text-gray-400 max-w-sm">
+                El IVA, el envío y los descuentos por defecto de cada ítem salen de la configuración del proveedor.
+              </p>
+            </div>
+          )}
 
-                  {/* Fila de campos numéricos: anchos fijos (nunca se comprimen ni se cortan) y
-                      flex-wrap para que, en pantallas muy angostas (320px), bajen de línea en vez
-                      de desbordar. */}
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 pl-0">
-                    <div className="w-[84px] shrink-0">
-                      <label className="block text-[10px] font-medium text-gray-400 mb-0.5">Cant.</label>
-                      <FormattedNumberInput
-                        value={it.cantidadPedida}
-                        onChange={(val) => actualizarLinea(it.lineaId, 'cantidadPedida', val)}
-                        placeholder="0"
-                        className={`w-full px-2.5 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-right ${
-                          errors[`cantidad-${it.lineaId}`] ? 'border-red-300' : 'border-gray-200'
-                        }`}
-                      />
-                    </div>
-                    <div className="w-[132px] shrink-0">
-                      <label className="block text-[10px] font-medium text-gray-400 mb-0.5">Costo unit.</label>
-                      <FormattedNumberInput
-                        value={it.costoUnitarioPactado}
-                        onChange={(val) => actualizarLinea(it.lineaId, 'costoUnitarioPactado', val)}
-                        placeholder="0"
-                        className={`w-full px-2.5 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-right ${
-                          errors[`costo-${it.lineaId}`] ? 'border-red-300' : 'border-gray-200'
-                        }`}
-                      />
-                    </div>
+          {/* Caso borrador restaurado con ítems y SIN proveedor (Decisión 7): las filas NUNCA se
+              descartan — se muestran debajo de este aviso, con todos sus inputs deshabilitados
+              (ver `disabled` en `propsFila`) hasta que se elija un proveedor. */}
+          {!proveedorId && items.length > 0 && (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              Elegí un proveedor para seguir editando estos ítems.
+            </div>
+          )}
 
-                    {/* Moneda de la línea (grupo 7, tarea 7.1): visible SÓLO si el proveedor
-                        elegido maneja dólares. */}
-                    {manejaDolares && (
-                      <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 cursor-pointer shrink-0 self-end pb-1.5">
-                        <input
-                          type="checkbox"
-                          checked={it.monedaLinea === 'USD'}
-                          onChange={() => toggleMonedaLinea(it.lineaId)}
-                          className="cursor-pointer accent-emerald-600"
-                        />
-                        USD
-                      </label>
-                    )}
-                  </div>
+          {items.length > 0 && (
+            <>
+              {/* Grilla tipo planilla (change pedido-planilla-editable, grupo 3 — Decisión 2 de
+                  design.md): una única plantilla de columnas (`gridColsClass`, tarea 3.1/3.2)
+                  compartida por la fila de encabezados y por cada `FilaItemPedido` variant="grid",
+                  que se renderiza como `className="contents"` para volverse hijas directas de ESTE
+                  `div` grid — nunca redefinen la plantilla (así nunca pueden desalinearse).
+                  Breakpoint de colapso `xl` (1280px), NO `lg` (tarea 3.12, verificado con Playwright
+                  contra el dev stack real): el shell de la app (`DashboardLayout.jsx`, fuera del
+                  alcance de este change) envuelve toda página en un contenedor `overflow-x-hidden`
+                  fijo; con 9 columnas (caso USD) el ancho mínimo de la grilla (~1028px de columnas +
+                  gaps) no entra en el área de contenido disponible entre `lg` y `xl` (sidebar fija de
+                  256px descontada), así que a `lg` la grilla queda RECORTADA en silencio —sin
+                  scrollbar, columnas de la derecha (IVA %, Envío %, Costo total y hasta el botón de
+                  quitar) invisibles e inalcanzables— en vez de colapsar a tarjetas. Es exactamente el
+                  riesgo "Densidad visual en 1024–1280px" de design.md, con la salida que el propio
+                  documento pre-autoriza: bajar el breakpoint de colapso, nunca agregar scroll
+                  horizontal (Decisión 6 lo prohíbe explícitamente por el dropdown/panel absolutos). */}
+              <div className={`hidden xl:grid ${gridColsClass} gap-x-3 items-end pb-2 mb-1 border-b border-gray-200`}>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Producto</span>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Cant.</span>
+                {manejaDolares && (
+                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-center">USD</span>
+                )}
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Costo unit.</span>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Descuentos</span>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">IVA %</span>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Envío %</span>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Costo total</span>
+                <span aria-hidden="true" />
 
-                  {/* Pedido 1 (arreglo 2026-08-21): un producto YA EXISTENTE se rige por su propia
-                      configuración de costeo (ProductoForm.jsx), nunca por los defaults del
-                      proveedor del pedido (OQ3). Acá sólo se la muestra, de solo lectura, para que
-                      el usuario vea con qué costo real va a quedar el producto — no se confunde
-                      con el "Costo unit." de arriba, que es el costo PACTADO de esta compra
-                      puntual (puede diferir del costo de catálogo del producto). */}
-                  {!esPendiente && it.productoId && (
-                    <ConfiguracionProductoExistente
-                      producto={productos.find((p) => String(p.id) === String(it.productoId))}
-                      ivaDefaultUnidad={ivaDefaultUnidad}
-                      costoEnvioDefaultUnidad={costoEnvioDefaultUnidad}
-                    />
-                  )}
+                {items.map((it) => (
+                  <FilaItemPedido key={it.lineaId} variant="grid" {...propsFila(it)} />
+                ))}
+              </div>
 
-                  {/* Costeo pactado de la línea (grupo 8, tarea 8.5), sólo relevante para una
-                      línea "pendiente de crear": el producto que nazca de acá se crea con estos
-                      valores, no con los del proveedor en ese momento (tarea 8.11). Para un
-                      producto ya existente, su propia ficha en Productos gobierna.
-                      Arreglo 2026-08-21: el viejo campo único "Desc. %" (sin nombre, sin vista
-                      previa) se reemplaza por una lista de descuentos con nombre (mismo patrón que
-                      ProductoForm.jsx) + una vista previa en vivo del costo final, para que el
-                      efecto del descuento se vea ACÁ, antes de confirmar la recepción, en vez de
-                      recién en el backend. */}
-                  {esPendiente && (
-                    <div className="mt-2 space-y-2">
-                      <div className="flex flex-wrap gap-3">
-                        <div className="w-[84px] shrink-0">
-                          <label className="block text-[10px] font-medium text-gray-400 mb-0.5">IVA %</label>
-                          <FormattedNumberInput
-                            value={it.ivaPactadoPorcentaje}
-                            onChange={(val) => actualizarLinea(it.lineaId, 'ivaPactadoPorcentaje', val)}
-                            placeholder="0"
-                            className={`w-full px-2 py-1 rounded-lg border bg-white text-xs text-right focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                              errors[`iva-${it.lineaId}`] ? 'border-red-300' : 'border-gray-200'
-                            }`}
-                          />
-                          {errors[`iva-${it.lineaId}`] && (
-                            <p className="mt-0.5 text-[10px] text-red-500 leading-tight">{errors[`iva-${it.lineaId}`]}</p>
-                          )}
-                        </div>
-                        <div className="w-[84px] shrink-0">
-                          <label className="block text-[10px] font-medium text-gray-400 mb-0.5">Envío %</label>
-                          <FormattedNumberInput
-                            value={it.envioPactadoPorcentaje}
-                            onChange={(val) => actualizarLinea(it.lineaId, 'envioPactadoPorcentaje', val)}
-                            placeholder="0"
-                            className="w-full px-2 py-1 rounded-lg border border-gray-200 bg-white text-xs text-right focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Lista de descuentos pactados (nombre + %), agregable/quitable. */}
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <label className="block text-[10px] font-medium text-gray-400">Descuentos pactados</label>
-                          <div className="flex items-center gap-2.5">
-                            {/* Mitigación 2 del bug "sólo aparece 1 de 2 descuentos" (pedido 2,
-                                2026-08-21): si el proveedor ya estaba seleccionado en este pedido
-                                cuando le cambiaron el perfil de costeo, la precarga automática
-                                (useEffect [proveedorId]) no se entera sola — este botón fuerza un
-                                fetch fresco de ['proveedores'] y reaplica los defaults SOLO a
-                                esta línea. */}
-                            <button
-                              type="button"
-                              onClick={() => recargarDefaultsProveedorLinea(it.lineaId)}
-                              title="Volver a traer IVA/envío/descuentos por defecto del proveedor (por si cambiaron después de seleccionarlo)"
-                              className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 cursor-pointer"
-                            >
-                              <RefreshCw className="w-3 h-3" /> Recargar del proveedor
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => agregarDescuentoLinea(it.lineaId)}
-                              className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer"
-                            >
-                              <Plus className="w-3 h-3" /> Agregar
-                            </button>
-                          </div>
-                        </div>
-                        {it.descuentosPactados.length === 0 ? (
-                          <p className="text-[11px] text-gray-400 italic">Sin descuentos cargados.</p>
-                        ) : (
-                          <div className="space-y-1 mt-0.5">
-                            {it.descuentosPactados.map((d, index) => (
-                              <div key={index} className="flex items-center gap-1.5">
-                                <input
-                                  type="text"
-                                  value={d.nombre}
-                                  onChange={(e) => actualizarDescuentoLinea(it.lineaId, index, 'nombre', e.target.value)}
-                                  placeholder="Ej: Proveedor, Volumen"
-                                  className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                                <div className="w-16 shrink-0">
-                                  <FormattedNumberInput
-                                    value={d.porcentaje}
-                                    onChange={(val) => actualizarDescuentoLinea(it.lineaId, index, 'porcentaje', val)}
-                                    placeholder="%"
-                                    className="w-full px-2 py-1 rounded-lg border border-gray-200 bg-white text-xs text-right focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => quitarDescuentoLinea(it.lineaId, index)}
-                                  className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
-                                  aria-label="Quitar descuento"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {errors[`descuentos-${it.lineaId}`] && (
-                          <p className="mt-0.5 text-[10px] text-red-500 leading-tight">{errors[`descuentos-${it.lineaId}`]}</p>
-                        )}
-                      </div>
-
-                      {/* Vista previa en vivo del costo final (responde directo al reclamo "no se
-                          está aplicando el descuento"): mismo utilitario calcularCosto que ya usa
-                          ProductoForm.jsx, así el número que se ve acá coincide al centavo con lo
-                          que el backend termina congelando en el movimiento al confirmar la
-                          recepción. Con moneda USD, calcularCosto ya aplica la conversión por
-                          cotizacionDolar del pedido antes del resto de la cadena. */}
-                      {(() => {
-                        const costoBaseLinea = it.costoUnitarioPactado !== '' ? parseFloat(it.costoUnitarioPactado) : NaN;
-                        if (Number.isNaN(costoBaseLinea)) return null;
-                        const porcentajesLinea = it.descuentosPactados
-                          .map((d) => (d.porcentaje !== '' && d.porcentaje !== null && d.porcentaje !== undefined ? parseFloat(d.porcentaje) : NaN))
-                          .filter((p) => !Number.isNaN(p));
-                        const ivaLinea = it.ivaPactadoPorcentaje !== '' ? parseFloat(it.ivaPactadoPorcentaje) || 0 : 0;
-                        const envioLinea = it.envioPactadoPorcentaje !== '' ? parseFloat(it.envioPactadoPorcentaje) || 0 : 0;
-                        const cotizacionLinea = it.monedaLinea === 'USD' ? (parseFloat(cotizacionDolar) || 0) : null;
-                        const previewDesglose = calcularCosto(
-                          costoBaseLinea,
-                          porcentajesLinea,
-                          ivaLinea,
-                          envioLinea,
-                          it.monedaLinea,
-                          cotizacionLinea,
-                        );
-                        return (
-                          <p className="text-[11px] text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1">
-                            Costo final: <span className="font-semibold text-gray-800">
-                              ${previewDesglose.costoFinal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                            {previewDesglose.descuentoEfectivo > 0 && (
-                              <span className="text-gray-400"> (desc. efectivo {previewDesglose.descuentoEfectivo.toFixed(2)}%)</span>
-                            )}
-                          </p>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                  {/* Sub-formulario de producto pendiente de crear, sólo visible para esta línea
-                      (grupo 13: ya no llama a la API, sólo captura el nombre). Tratamiento sobrio
-                      (rediseño 2026-08-20): gris neutro con acento ámbar puntual, no una tarjeta
-                      ámbar entera. */}
-                  {creandoParaLinea === it.lineaId && (
-                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
-                      <p className="text-xs font-semibold text-amber-700 flex items-center gap-1">
-                        <PackagePlus className="w-4 h-4" /> Producto nuevo — se crea al confirmar la recepción
-                      </p>
-                      <input
-                        type="text"
-                        value={nuevoNombre}
-                        onChange={(e) => setNuevoNombre(e.target.value)}
-                        placeholder="Nombre del producto"
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                      <p className="text-[11px] text-gray-500">
-                        El precio de venta se configura después, en Productos.
-                      </p>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCreandoParaLinea(null)}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={confirmarProductoPendiente}
-                          className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg cursor-pointer"
-                        >
-                          Usar en esta línea
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+              {/* Colapso mobile/tablet/laptop chica (Decisión 6, breakpoint `xl` — ver comentario de
+                  arriba): mismas filas, tarjeta apilada — nunca visible al mismo tiempo que la
+                  grilla. */}
+              <div className="xl:hidden divide-y divide-gray-100">
+                {items.map((it) => (
+                  <FilaItemPedido key={it.lineaId} variant="card" {...propsFila(it)} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">

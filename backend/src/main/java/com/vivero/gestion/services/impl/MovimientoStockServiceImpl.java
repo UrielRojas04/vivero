@@ -12,7 +12,9 @@ import com.vivero.gestion.repositories.MovimientoStockRepository;
 import com.vivero.gestion.services.CostoCalculator;
 import com.vivero.gestion.services.CosteoPorCapasCalculator;
 import com.vivero.gestion.services.MovimientoStockService;
+import com.vivero.gestion.services.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,21 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
     // costeo por capas habilitado (Decisión 7); con el flag en false ni siquiera se consulta.
     @Autowired
     private CapaCostoStockRepository capaCostoStockRepository;
+
+    // Auto-ajuste de costoProducto/precio hacia arriba (pedido puntual del usuario, 2026-08-25 —
+    // ver ProductoService.ajustarCostoSiSuperaAlActual). @Lazy es obligatorio acá: ProductoServiceImpl
+    // depende de MovimientoStockService por constructor (para el AJUSTE_INICIAL de crearProducto),
+    // así que una dependencia directa y eager en sentido inverso es un ciclo real que Spring no
+    // puede resolver al arrancar (BeanCurrentlyInCreationException) — con @Lazy se inyecta un
+    // proxy y la referencia real recién se resuelve en el primer uso, momento en el que el
+    // contenedor ya terminó de armar ambos beans. Se evaluó extraer la fórmula de precio a un
+    // método estático compartido para evitar el ciclo del todo, pero eso hubiera significado
+    // sacarla de ProductoServiceImpl (donde ya vive reusada por crearProducto/actualizarProducto/
+    // listarRevisionCostos) sin necesidad real — @Lazy es el fix mínimo, estándar de Spring, y no
+    // duplica la fórmula de precio.
+    @Autowired
+    @Lazy
+    private ProductoService productoService;
 
     @Override
     @Transactional
@@ -57,6 +74,33 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
     @Transactional
     public MovimientoStock registrarMovimiento(Producto producto, Integer cantidad, TipoMovimientoStock tipo, Usuario usuario,
                                                  BigDecimal costoBaseExplicito, MonedaCosto monedaLinea, BigDecimal cotizacionAplicada) {
+        // Delega en la sobrecarga de 9 parámetros con ivaPactadoExplicito=null,
+        // envioPactadoExplicito=null: se comporta exactamente igual que antes (fallback de siempre
+        // a la ficha del producto) — una sola implementación (reapertura puntual de la Decisión 6,
+        // 2026-08-25).
+        return registrarMovimiento(producto, cantidad, tipo, usuario, costoBaseExplicito, monedaLinea, cotizacionAplicada, null, null);
+    }
+
+    @Override
+    @Transactional
+    public MovimientoStock registrarMovimiento(Producto producto, Integer cantidad, TipoMovimientoStock tipo, Usuario usuario,
+                                                 BigDecimal costoBaseExplicito, MonedaCosto monedaLinea, BigDecimal cotizacionAplicada,
+                                                 BigDecimal ivaPactadoExplicito, BigDecimal envioPactadoExplicito) {
+        // Delega en la sobrecarga de 11 parámetros con descuentoPactadoExplicito=null,
+        // descuentoPactadoDetalleExplicito=null: se comporta exactamente igual que antes (fallback
+        // de siempre a la cascada de producto.getDescuentos()) — una sola implementación
+        // (ampliación de pedido-planilla-editable, descuentos editables para línea existente,
+        // 2026-08-25).
+        return registrarMovimiento(producto, cantidad, tipo, usuario, costoBaseExplicito, monedaLinea, cotizacionAplicada,
+                ivaPactadoExplicito, envioPactadoExplicito, null, null);
+    }
+
+    @Override
+    @Transactional
+    public MovimientoStock registrarMovimiento(Producto producto, Integer cantidad, TipoMovimientoStock tipo, Usuario usuario,
+                                                 BigDecimal costoBaseExplicito, MonedaCosto monedaLinea, BigDecimal cotizacionAplicada,
+                                                 BigDecimal ivaPactadoExplicito, BigDecimal envioPactadoExplicito,
+                                                 BigDecimal descuentoPactadoExplicito, String descuentoPactadoDetalleExplicito) {
         // Flag leído UNA SOLA VEZ, al principio, y NUNCA comparado por id de unidad de negocio
         // (Decisión 7 de costeo-fifo-herramientas — el nombre del directorio del change es
         // histórico, el algoritmo final NO es FIFO). Con el flag en false, este método hace
@@ -81,7 +125,8 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
             // sin tocar) no recibe este parámetro.
             BigDecimal costoBase = costoBaseExplicito != null ? costoBaseExplicito
                     : (producto.getCostoProducto() != null ? producto.getCostoProducto() : BigDecimal.ZERO);
-            aplicarDesglose(mov, producto, costoBase, monedaLinea, cotizacionAplicada);
+            aplicarDesglose(mov, producto, costoBase, monedaLinea, cotizacionAplicada, ivaPactadoExplicito, envioPactadoExplicito,
+                    descuentoPactadoExplicito, descuentoPactadoDetalleExplicito);
         } else if (porCapas) {
             // Rama nueva de egreso por capas (tareas 6.5-6.14): resuelve su propio desglose y
             // persiste su propio (único) MovimientoStock — retorno propio, no cae al save() de
@@ -105,7 +150,7 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
                 mov.setDescuentoDetalle(lastIngreso.getDescuentoDetalle());
             } else {
                 BigDecimal costoBase = producto.getCostoProducto() != null ? producto.getCostoProducto() : BigDecimal.ZERO;
-                aplicarDesglose(mov, producto, costoBase, null, null);
+                aplicarDesglose(mov, producto, costoBase, null, null, null, null, null, null);
             }
         }
 
@@ -118,6 +163,17 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
         if (porCapas && (tipo == TipoMovimientoStock.INGRESO || tipo == TipoMovimientoStock.AJUSTE_INICIAL)
                 && cantidad != null && cantidad > 0) {
             crearCapa(guardado, producto);
+            // Auto-ajuste hacia arriba (pedido puntual del usuario, 2026-08-25): sólo cuando el
+            // costo BASE de ESTE movimiento (guardado.getCostoBase(), pre-descuentos/IVA/envío —
+            // el mismo tipo de número que Producto.costoProducto) supera producto.getCostoProducto()
+            // actual. Deliberadamente NO se usa CapaCostoStock.getCostoUnitario(): ese valor ya tiene
+            // la fórmula completa aplicada (viene de CostoCalculator), y pasarlo acá haría que
+            // ajustarCostoSiSuperaAlActual() vuelva a aplicar descuento/IVA/envío una segunda vez al
+            // recalcular precio (doble conteo verificado con datos reales). Update silencioso de
+            // catálogo, misma transacción, sin generar ningún MovimientoStock adicional — no toca
+            // producto.stock. Sólo alcanzable acá dentro (porCapas == true); Vivero nunca entra a
+            // esta rama (tarea 6.2, contrato de no-regresión).
+            productoService.ajustarCostoSiSuperaAlActual(producto, guardado.getCostoBase());
         }
 
         return guardado;
@@ -126,7 +182,7 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
     // Crea la capa que corresponde a un movimiento entrante con cantidad > 0 (Decisión 1/4). El
     // costoUnitario y la fecha se copian UNA VEZ del movimiento ya persistido — nunca se vuelven a
     // tocar (contrato de CapaCostoStock). No escribe Producto.stock.
-    private void crearCapa(MovimientoStock movimientoIngreso, Producto producto) {
+    private CapaCostoStock crearCapa(MovimientoStock movimientoIngreso, Producto producto) {
         CapaCostoStock capa = new CapaCostoStock();
         capa.setProducto(producto);
         capa.setMovimiento(movimientoIngreso);
@@ -135,7 +191,7 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
         capa.setCantidadRestante(movimientoIngreso.getCantidad());
         capa.setCostoUnitario(movimientoIngreso.getCostoUnitario());
         capa.setFecha(movimientoIngreso.getFecha());
-        capaCostoStockRepository.save(capa);
+        return capaCostoStockRepository.save(capa);
     }
 
     // Rama de egreso con costeo por capas activo (VENTA / EGRESO / MERMA — tarea 6.5). Orden
@@ -172,7 +228,7 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
                 mov.setDescuentoDetalle(lastIngreso.getDescuentoDetalle());
             } else {
                 BigDecimal costoBase = producto.getCostoProducto() != null ? producto.getCostoProducto() : BigDecimal.ZERO;
-                aplicarDesglose(mov, producto, costoBase, null, null);
+                aplicarDesglose(mov, producto, costoBase, null, null, null, null, null, null);
             }
             return movimientoStockRepository.save(mov);
         }
@@ -206,25 +262,55 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
     }
 
     private void aplicarDesglose(MovimientoStock mov, Producto producto, BigDecimal costoBase,
-                                  MonedaCosto monedaLinea, BigDecimal cotizacionAplicada) {
-        List<ProductoDescuento> descuentos = producto.getDescuentos();
-
-        List<BigDecimal> porcentajes = new ArrayList<>();
-        StringBuilder detalle = new StringBuilder();
-        if (descuentos != null) {
-            for (ProductoDescuento d : descuentos) {
-                porcentajes.add(d.getPorcentaje());
-                if (detalle.length() > 0) {
-                    detalle.append("; ");
+                                  MonedaCosto monedaLinea, BigDecimal cotizacionAplicada,
+                                  BigDecimal ivaPactadoExplicito, BigDecimal envioPactadoExplicito,
+                                  BigDecimal descuentoPactadoExplicito, String descuentoPactadoDetalleExplicito) {
+        // Ampliación de pedido-planilla-editable (descuentos editables también para una línea de
+        // producto YA EXISTENTE, 2026-08-25): un descuentoPactadoExplicito no nulo (incluido 0)
+        // reemplaza POR COMPLETO la cascada que se derivaría de producto.getDescuentos() para ESTE
+        // movimiento puntual — mismo criterio que costoBaseExplicito ya reemplaza
+        // producto.getCostoProducto(). Es un único factor YA COLAPSADO (no una lista de
+        // descuentos individuales): con un solo elemento en la cascada,
+        // CostoCalculator.calcular() devuelve descuentoEfectivoPorcentaje ==
+        // descuentoPactadoExplicito exactamente. El detalle textual persistido es el de LA LÍNEA
+        // (descuentoPactadoDetalleExplicito), no el de la ficha — puede ser null (ej. 0% sin
+        // desglose), igual que el caso "sin descuentos" de la rama de siempre.
+        List<BigDecimal> porcentajes;
+        String detalleTexto;
+        if (descuentoPactadoExplicito != null) {
+            porcentajes = List.of(descuentoPactadoExplicito);
+            detalleTexto = descuentoPactadoDetalleExplicito;
+        } else {
+            List<ProductoDescuento> descuentos = producto.getDescuentos();
+            List<BigDecimal> lista = new ArrayList<>();
+            StringBuilder detalle = new StringBuilder();
+            if (descuentos != null) {
+                for (ProductoDescuento d : descuentos) {
+                    lista.add(d.getPorcentaje());
+                    if (detalle.length() > 0) {
+                        detalle.append("; ");
+                    }
+                    detalle.append(d.getNombre()).append(" ").append(d.getPorcentaje().setScale(2, RoundingMode.HALF_UP)).append("%");
                 }
-                detalle.append(d.getNombre()).append(" ").append(d.getPorcentaje().setScale(2, RoundingMode.HALF_UP)).append("%");
             }
+            porcentajes = lista;
+            detalleTexto = detalle.length() > 0 ? detalle.toString() : null;
         }
 
+        // Reapertura puntual de la Decisión 6, sólo IVA/envío (pedido explícito del usuario,
+        // 2026-08-25, fuera de OpenSpec): un valor pactado explícito de ESTA línea de pedido (no
+        // nulo, incluido 0) gana sobre la ficha del producto para ESTE cálculo puntual — igual que
+        // costoBaseExplicito ya ganaba sobre producto.getCostoProducto(). null se comporta
+        // exactamente igual que antes: fallback resolverEfectivo(ficha del producto, default de la
+        // unidad).
         BigDecimal unidadIva = producto.getUnidadNegocio() != null ? producto.getUnidadNegocio().getIvaPorcentaje() : null;
         BigDecimal unidadEnvio = producto.getUnidadNegocio() != null ? producto.getUnidadNegocio().getCostoEnvioPorcentaje() : null;
-        BigDecimal ivaEfectivo = CostoCalculator.resolverEfectivo(producto.getIvaPorcentaje(), unidadIva);
-        BigDecimal envioEfectivo = CostoCalculator.resolverEfectivo(producto.getCostoEnvioPorcentaje(), unidadEnvio);
+        BigDecimal ivaEfectivo = ivaPactadoExplicito != null
+                ? ivaPactadoExplicito
+                : CostoCalculator.resolverEfectivo(producto.getIvaPorcentaje(), unidadIva);
+        BigDecimal envioEfectivo = envioPactadoExplicito != null
+                ? envioPactadoExplicito
+                : CostoCalculator.resolverEfectivo(producto.getCostoEnvioPorcentaje(), unidadEnvio);
 
         // Paso 0 de conversión de moneda (config-costeo-por-proveedor, grupo 6/7 de tasks.md): el
         // guard "sólo si USD" vive dentro de CostoCalculator, acá sólo se pasan los datos crudos
@@ -238,7 +324,7 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
         mov.setCostoBase(resultado.getCostoBaseConvertido());
         mov.setCostoNeto(resultado.getNetoConDescuentos());
         mov.setDescuentoPorcentaje(resultado.getDescuentoEfectivoPorcentaje());
-        mov.setDescuentoDetalle(detalle.length() > 0 ? detalle.toString() : null);
+        mov.setDescuentoDetalle(detalleTexto);
         mov.setIvaPorcentaje(ivaEfectivo);
         mov.setEnvioPorcentaje(envioEfectivo);
         mov.setCostoUnitario(resultado.getCostoUnitario());

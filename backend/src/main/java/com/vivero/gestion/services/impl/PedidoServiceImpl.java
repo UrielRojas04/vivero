@@ -308,6 +308,24 @@ public class PedidoServiceImpl implements PedidoService {
                 producto.setStock(stockActual + recibida);
                 productoRepository.save(producto);
 
+                // Reapertura puntual de la Decisión 6, sólo IVA/envío (pedido explícito del
+                // usuario, sesión del 2026-08-25, fuera de OpenSpec): a diferencia del costo (que
+                // sigue siendo SIEMPRE el pactado de la línea, sin condición), el IVA/envío
+                // pactados de la línea sólo se persisten en la ficha si son numéricamente
+                // distintos del efectivo actual — ver actualizarIvaEnvioSiDistinto(). null en
+                // ambos campos (pedido creado antes de esta funcionalidad, línea que nunca trajo
+                // pactado) es un no-op total: no toca la ficha y abajo cae al fallback de siempre.
+                productoService.actualizarIvaEnvioSiDistinto(
+                        producto, detalle.getIvaPactadoPorcentaje(), detalle.getEnvioPactadoPorcentaje());
+
+                // Ampliación del change (pedido explícito del dueño del negocio, 2026-08-25, mismo
+                // criterio que IVA/envío arriba): la columna "Descuentos" de una línea de producto
+                // YA EXISTENTE también pasa a ser editable, precargada con los descuentos actuales
+                // de la ficha — si el % pactado de la línea es distinto del efectivo colapsado
+                // actual, se persiste como nuevo default de la ficha hacia adelante.
+                productoService.actualizarDescuentosSiDistinto(
+                        producto, detalle.getDescuentoPactadoPorcentaje(), detalle.getDescuentoPactadoDetalle());
+
                 // Costo congelado en el movimiento = costoUnitarioPactado de ESTE ítem, no
                 // producto.getCostoProducto() (Decisión 4 / Checkpoint grupo 5). NO se pasa por
                 // ProductoService.actualizarProducto(): eso generaría un segundo movimiento con el
@@ -315,9 +333,19 @@ public class PedidoServiceImpl implements PedidoService {
                 // Moneda/cotización de ESTA línea (grupo 6/7): el guard "sólo convierte si USD"
                 // vive en CostoCalculator — pasar monedaLinea=ARS o cotización=null para una línea
                 // en pesos es inofensivo, el resultado congelado queda igual (identidad, tarea 6.7).
+                // ivaPactadoPorcentaje/envioPactadoPorcentaje de ESTA línea (reapertura de la
+                // Decisión 6 de arriba) ganan sobre la ficha del producto para ESTE movimiento —
+                // null se comporta igual que siempre (fallback a la ficha). Mismo criterio ahora
+                // para descuentoPactadoPorcentaje/Detalle (ampliación de hoy): gana sobre la
+                // cascada de producto.getDescuentos() para ESTE movimiento congelado, para AMBOS
+                // tipos de línea (existente y pendiente-recién-creada) — para una línea pendiente
+                // esto reproduce exactamente el mismo resultado que antes (producto.descuentos ya
+                // nació con esta misma entrada sintética "Proveedor" arriba, líneas 285-293).
                 movimientoStockService.registrarMovimiento(
                         producto, recibida, TipoMovimientoStock.INGRESO, usuario, detalle.getCostoUnitarioPactado(),
-                        detalle.getMonedaLinea(), pedido.getCotizacionDolar());
+                        detalle.getMonedaLinea(), pedido.getCotizacionDolar(),
+                        detalle.getIvaPactadoPorcentaje(), detalle.getEnvioPactadoPorcentaje(),
+                        detalle.getDescuentoPactadoPorcentaje(), detalle.getDescuentoPactadoDetalle());
             }
 
             if (recibida < detalle.getCantidadPedida()) {
