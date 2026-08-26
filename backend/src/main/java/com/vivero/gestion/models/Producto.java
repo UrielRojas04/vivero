@@ -120,15 +120,6 @@ public class Producto {
     @Column(name = "moneda_costo", nullable = false, length = 3, columnDefinition = "varchar(3) default 'ARS'")
     private MonedaCosto monedaCosto = MonedaCosto.ARS;
 
-    // Marcador de revisión de costos (Decisión 11 de design.md de revision-costos-productos,
-    // tarea 6.2 — adelantada a la tarea 3.1 porque la query de detección de ese grupo la
-    // referencia y no compila/corre sin ella). Nullable, SIN FK declarada y SIN valor por
-    // defecto a propósito: no es una relación del dominio, es un marcador de "ya revisé este
-    // ingreso". null == "nunca se descartó nada". ddl-auto=update la crea sola; sin backfill.
-    // El endpoint de escritura que la sella ("Descartar") es del grupo 6, todavía no implementado.
-    @Column(name = "movimiento_revision_descartado_id")
-    private Long movimientoRevisionDescartadoId;
-
     public Producto() {}
 
     public Producto(String nombre, String descripcion, BigDecimal precio, BigDecimal costoProducto, Integer stock, String lote, String dueno) {
@@ -201,7 +192,4 @@ public class Producto {
 
     public MonedaCosto getMonedaCosto() { return monedaCosto; }
     public void setMonedaCosto(MonedaCosto monedaCosto) { this.monedaCosto = monedaCosto; }
-
-    public Long getMovimientoRevisionDescartadoId() { return movimientoRevisionDescartadoId; }
-    public void setMovimientoRevisionDescartadoId(Long movimientoRevisionDescartadoId) { this.movimientoRevisionDescartadoId = movimientoRevisionDescartadoId; }
 }

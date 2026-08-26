@@ -2,11 +2,9 @@ package com.vivero.gestion.services.impl;
 
 import com.vivero.gestion.dto.ProductoDTO;
 import com.vivero.gestion.dto.ProductoDescuentoDTO;
-import com.vivero.gestion.dto.RevisionCostoProductoDTO;
 import com.vivero.gestion.models.Producto;
 import com.vivero.gestion.models.ProductoDescuento;
 import com.vivero.gestion.repositories.ProductoRepository;
-import com.vivero.gestion.repositories.RevisionCostoProjection;
 import com.vivero.gestion.services.CostoCalculator;
 import com.vivero.gestion.services.ProductoService;
 import com.vivero.gestion.services.SseService;
@@ -35,11 +33,6 @@ import java.util.stream.Collectors;
 public class ProductoServiceImpl implements ProductoService {
 
     private static final Logger log = LoggerFactory.getLogger(ProductoServiceImpl.class);
-
-    // Panel de revisión de costos (Decisión 10 de design.md de revision-costos-productos): LIMIT
-    // explícito (regla dura 6, nada sin límite), no paginado. Con 11 productos en Herramientas no
-    // se roza ni de lejos; existe para que el panel no pueda degradarse si el catálogo crece.
-    private static final int LIMITE_REVISION_COSTOS = 50;
 
     // Tanda de fixes puntuales del 2026-08-20 (Problema 4, pedido explícito del usuario, aplica a
     // TODOS los productos de ambos negocios): cualquier producto nuevo nace con 30% de ganancia
@@ -239,123 +232,131 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
-    public boolean ajustarCostoSiSuperaAlActual(Producto producto, BigDecimal costoBaseNuevo) {
-        // Pedido puntual del usuario (2026-08-25), relaja PARCIALMENTE la Decisión 6 original de
-        // herramientas-pedidos-proveedores ("nada mueve costoProducto/precio solo salvo edición
-        // manual"): sólo cuando el costo BASE de la capa nueva es estrictamente mayor al
-        // costoProducto actual (o costoProducto es null) se sube — nunca se baja por esta vía.
-        // costoBaseNuevo debe ser el costo BASE (pre-descuentos/IVA/envío) del movimiento de
-        // ingreso, el mismo tipo de número que costoProducto — NUNCA CapaCostoStock.getCostoUnitario(),
-        // que ya tiene la fórmula completa aplicada (eso duplicaría envío/IVA al recalcular precio
-        // más abajo). Llamado desde MovimientoStockServiceImpl justo después de crear una
-        // CapaCostoStock nueva (único punto de creación de capas), dentro de la misma transacción
-        // que registrarMovimiento().
-        if (costoBaseNuevo == null) {
+    public boolean actualizarFichaSiCostoFinalSupera(Producto producto, BigDecimal costoBasePactado,
+                                                       BigDecimal ivaPactado, BigDecimal envioPactado,
+                                                       BigDecimal descuentoPactadoPorcentaje,
+                                                       String descuentoPactadoDetalle) {
+        // Unificación de ajustarCostoSiSuperaAlActual + actualizarIvaEnvioSiDistinto +
+        // actualizarDescuentosSiDistinto (fix del bug real del 2026-08-26, ver Javadoc en la
+        // interfaz): el ratchet ahora compara el costo FINAL completo, no sólo la base, así que las
+        // cuatro piezas (costoProducto/descuentos/IVA/envío) sólo se mueven JUNTAS o no se mueven
+        // nada — nunca puede pasar que el final termine bajando porque una pieza se comparó sola.
+        if (costoBasePactado == null) {
             return false;
         }
-        BigDecimal actual = producto.getCostoProducto();
-        if (actual != null && costoBaseNuevo.compareTo(actual) <= 0) {
-            // Menor o igual: no se toca nada (contrato "nunca baja solo" — tarea explícita del
-            // pedido). Cubre también el caso "se agota la capa cara y queda la barata": ese caso ni
-            // siquiera llega a este método, porque vender/consumir no crea capas nuevas.
-            return false;
-        }
-        producto.setCostoProducto(costoBaseNuevo);
-        // Reusa calcularPrecioSiAplica (misma fórmula que crearProducto/actualizarProducto, grupo
-        // 7 de costeo-flexible-por-producto): no se duplica la aritmética a mano. Guard interno de
-        // ese método (porcentajeGanancia > 0 y costoProducto > 0) decide si precio se recalcula.
-        calcularPrecioSiAplica(producto);
-        productoRepository.save(producto);
-        return true;
-    }
 
-    @Override
-    @Transactional
-    public boolean actualizarIvaEnvioSiDistinto(Producto producto, BigDecimal ivaPactadoPorcentaje,
-                                                 BigDecimal envioPactadoPorcentaje) {
-        // Reapertura puntual de la Decisión 6, sólo IVA/envío (pedido explícito del usuario,
-        // 2026-08-25, fuera de OpenSpec). A diferencia de ajustarCostoSiSuperaAlActual: acá se
-        // escribe en cualquier dirección (sube o baja), nunca sólo "hacia arriba" — es corrección
-        // de dato, no ratchet de seguridad.
         BigDecimal unidadIva = producto.getUnidadNegocio() != null
                 ? producto.getUnidadNegocio().getIvaPorcentaje() : null;
         BigDecimal unidadEnvio = producto.getUnidadNegocio() != null
                 ? producto.getUnidadNegocio().getCostoEnvioPorcentaje() : null;
+        BigDecimal ivaEfectivoActual = CostoCalculator.resolverEfectivo(producto.getIvaPorcentaje(), unidadIva);
+        BigDecimal envioEfectivoActual = CostoCalculator.resolverEfectivo(producto.getCostoEnvioPorcentaje(), unidadEnvio);
+        BigDecimal descuentoEfectivoActualPct = descuentoEfectivoActual(producto);
 
-        boolean cambio = false;
+        // Final ACTUAL: costo/descuentos/IVA/envío tal como están HOY en la ficha (cascada real de
+        // producto.getDescuentos(), no colapsada) — costoProducto null se trata como 0 vía
+        // CostoCalculator.calcular (mismo criterio que el ratchet viejo: sin costo de referencia,
+        // cualquier compra pactada > 0 gana).
+        List<BigDecimal> porcentajesDescuentoActuales = producto.getDescuentos() == null ? List.of() :
+                producto.getDescuentos().stream().map(ProductoDescuento::getPorcentaje).collect(Collectors.toList());
+        BigDecimal finalActual = CostoCalculator.calcular(
+                producto.getCostoProducto(), porcentajesDescuentoActuales, ivaEfectivoActual, envioEfectivoActual)
+                .getCostoUnitario();
 
-        if (ivaPactadoPorcentaje != null) {
-            BigDecimal ivaEfectivoActual = CostoCalculator.resolverEfectivo(producto.getIvaPorcentaje(), unidadIva);
-            // Comparación numérica (compareTo), no de referencia/string — 21.00 y 21 no son
-            // "distintos" acá (guard explícito del pedido: "comparación numérica, no de string").
-            if (ivaPactadoPorcentaje.compareTo(ivaEfectivoActual) != 0) {
-                producto.setIvaPorcentaje(ivaPactadoPorcentaje);
-                cambio = true;
-            }
-        }
+        // Final PACTADO: los 4 valores de ESTA compra. Un null en iva/envío/descuento (línea de un
+        // pedido viejo, de antes de que el campo existiera) usa el valor EFECTIVO/actual de la
+        // ficha para ESE campo puntual — si ninguno de los 3 aporta nada nuevo, el final pactado
+        // sólo puede superar al actual si costoBasePactado por sí solo ya alcanza, y en ese caso el
+        // resto de los campos no se escriben más abajo (quedan como estaban).
+        BigDecimal ivaParaPactado = ivaPactado != null ? ivaPactado : ivaEfectivoActual;
+        BigDecimal envioParaPactado = envioPactado != null ? envioPactado : envioEfectivoActual;
+        BigDecimal descuentoParaPactado = descuentoPactadoPorcentaje != null ? descuentoPactadoPorcentaje : descuentoEfectivoActualPct;
+        BigDecimal finalPactado = CostoCalculator.calcular(
+                costoBasePactado, List.of(descuentoParaPactado), ivaParaPactado, envioParaPactado)
+                .getCostoUnitario();
 
-        if (envioPactadoPorcentaje != null) {
-            BigDecimal envioEfectivoActual = CostoCalculator.resolverEfectivo(producto.getCostoEnvioPorcentaje(), unidadEnvio);
-            if (envioPactadoPorcentaje.compareTo(envioEfectivoActual) != 0) {
-                producto.setCostoEnvioPorcentaje(envioPactadoPorcentaje);
-                cambio = true;
-            }
-        }
-
-        if (cambio) {
-            // El IVA/envío efectivo entra en la fórmula de precio (calcularPrecioSiAplica reusa
-            // CostoCalculator con el mismo fallback producto->unidad) — si cambiaron, precio queda
-            // desactualizado hasta que se recalcula acá, mismo criterio que ajustarCostoSiSuperaAlActual.
-            calcularPrecioSiAplica(producto);
-            productoRepository.save(producto);
-        }
-        return cambio;
-    }
-
-    @Override
-    @Transactional
-    public boolean actualizarDescuentosSiDistinto(Producto producto, BigDecimal descuentoPactadoPorcentaje,
-                                                    String descuentoPactadoDetalle) {
-        // Ampliación de pedido-planilla-editable, sólo descuentos (pedido explícito del dueño del
-        // negocio, 2026-08-25) — mismo patrón EXACTO que actualizarIvaEnvioSiDistinto: se
-        // sobreescribe en cualquier dirección (sube o baja el % efectivo), nunca sólo "hacia
-        // arriba". null significa "esta línea no trae descuento pactado" (pedido creado antes de
-        // esta funcionalidad, o línea sin ningún descuento cargado a mano): no-op total, la ficha
-        // no se toca.
-        if (descuentoPactadoPorcentaje == null) {
+        if (finalPactado.compareTo(finalActual) <= 0) {
+            // Menor o igual: no se toca NADA de la ficha (ni costo, ni descuentos, ni IVA, ni
+            // envío) — todo o nada, nunca parcial. "Igual" también cuenta como "no sube" (excluye
+            // el empate a propósito, no sólo la baja).
             return false;
         }
 
-        BigDecimal efectivoActual = descuentoEfectivoActual(producto);
-        // Comparación numérica (compareTo), no de referencia/string — mismo criterio que
-        // actualizarIvaEnvioSiDistinto (21.00 y 21 no son "distintos" acá).
-        if (descuentoPactadoPorcentaje.compareTo(efectivoActual) == 0) {
-            return false;
+        producto.setCostoProducto(costoBasePactado);
+        if (ivaPactado != null) {
+            producto.setIvaPorcentaje(ivaPactado);
+        }
+        if (envioPactado != null) {
+            producto.setCostoEnvioPorcentaje(envioPactado);
+        }
+        if (descuentoPactadoPorcentaje != null) {
+            // Reconstruye los descuentos con sus nombres REALES parseando descuentoPactadoDetalle
+            // (fix del segundo bug del 2026-08-26: antes se colapsaba todo a una única entrada
+            // sintética "Proveedor", perdiendo los nombres individuales) — mismo formato que ya
+            // arma el frontend y que aplicarDesglose() de MovimientoStockServiceImpl reproduce
+            // hacia el texto de MovimientoStock.descuentoDetalle. Sin desglose textual disponible
+            // (pedido viejo, o línea sin descuentos) la ficha queda con la lista vacía: no se
+            // inventa ninguna entrada sintética.
+            List<ProductoDescuentoDTO> descuentosIndividuales = parsearDescuentosPactados(descuentoPactadoDetalle);
+            producto.getDescuentos().clear();
+            int orden = 0;
+            for (ProductoDescuentoDTO d : descuentosIndividuales) {
+                ProductoDescuento entidad = new ProductoDescuento();
+                entidad.setProducto(producto);
+                entidad.setNombre(d.getNombre());
+                entidad.setPorcentaje(d.getPorcentaje());
+                entidad.setOrden(orden++);
+                producto.getDescuentos().add(entidad);
+            }
         }
 
-        // Reemplazo EN EL LUGAR (clear + add sobre la colección ya gestionada por Hibernate),
-        // NUNCA producto.setDescuentos(List.of(...)) directo: @OneToMany(mappedBy="producto",
-        // orphanRemoval=true) necesita que la entidad hija tenga la FK seteada
-        // (entidad.setProducto(producto)) para que el INSERT no viaje con producto_id NULL — mismo
-        // patrón exacto que ya usa reemplazarDescuentos() más abajo. Mismo criterio que
-        // PedidoServiceImpl.confirmarRecepcion() al dar de alta un producto nuevo desde una línea
-        // pendiente: se colapsa TODO en una única entrada sintética "Proveedor", el desglose
-        // original (si lo había) sólo sobrevive como texto en MovimientoStock.descuentoDetalle de
-        // ESTE movimiento — descuentoPactadoDetalle no se usa acá a propósito.
-        producto.getDescuentos().clear();
-        ProductoDescuento entidad = new ProductoDescuento();
-        entidad.setProducto(producto);
-        entidad.setNombre("Proveedor");
-        entidad.setPorcentaje(descuentoPactadoPorcentaje);
-        entidad.setOrden(0);
-        producto.getDescuentos().add(entidad);
-
-        // El descuento efectivo entra en la fórmula de precio (calcularPrecioSiAplica reusa
-        // CostoCalculator con la misma cascada) — si cambió, precio queda desactualizado hasta que
-        // se recalcula acá, mismo criterio que actualizarIvaEnvioSiDistinto.
         calcularPrecioSiAplica(producto);
         productoRepository.save(producto);
         return true;
+    }
+
+    // Patrón del desglose textual de un descuento individual dentro de descuentoPactadoDetalle:
+    // "Nombre XX.XX%" (nombre puede tener espacios, el número final antes del "%" es el
+    // porcentaje). Formato controlado por nuestro propio frontend (descuentoDetalleTexto() en
+    // PedidoNuevo.jsx) y por aplicarDesglose() de MovimientoStockServiceImpl — seguro de parsear.
+    private static final java.util.regex.Pattern DESCUENTO_DETALLE_PATTERN =
+            java.util.regex.Pattern.compile("^(.+?)\\s+([0-9]+(?:[.,][0-9]+)?)%$");
+
+    /**
+     * Parsea el desglose textual de descuentos pactados de una línea de pedido (formato
+     * {@code "Nombre XX.XX%; Nombre2 YY.YY%"}) en la lista real de descuentos con sus nombres
+     * individuales — reemplaza el colapso anterior a una única entrada sintética "Proveedor" (bug
+     * reportado por el usuario, 2026-08-26: se perdían los nombres reales al persistir en la
+     * ficha). {@code null}/vacío o sin partes reconocibles -&gt; lista vacía (línea sin
+     * descuentos, o pedido de antes de que este campo existiera) — nunca se inventa una entrada
+     * sintética. Usado tanto por {@link #actualizarFichaSiCostoFinalSupera} como por
+     * {@code PedidoServiceImpl} al dar de alta un producto nuevo desde una línea "pendiente".
+     */
+    public static List<ProductoDescuentoDTO> parsearDescuentosPactados(String descuentoPactadoDetalle) {
+        List<ProductoDescuentoDTO> resultado = new ArrayList<>();
+        if (descuentoPactadoDetalle == null || descuentoPactadoDetalle.trim().isEmpty()) {
+            return resultado;
+        }
+        for (String parte : descuentoPactadoDetalle.split(";")) {
+            String p = parte.trim();
+            if (p.isEmpty()) {
+                continue;
+            }
+            java.util.regex.Matcher m = DESCUENTO_DETALLE_PATTERN.matcher(p);
+            if (!m.matches()) {
+                // Defensivo: no debería pasar con el formato controlado de arriba — se ignora en
+                // vez de romper la confirmación de recepción por un dato textual inesperado.
+                continue;
+            }
+            try {
+                String nombre = m.group(1).trim();
+                BigDecimal porcentaje = new BigDecimal(m.group(2).replace(",", "."));
+                resultado.add(new ProductoDescuentoDTO(nombre, porcentaje));
+            } catch (NumberFormatException ignored) {
+                // Idem: formato inesperado, se ignora esa parte puntual.
+            }
+        }
+        return resultado;
     }
 
     /**
@@ -370,117 +371,6 @@ public class ProductoServiceImpl implements ProductoService {
                 producto.getDescuentos().stream().map(ProductoDescuento::getPorcentaje).collect(Collectors.toList());
         return CostoCalculator.calcular(BigDecimal.ZERO, porcentajes, BigDecimal.ZERO, BigDecimal.ZERO)
                 .getDescuentoEfectivoPorcentaje();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<RevisionCostoProductoDTO> listarRevisionCostos() {
-        // Misma resolución de unidad que obtenerTodosLosProductos() (Decisión 9 de design.md):
-        // sin chequeo nuevo de "es Herramientas" acá, el gate de sección vive en el frontend.
-        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
-        if (unidadId == null) {
-            return new ArrayList<>();
-        }
-
-        // Regla de moneda (Decisión 4, tarea 3.6): un producto USD sin conversión registrada en
-        // su último ingreso queda excluido de la lista visible por construcción (la query de
-        // findRevisionCostos() no lo puede comparar de forma segura); se deja logueado acá para
-        // que el caso sea diagnosticable en vez de simplemente invisible.
-        List<Long> usdSinConversion = productoRepository.findProductosUsdSinConversionRegistrada(unidadId);
-        for (Long productoId : usdSinConversion) {
-            log.warn("Revisión de costos: producto {} tiene moneda_costo=USD pero su último ingreso "
-                    + "no registró conversión (moneda_origen/cotizacion_aplicada); queda excluido del "
-                    + "panel porque costo_producto y costo_base no son comparables sin la cotización.",
-                    productoId);
-        }
-
-        List<RevisionCostoProjection> filas = productoRepository.findRevisionCostos(unidadId, LIMITE_REVISION_COSTOS);
-        if (filas.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // Sin lógica de negocio nueva sobre el costo (tarea 3.4): sólo se cargan las entidades
-        // completas (descuentos, IVA/envío propios, porcentajeGanancia) que la query nativa no
-        // trae, para poder reusar CostoCalculator igual que calcularPrecioSiAplica().
-        List<Long> productoIds = filas.stream().map(RevisionCostoProjection::getProductoId).collect(Collectors.toList());
-        Map<Long, Producto> productosPorId = productoRepository.findAllById(productoIds).stream()
-                .collect(Collectors.toMap(Producto::getId, p -> p));
-
-        List<RevisionCostoProductoDTO> resultado = new ArrayList<>();
-        for (RevisionCostoProjection fila : filas) {
-            Producto producto = productosPorId.get(fila.getProductoId());
-            if (producto == null) {
-                continue;
-            }
-            resultado.add(armarFilaRevisionCosto(fila, producto));
-        }
-        return resultado;
-    }
-
-    /**
-     * Arma el DTO de una fila del panel de revisión de costos (tarea 3.5). Reusa
-     * {@code CostoCalculator.resolverEfectivo()} + {@code CostoCalculator.calcular()} con
-     * exactamente los mismos argumentos que {@link #calcularPrecioSiAplica(Producto)}
-     * (descuentos del producto, IVA y envío efectivos con fallback a la unidad de negocio), para
-     * que {@code precioResultante} sea EXACTAMENTE el precio que queda persistido después de
-     * "Actualizar" — nunca una copia nueva de la aritmética.
-     */
-    private RevisionCostoProductoDTO armarFilaRevisionCosto(RevisionCostoProjection fila, Producto producto) {
-        RevisionCostoProductoDTO dto = new RevisionCostoProductoDTO();
-        dto.setProductoId(fila.getProductoId());
-        dto.setNombre(fila.getNombre());
-        dto.setProveedorNombre(fila.getProveedorNombre());
-        dto.setFechaUltimoIngreso(fila.getFechaUltimoIngreso());
-        dto.setCostoFicha(fila.getCostoFicha());
-        dto.setCostoUltimoIngreso(fila.getCostoUltimoIngreso());
-        dto.setMonedaCosto(fila.getMonedaCosto());
-        dto.setCotizacionAplicada(fila.getCotizacionAplicada());
-        dto.setMovimientoId(fila.getMovimientoId());
-        dto.setPrecioActual(producto.getPrecio());
-
-        List<BigDecimal> porcentajesDescuento = producto.getDescuentos() == null ? List.of() :
-                producto.getDescuentos().stream().map(ProductoDescuento::getPorcentaje).collect(Collectors.toList());
-        BigDecimal unidadIva = producto.getUnidadNegocio() != null ? producto.getUnidadNegocio().getIvaPorcentaje() : null;
-        BigDecimal unidadEnvio = producto.getUnidadNegocio() != null ? producto.getUnidadNegocio().getCostoEnvioPorcentaje() : null;
-        BigDecimal ivaEfectivo = CostoCalculator.resolverEfectivo(producto.getIvaPorcentaje(), unidadIva);
-        BigDecimal envioEfectivo = CostoCalculator.resolverEfectivo(producto.getCostoEnvioPorcentaje(), unidadEnvio);
-
-        // Costo unitario ACTUAL: sobre costoProducto de la ficha (OQ2) — el mismo número que ya
-        // explica el precio actual de la grilla, no un valor nuevo.
-        if (producto.getCostoProducto() != null) {
-            CostoCalculator.CostoResultado actual = CostoCalculator.calcular(
-                    producto.getCostoProducto(), porcentajesDescuento, ivaEfectivo, envioEfectivo);
-            dto.setCostoUnitarioActual(actual.getCostoUnitario());
-        }
-
-        // Costo unitario RESULTANTE: sobre el costo del último ingreso, ya resuelto por moneda
-        // (Decisión 4 — costoUltimoIngresoComparable viene de la proyección, en la MISMA escala
-        // que costoProducto: para ARS/null es costo_base tal cual, para USD con conversión es
-        // costo_base / cotizacion_aplicada).
-        BigDecimal costoNuevoBase = fila.getCostoUltimoIngresoComparable();
-        BigDecimal costoFinalNuevo = null;
-        if (costoNuevoBase != null) {
-            CostoCalculator.CostoResultado resultante = CostoCalculator.calcular(
-                    costoNuevoBase, porcentajesDescuento, ivaEfectivo, envioEfectivo);
-            costoFinalNuevo = resultante.getCostoUnitario();
-            dto.setCostoUnitarioResultante(costoFinalNuevo);
-        }
-
-        // Guard de calcularPrecioSiAplica() reproducido tal cual (Decisión 3): sin margen
-        // configurado o sin costo nuevo > 0, el precio no se mueve — precioResultante queda
-        // igual al actual, nunca un precio inventado.
-        boolean hayMargen = producto.getPorcentajeGanancia() != null
-                && producto.getPorcentajeGanancia().compareTo(BigDecimal.ZERO) > 0;
-        boolean hayCostoNuevo = costoNuevoBase != null && costoNuevoBase.compareTo(BigDecimal.ZERO) > 0;
-        if (hayMargen && hayCostoNuevo) {
-            BigDecimal gananciaMonto = costoFinalNuevo.multiply(producto.getPorcentajeGanancia())
-                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
-            dto.setPrecioResultante(costoFinalNuevo.add(gananciaMonto));
-        } else {
-            dto.setPrecioResultante(producto.getPrecio());
-        }
-
-        return dto;
     }
 
     private ProductoDTO mapToDTO(Producto producto) {

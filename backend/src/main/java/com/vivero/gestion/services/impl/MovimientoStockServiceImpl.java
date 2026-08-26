@@ -36,17 +36,17 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
     @Autowired
     private CapaCostoStockRepository capaCostoStockRepository;
 
-    // Auto-ajuste de costoProducto/precio hacia arriba (pedido puntual del usuario, 2026-08-25 —
-    // ver ProductoService.ajustarCostoSiSuperaAlActual). @Lazy es obligatorio acá: ProductoServiceImpl
+    // Ratchet unificado de costo FINAL (ver ProductoService.actualizarFichaSiCostoFinalSupera).
+    // @Lazy es obligatorio acá: ProductoServiceImpl
     // depende de MovimientoStockService por constructor (para el AJUSTE_INICIAL de crearProducto),
     // así que una dependencia directa y eager en sentido inverso es un ciclo real que Spring no
     // puede resolver al arrancar (BeanCurrentlyInCreationException) — con @Lazy se inyecta un
     // proxy y la referencia real recién se resuelve en el primer uso, momento en el que el
     // contenedor ya terminó de armar ambos beans. Se evaluó extraer la fórmula de precio a un
     // método estático compartido para evitar el ciclo del todo, pero eso hubiera significado
-    // sacarla de ProductoServiceImpl (donde ya vive reusada por crearProducto/actualizarProducto/
-    // listarRevisionCostos) sin necesidad real — @Lazy es el fix mínimo, estándar de Spring, y no
-    // duplica la fórmula de precio.
+    // sacarla de ProductoServiceImpl (donde ya vive reusada por crearProducto/actualizarProducto)
+    // sin necesidad real — @Lazy es el fix mínimo, estándar de Spring, y no duplica la fórmula de
+    // precio.
     @Autowired
     @Lazy
     private ProductoService productoService;
@@ -163,17 +163,20 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
         if (porCapas && (tipo == TipoMovimientoStock.INGRESO || tipo == TipoMovimientoStock.AJUSTE_INICIAL)
                 && cantidad != null && cantidad > 0) {
             crearCapa(guardado, producto);
-            // Auto-ajuste hacia arriba (pedido puntual del usuario, 2026-08-25): sólo cuando el
-            // costo BASE de ESTE movimiento (guardado.getCostoBase(), pre-descuentos/IVA/envío —
-            // el mismo tipo de número que Producto.costoProducto) supera producto.getCostoProducto()
-            // actual. Deliberadamente NO se usa CapaCostoStock.getCostoUnitario(): ese valor ya tiene
-            // la fórmula completa aplicada (viene de CostoCalculator), y pasarlo acá haría que
-            // ajustarCostoSiSuperaAlActual() vuelva a aplicar descuento/IVA/envío una segunda vez al
-            // recalcular precio (doble conteo verificado con datos reales). Update silencioso de
+            // Ratchet unificado de costo FINAL (fix del 2026-08-26, reemplaza los tres mecanismos
+            // puntuales del 2026-08-25 que comparaban cada pieza por separado — costo base, IVA/
+            // envío, descuento — y podían terminar bajando el costo final real de la ficha). Los 4
+            // valores pactados de ESTA línea ya están disponibles acá mismo (parámetros de este
+            // método): guardado.getCostoBase() es el costo BASE ya convertido del movimiento recién
+            // persistido (pre-descuentos/IVA/envío, el mismo tipo de número que
+            // Producto.costoProducto — deliberadamente NO CapaCostoStock.getCostoUnitario(), que ya
+            // tiene la fórmula completa aplicada y duplicaría el conteo). Update silencioso de
             // catálogo, misma transacción, sin generar ningún MovimientoStock adicional — no toca
             // producto.stock. Sólo alcanzable acá dentro (porCapas == true); Vivero nunca entra a
-            // esta rama (tarea 6.2, contrato de no-regresión).
-            productoService.ajustarCostoSiSuperaAlActual(producto, guardado.getCostoBase());
+            // esta rama (tarea 6.2, contrato de no-regresión) y hoy es la única unidad que compra a
+            // proveedor con el flag activo, así que el guard porCapas no achica el alcance real.
+            productoService.actualizarFichaSiCostoFinalSupera(producto, guardado.getCostoBase(),
+                    ivaPactadoExplicito, envioPactadoExplicito, descuentoPactadoExplicito, descuentoPactadoDetalleExplicito);
         }
 
         return guardado;

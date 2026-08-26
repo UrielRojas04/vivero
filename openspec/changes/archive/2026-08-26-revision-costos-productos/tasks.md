@@ -1,3 +1,11 @@
+> ## 🔴 ARCHIVADO COMO SUPERADO/ABANDONADO (2026-08-26) — quedó en 20/61
+>
+> Este change se pausó el 2026-08-22 (ver addendum de `proposal.md`) porque `costeo-fifo-herramientas` dejó obsoleto su criterio de detección, y se decidió no retomarlo: el ratchet automático (`ProductoServiceImpl.actualizarFichaSiCostoFinalSupera`) y el badge de margen de `Productos.jsx` (ambos construidos después, el 2026-08-26) ya cubren el problema que este panel resolvía a mano. Detalle completo en `proposal.md`.
+>
+> **Las tareas de los grupos 1, 2, 3 y 6 marcadas `[x]` abajo reflejan trabajo que efectivamente se hizo** (línea de base, query de detección, DTO, endpoint, columna de descarte) — **pero ese código se removió del repo en el commit de archivado**, porque no tenía consumidor en el frontend y su criterio quedó incorrecto con el flag de costeo por capas activo. Los grupos 4, 5, 7, 8 y 9 (checkpoint de usuario, wiring de "Actualizar", endpoint de "Descartar", UI del panel, verificación final) **nunca se implementaron** y no se van a implementar.
+>
+> ---
+>
 > ### ⚠️ Gobernanza: **MEDIA** — no toca la fórmula de costeo, pero sí mueve precios de venta
 >
 > Este change **no modifica `CostoCalculator` en ninguna línea** (contrato de no-regresión) y **no reabre la Decisión 6 de `herramientas-pedidos-proveedores`**: confirmar un pedido sigue sin pisar `costoProducto`/`precio`. Sólo lee un valor ya congelado y ofrece copiarlo por el mismo camino que hoy usa una edición manual en `ProductoForm.jsx`. Por eso está un escalón por debajo de `costeo-flexible-por-producto` y `config-costeo-por-proveedor` (ambos MEDIA-ALTA) y **no requiere checkpoint de fórmula**.
