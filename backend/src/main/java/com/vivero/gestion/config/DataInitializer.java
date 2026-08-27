@@ -86,21 +86,22 @@ public class DataInitializer implements CommandLineRunner {
         rolJefe.setPermisos(permisosJefe);
         rolRepository.save(rolJefe);
 
-        Set<PermisoEnum> permisosEmpleado = EnumSet.of(
-                PermisoEnum.LEER_STOCK,
-                PermisoEnum.ESCRIBIR_STOCK,
-                PermisoEnum.ESCRIBIR_VENTAS
-        );
-        Rol rolEmpleado = crearRol("EMPLEADO_VIVERO", permisosEmpleado);
-        rolEmpleado.setPermisos(permisosEmpleado);
-        rolRepository.save(rolEmpleado);
-
         // 3. Crear o actualizar Usuario Jefe
         Usuario jefe = usuarioRepository.findByUsername("jefe@vivero.com").orElse(new Usuario());
         if (jefe.getId() == null) {
             jefe.setUsername("jefe@vivero.com");
-            jefe.setPassword(passwordEncoder.encode("jefe123")); // Password seguro
-            
+            // Sin contraseña hardcodeada en el código fuente (2026-08-27, limpieza pre-GitHub):
+            // sólo se usa en la primera creación del usuario, en una base recién levantada — la
+            // base real ya tiene este usuario, así que esta rama nunca vuelve a correr para él.
+            // Requiere la variable de entorno INITIAL_JEFE_PASSWORD (sin default): una base
+            // nueva sin esa variable falla fuerte en vez de sembrar una contraseña conocida.
+            String initialPassword = System.getenv("INITIAL_JEFE_PASSWORD");
+            if (initialPassword == null || initialPassword.isBlank()) {
+                throw new IllegalStateException(
+                        "Falta la variable de entorno INITIAL_JEFE_PASSWORD para crear el usuario jefe inicial.");
+            }
+            jefe.setPassword(passwordEncoder.encode(initialPassword));
+
             // Mapear Usuario a su Rol
             Set<Rol> rolesJefe = new HashSet<>();
             rolesJefe.add(rolJefe);
