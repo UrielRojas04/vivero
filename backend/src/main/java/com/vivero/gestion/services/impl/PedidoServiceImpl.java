@@ -298,14 +298,18 @@ public class PedidoServiceImpl implements PedidoService {
                 nuevoProductoDTO.setIvaPorcentaje(detalle.getIvaPactadoPorcentaje());
                 nuevoProductoDTO.setCostoEnvioPorcentaje(detalle.getEnvioPactadoPorcentaje());
                 nuevoProductoDTO.setMonedaCosto(detalle.getMonedaLinea());
-                if (detalle.getDescuentoPactadoPorcentaje() != null
-                        && detalle.getDescuentoPactadoPorcentaje().compareTo(BigDecimal.ZERO) > 0) {
-                    // Único descuento colapsado de la línea, mismo criterio que la migración
-                    // de la OQ1 (todas las filas migradas quedan con un único descuento
-                    // "Proveedor") — el desglose original (si el proveedor tenía más de un
-                    // descuento) sólo sobrevive como texto en descuentoPactadoDetalle.
-                    nuevoProductoDTO.setDescuentos(List.of(
-                            new ProductoDescuentoDTO("Proveedor", detalle.getDescuentoPactadoPorcentaje())));
+                // Fix del 2026-08-26 (bug reportado por el usuario): antes se colapsaba todo a una
+                // única entrada sintética "Proveedor", perdiendo los nombres reales de cada
+                // descuento pactado. Ahora se parsea descuentoPactadoDetalle (mismo formato que ya
+                // arma el frontend, "Nombre XX.XX%; Nombre2 YY.YY%") y el producto nace con sus
+                // descuentos reales, separados por nombre — ver
+                // ProductoServiceImpl.parsearDescuentosPactados(). Sin desglose textual disponible
+                // (línea sin descuentos, o pedido de antes de que este campo existiera) el producto
+                // nace con la lista de descuentos vacía, sin inventar ninguna entrada sintética.
+                List<ProductoDescuentoDTO> descuentosIndividuales =
+                        ProductoServiceImpl.parsearDescuentosPactados(detalle.getDescuentoPactadoDetalle());
+                if (!descuentosIndividuales.isEmpty()) {
+                    nuevoProductoDTO.setDescuentos(descuentosIndividuales);
                 }
                 // Grupo 9 (tarea 8.6/9.2): el producto nace con el proveedor DEL PEDIDO, ya
                 // que Producto.proveedor existe. Puede ser null si el pedido no tiene
@@ -325,23 +329,15 @@ public class PedidoServiceImpl implements PedidoService {
                 producto.setStock(stockActual + recibida);
                 productoRepository.save(producto);
 
-                // Reapertura puntual de la Decisión 6, sólo IVA/envío (pedido explícito del
-                // usuario, sesión del 2026-08-25, fuera de OpenSpec): a diferencia del costo (que
-                // sigue siendo SIEMPRE el pactado de la línea, sin condición), el IVA/envío
-                // pactados de la línea sólo se persisten en la ficha si son numéricamente
-                // distintos del efectivo actual — ver actualizarIvaEnvioSiDistinto(). null en
-                // ambos campos (pedido creado antes de esta funcionalidad, línea que nunca trajo
-                // pactado) es un no-op total: no toca la ficha y abajo cae al fallback de siempre.
-                productoService.actualizarIvaEnvioSiDistinto(
-                        producto, detalle.getIvaPactadoPorcentaje(), detalle.getEnvioPactadoPorcentaje());
-
-                // Ampliación del change (pedido explícito del dueño del negocio, 2026-08-25, mismo
-                // criterio que IVA/envío arriba): la columna "Descuentos" de una línea de producto
-                // YA EXISTENTE también pasa a ser editable, precargada con los descuentos actuales
-                // de la ficha — si el % pactado de la línea es distinto del efectivo colapsado
-                // actual, se persiste como nuevo default de la ficha hacia adelante.
-                productoService.actualizarDescuentosSiDistinto(
-                        producto, detalle.getDescuentoPactadoPorcentaje(), detalle.getDescuentoPactadoDetalle());
+                // Fix del 2026-08-26: el ajuste de ficha (costo/IVA/envío/descuento, sólo si el
+                // costo FINAL completo de esta compra supera al final actual) ya NO se dispara acá
+                // — se unificó en un único mecanismo (ProductoServiceImpl.actualizarFichaSiCostoFinalSupera)
+                // que corre dentro de MovimientoStockServiceImpl.registrarMovimiento(), justo
+                // después de crear la capa de costo de este mismo movimiento (mismo lugar donde
+                // antes vivía sólo el ajuste de costo base). Los tres mecanismos viejos que vivían
+                // acá por separado (costo/IVA-envío/descuento, cada uno con su propia condición de
+                // disparo) se eliminaron: comparar cada pieza por separado era justamente el bug
+                // reportado por el usuario (la combinación podía bajar el costo final real).
 
                 // Costo congelado en el movimiento = costoUnitarioPactado de ESTE ítem, no
                 // producto.getCostoProducto() (Decisión 4 / Checkpoint grupo 5). NO se pasa por

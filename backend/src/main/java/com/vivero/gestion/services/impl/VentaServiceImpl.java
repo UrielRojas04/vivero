@@ -70,8 +70,28 @@ public class VentaServiceImpl implements VentaService {
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
                 
-        Cliente cliente = clienteRepository.findById(request.getClienteId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+        Cliente cliente = null;
+        if (request.getClienteId() != null) {
+            cliente = clienteRepository.findById(request.getClienteId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+        } else if (request.getClienteAdHoc() != null) {
+            if (!request.getClienteAdHoc().isCasual()) {
+                // Crear el cliente en la base de datos
+                Cliente nuevoCliente = new Cliente();
+                nuevoCliente.setNombreRazonSocial(request.getClienteAdHoc().getNombre());
+                nuevoCliente.setTelefono(request.getClienteAdHoc().getTelefono());
+                
+                Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+                if (unidadId != null) {
+                    UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
+                    nuevoCliente.setUnidadNegocio(unidad);
+                }
+                
+                cliente = clienteRepository.save(nuevoCliente);
+            }
+        } else {
+            throw new IllegalArgumentException("Debe enviar un clienteId o los datos de un cliente express");
+        }
 
         if (request.getDetalles() == null || request.getDetalles().isEmpty()) {
             throw new IllegalArgumentException("La venta debe tener al menos un detalle");
@@ -79,8 +99,14 @@ public class VentaServiceImpl implements VentaService {
 
         Venta venta = new Venta();
         venta.setCliente(cliente);
+        if (cliente == null && request.getClienteAdHoc() != null && request.getClienteAdHoc().isCasual()) {
+            venta.setClienteNombreCasual(request.getClienteAdHoc().getNombre());
+            venta.setClienteTelefonoCasual(request.getClienteAdHoc().getTelefono());
+        }
         venta.setUsuario(usuario);
         venta.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        
+        final Cliente finalCliente = cliente;
         
         BigDecimal porcentajeDescuento = request.getPorcentajeDescuento() != null ? request.getPorcentajeDescuento() : BigDecimal.ZERO;
         venta.setPorcentajeDescuento(porcentajeDescuento);
@@ -90,12 +116,12 @@ public class VentaServiceImpl implements VentaService {
             UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
             venta.setUnidadNegocio(unidad);
 
-            if (unidadId == 1L && unidad != null) {
+            if (unidadId == 1L && unidad != null && finalCliente != null) {
                 FacturaCliente factura = facturaClienteRepository
-                    .findByClienteIdAndEstadoAndUnidadNegocioId(cliente.getId(), "ABIERTA", unidadId)
+                    .findByClienteIdAndEstadoAndUnidadNegocioId(finalCliente.getId(), "ABIERTA", unidadId)
                     .orElseGet(() -> {
                         FacturaCliente nueva = new FacturaCliente();
-                        nueva.setCliente(cliente);
+                        nueva.setCliente(finalCliente);
                         nueva.setUnidadNegocio(unidad);
                         nueva.setEstado("ABIERTA");
                         nueva.setFechaApertura(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
@@ -172,7 +198,9 @@ public class VentaServiceImpl implements VentaService {
                             pReq.getFechaRecepcion() : 
                             LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")).toLocalDate();
                     cheque.setFechaRecepcion(fechaRec);
-                    cheque.setCliente(cliente);
+                    if (cliente != null) {
+                        cheque.setCliente(cliente);
+                    }
                     cheque.setPagoOrigen(pago);
                     // venta se setea después de guardar la venta para evitar TransientObjectException
                     cheque.setMonto(pReq.getMonto());
@@ -187,22 +215,27 @@ public class VentaServiceImpl implements VentaService {
 
         BigDecimal diferencia = totalPagado.subtract(totalFinal);
         if (diferencia.compareTo(BigDecimal.ZERO) != 0) {
-            CuentaCorrienteDinero ccd = ccdRepository.findByClienteId(cliente.getId())
-                    .orElseGet(() -> {
-                        CuentaCorrienteDinero nueva = new CuentaCorrienteDinero();
-                        nueva.setCliente(cliente);
-                        nueva.setBalancePesos(BigDecimal.ZERO);
-                        return ccdRepository.save(nueva);
-                    });
-            
-            if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
-                ccd.agregarDeuda(diferencia.abs());
-                venta.setEstadoPago(totalPagado.compareTo(BigDecimal.ZERO) > 0 ? "PARCIAL" : "DEBE");
+            if (finalCliente != null) {
+                CuentaCorrienteDinero ccd = ccdRepository.findByClienteId(finalCliente.getId())
+                        .orElseGet(() -> {
+                            CuentaCorrienteDinero nueva = new CuentaCorrienteDinero();
+                            nueva.setCliente(finalCliente);
+                            nueva.setBalancePesos(BigDecimal.ZERO);
+                            return ccdRepository.save(nueva);
+                        });
+                
+                if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
+                    ccd.agregarDeuda(diferencia.abs());
+                    venta.setEstadoPago(totalPagado.compareTo(BigDecimal.ZERO) > 0 ? "PARCIAL" : "DEBE");
+                } else {
+                    ccd.agregarSaldoAFavor(diferencia);
+                    venta.setEstadoPago("PAGADO");
+                }
+                ccdRepository.save(ccd);
             } else {
-                ccd.agregarSaldoAFavor(diferencia);
-                venta.setEstadoPago("PAGADO");
+                // Para cliente casual, no hay cuenta corriente
+                venta.setEstadoPago(totalPagado.compareTo(totalFinal) >= 0 ? "PAGADO" : "DEBE");
             }
-            ccdRepository.save(ccd);
         } else {
             venta.setEstadoPago("PAGADO");
         }
@@ -220,7 +253,9 @@ public class VentaServiceImpl implements VentaService {
         
         // --- Historial Bandejas ---
         if (request.getBandejasEntregadas() != null && request.getBandejasEntregadas() > 0) {
-            bandejasService.registrarEntrega(cliente.getId(), request.getBandejasEntregadas(), ventaGuardada, username);
+            if (cliente != null) {
+                bandejasService.registrarEntrega(cliente.getId(), request.getBandejasEntregadas(), ventaGuardada, username);
+            }
         }
 
         return mapearAVentaResponseDTO(ventaGuardada);
@@ -333,6 +368,9 @@ public class VentaServiceImpl implements VentaService {
             if (venta.getCliente() != null) {
                 dto.setClienteNombre(venta.getCliente().getNombreRazonSocial());
                 dto.setClienteTelefono(venta.getCliente().getTelefono());
+            } else if (venta.getClienteNombreCasual() != null) {
+                dto.setClienteNombre(venta.getClienteNombreCasual() + " (Casual)");
+                dto.setClienteTelefono(venta.getClienteTelefonoCasual());
             } else {
                 dto.setClienteNombre("(eliminado)");
             }

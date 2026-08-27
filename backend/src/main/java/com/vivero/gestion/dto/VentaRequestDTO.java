@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 public class VentaRequestDTO {
     private Long clienteId;
+    private ClienteAdHocDTO clienteAdHoc;
     private BigDecimal porcentajeDescuento;
     private Integer bandejasEntregadas;
     private List<VentaDetalleRequestDTO> detalles = new ArrayList<>();
@@ -15,6 +16,9 @@ public class VentaRequestDTO {
 
     public Long getClienteId() { return clienteId; }
     public void setClienteId(Long clienteId) { this.clienteId = clienteId; }
+
+    public ClienteAdHocDTO getClienteAdHoc() { return clienteAdHoc; }
+    public void setClienteAdHoc(ClienteAdHocDTO clienteAdHoc) { this.clienteAdHoc = clienteAdHoc; }
     
     public BigDecimal getPorcentajeDescuento() { return porcentajeDescuento; }
     public void setPorcentajeDescuento(BigDecimal porcentajeDescuento) { this.porcentajeDescuento = porcentajeDescuento; }

@@ -69,7 +69,7 @@ function App() {
             </Route>
 
             {/* Facturas */}
-            <Route element={<ProtectedRoute requiredPermission={['ESCRIBIR_VENTAS', 'LEER_CLIENTES']} />}>
+            <Route element={<ProtectedRoute requiredPermission="LEER_FACTURACION" />}>
               <Route path="/facturas" element={<Facturas />} />
               <Route path="/facturas/:clienteId" element={<FacturaCliente />} />
             </Route>

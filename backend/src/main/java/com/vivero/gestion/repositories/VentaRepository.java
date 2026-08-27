@@ -24,7 +24,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query("""
             SELECT new com.vivero.gestion.dto.VentaLiteDTO(
-                v.id, v.id, v.fecha, COALESCE(c.nombreRazonSocial, '(eliminado)'), v.totalFinal, v.estadoPago,
+                v.id, v.id, v.fecha, COALESCE(c.nombreRazonSocial, v.clienteNombreCasual, '(eliminado)'), v.totalFinal, v.estadoPago,
                 (SELECT COALESCE(SUM((d.precioUnitarioHistorico - d.costoUnitarioHistorico) * d.cantidad), 0) FROM VentaDetalle d WHERE d.venta.id = v.id),
                 COALESCE(u.username, '(sin vendedor)'),
                 u.id
@@ -33,7 +33,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             WHERE v.fecha BETWEEN :desde AND :hasta
               AND v.unidadNegocio.id = :unidadId
               AND (:usuarioId IS NULL OR u.id = :usuarioId)
-              AND (:q IS NULL OR :q = '' OR LOWER(COALESCE(c.nombreRazonSocial, '(eliminado)')) LIKE LOWER(CONCAT('%', :q, '%')))
+              AND (:q IS NULL OR :q = '' OR LOWER(COALESCE(c.nombreRazonSocial, v.clienteNombreCasual, '(eliminado)')) LIKE LOWER(CONCAT('%', :q, '%')))
             ORDER BY v.fecha DESC
             """)
     Page<VentaLiteDTO> listarVentasPorRango(@Param("desde") LocalDateTime desde,

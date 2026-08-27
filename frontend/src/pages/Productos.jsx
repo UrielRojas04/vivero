@@ -7,6 +7,19 @@ import { getErrorMessage } from '../utils/errorMessage';
 import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
+// Aviso de margen (pedido del usuario 2026-08-25): el costo dinámico de las capas (`costoUnitarioHistorico`)
+// puede superar al precio de venta fijo sin que nadie lo note, porque el precio nunca se actualiza solo
+// (decisión deliberada, ver costeo-fifo-herramientas). Esto sólo lee y compara — nunca toca precio/costo.
+const estadoMargen = (producto) => {
+  const costoActual = producto.costoUnitarioHistorico ?? producto.costoProducto;
+  if (costoActual === null || costoActual === undefined || !producto.precio) return null;
+  const margenReal = ((producto.precio - costoActual) / costoActual) * 100;
+  if (margenReal < 0) return { nivel: 'perdida', margenReal };
+  const margenObjetivo = producto.porcentajeGanancia;
+  if (margenObjetivo && margenReal < margenObjetivo) return { nivel: 'reducido', margenReal };
+  return null;
+};
+
 const Productos = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
   const { unidadNegocioActiva } = useAuthStore();
@@ -293,6 +306,23 @@ const Productos = () => {
                         }`}>
                           Stock: {producto.stock}
                         </span>
+                        {unidadNegocioActiva === '2' && (() => {
+                          const margen = estadoMargen(producto);
+                          if (!margen) return null;
+                          return (
+                            <span
+                              title={`Margen real actual: ${margen.margenReal.toFixed(1)}%`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                                margen.nivel === 'perdida'
+                                  ? 'bg-red-50 text-red-700 border-red-100'
+                                  : 'bg-amber-50 text-amber-700 border-amber-100'
+                              }`}
+                            >
+                              <AlertCircle className="w-3 h-3" />
+                              {margen.nivel === 'perdida' ? 'Vendiendo a pérdida' : 'Margen reducido'}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -314,7 +344,7 @@ const Productos = () => {
 
                     {unidadNegocioActiva === '2' ? (
                       <div className="flex flex-wrap gap-2 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                        <span className="font-semibold">Costo: ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                        <span className="font-semibold">Costo: ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
                         <span>•</span>
                         <span className="font-semibold text-emerald-600">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
                       </div>
@@ -417,8 +447,25 @@ const Productos = () => {
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">
-                            ${producto.costoProducto ? producto.costoProducto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
+                            ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
                           </span>
+                          {(() => {
+                            const margen = estadoMargen(producto);
+                            if (!margen) return null;
+                            return (
+                              <span
+                                title={`Margen real actual: ${margen.margenReal.toFixed(1)}%`}
+                                className={`ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                                  margen.nivel === 'perdida'
+                                    ? 'bg-red-50 text-red-700 border-red-100'
+                                    : 'bg-amber-50 text-amber-700 border-amber-100'
+                                }`}
+                              >
+                                <AlertCircle className="w-3 h-3" />
+                                {margen.nivel === 'perdida' ? 'Pérdida' : 'Margen bajo'}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">

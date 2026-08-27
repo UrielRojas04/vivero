@@ -8,6 +8,7 @@ public class FacturaClienteDTO {
     private Long id;
     private Long clienteId;
     private String clienteNombre;
+    private String clienteTelefono;
     private LocalDateTime fechaApertura;
     private LocalDateTime fechaCierre;
     private String estado;
@@ -27,6 +28,8 @@ public class FacturaClienteDTO {
     public void setClienteId(Long clienteId) { this.clienteId = clienteId; }
     public String getClienteNombre() { return clienteNombre; }
     public void setClienteNombre(String clienteNombre) { this.clienteNombre = clienteNombre; }
+    public String getClienteTelefono() { return clienteTelefono; }
+    public void setClienteTelefono(String clienteTelefono) { this.clienteTelefono = clienteTelefono; }
     public LocalDateTime getFechaApertura() { return fechaApertura; }
     public void setFechaApertura(LocalDateTime fechaApertura) { this.fechaApertura = fechaApertura; }
     public LocalDateTime getFechaCierre() { return fechaCierre; }

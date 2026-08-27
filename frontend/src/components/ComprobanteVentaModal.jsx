@@ -52,6 +52,8 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
   const detalles = venta.detalles || [];
   const pagos = venta.pagos || [];
 
+  const clienteNombreLimpio = venta.clienteNombre ? venta.clienteNombre.replace(' (Casual)', '') : '-';
+
   const descargarPDF = () => {
     try {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -83,9 +85,11 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
       doc.setFontSize(11);
       const meta = [
         ['Fecha', formatearFecha(venta.fecha)],
-        ['Cliente', venta.clienteNombre || '-'],
-        ['Vendedor', venta.usuarioNombre || '-'],
+        ['Cliente', clienteNombreLimpio],
       ];
+      if (venta.clienteTelefono) {
+        meta.push(['Teléfono', venta.clienteTelefono]);
+      }
       meta.forEach(([label, value]) => {
         doc.setFont('helvetica', 'bold');
         doc.text(label, MARGIN, y);
@@ -272,11 +276,11 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
       '',
       `Venta Nº: ${venta.id}`,
       `Fecha: ${formatearFecha(venta.fecha)}`,
-      `Cliente: ${venta.clienteNombre || '-'}`,
-      `Vendedor: ${venta.usuarioNombre || '-'}`,
+      `Cliente: ${clienteNombreLimpio}`,
+      venta.clienteTelefono ? `Teléfono: ${venta.clienteTelefono}` : null,
       `Total final: ${formatearDinero(venta.totalFinal)}`,
       `Estado de pago: ${venta.estadoPago || '-'}`,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     const telefono = normalizarTelefonoWhatsApp(venta.clienteTelefono || WHATSAPP_CONTACTO);
 
@@ -427,11 +431,10 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
             <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
               <div>
                 <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Cliente</p>
-                <p className="font-semibold text-gray-900">{venta.clienteNombre || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Vendedor</p>
-                <p className="font-semibold text-gray-900">{venta.usuarioNombre || '-'}</p>
+                <p className="font-semibold text-gray-900">{clienteNombreLimpio}</p>
+                {venta.clienteTelefono && (
+                  <p className="text-sm text-gray-600 mt-0.5">{venta.clienteTelefono}</p>
+                )}
               </div>
             </div>
 

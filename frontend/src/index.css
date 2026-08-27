@@ -8,6 +8,10 @@
   --color-text-main: #1f2937;
   --color-text-muted: #6b7280;
 
+  /* Fuente exclusiva del panel de la factura (FacturaCliente.jsx, clase `font-factura`).
+     No reemplaza la fuente global del body — ver más abajo. */
+  --font-factura: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+
   --animate-fadeIn: fadeIn 0.2s ease-out forwards;
   --animate-scaleIn: scaleIn 0.2s ease-out forwards;
 

@@ -38,6 +38,10 @@ export default function NuevaVenta() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { unidadNegocioActiva } = useAuthStore();
+  const isHerramientas = String(unidadNegocioActiva) === '2';
+
+  const [isClienteExpress, setIsClienteExpress] = useState(false);
+  const [clienteExpressData, setClienteExpressData] = useState({ nombre: '', telefono: '', casual: true });
 
   const liveStocks = useStockStore(state => state.liveStocks);
 
@@ -134,6 +138,7 @@ export default function NuevaVenta() {
   // ---- Acciones ----
   const seleccionarCliente = (id) => {
     setCliente(id);
+    setIsClienteExpress(false);
     setBusquedaCliente('');
   };
 
@@ -231,7 +236,8 @@ export default function NuevaVenta() {
     setPagosLineas(prev => prev.filter(p => p.id !== id));
   };
   const handleSubmit = async () => {
-    if (!clienteId) return pushToast('error', 'Seleccioná un cliente');
+    if (!isClienteExpress && !clienteId) return pushToast('error', 'Seleccioná un cliente o usá el modo express');
+    if (isClienteExpress && !clienteExpressData.nombre.trim()) return pushToast('error', 'Ingresá el nombre del cliente express');
     if (detalles.length === 0) return pushToast('error', 'Agregá al menos un producto a la venta');
 
     const pagosASubir = pagosLineas
@@ -251,7 +257,8 @@ export default function NuevaVenta() {
       });
 
     const payload = {
-      clienteId: parseInt(clienteId),
+      clienteId: isClienteExpress ? null : parseInt(clienteId),
+      clienteAdHoc: isClienteExpress ? clienteExpressData : null,
       porcentajeDescuento: descuentoVal,
       bandejasEntregadas: parseInt(bandejasEntregadas) || 0,
       detalles: detalles.map(d => ({ 
@@ -278,6 +285,8 @@ export default function NuevaVenta() {
       clearCart();
       setBusquedaCliente('');
       setBusquedaProducto('');
+      setIsClienteExpress(false);
+      setClienteExpressData({ nombre: '', telefono: '', casual: true });
       setIsModalOpen(false);
       setPagosLineas([]);
 
@@ -307,12 +316,68 @@ export default function NuevaVenta() {
           
           {/* Tarjeta Cliente */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-emerald-600" />
-              1. Identificar Cliente
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-emerald-600" />
+                1. Identificar Cliente
+              </h2>
+              {isHerramientas && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsClienteExpress(!isClienteExpress);
+                    if (!isClienteExpress) setCliente('');
+                  }}
+                  className={`text-sm font-semibold px-3 py-1 rounded-lg transition-colors border ${
+                    isClienteExpress 
+                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {isClienteExpress ? 'Volver a Agenda' : 'Cliente Express'}
+                </button>
+              )}
+            </div>
             
-            {clienteId ? (
+            {isClienteExpress ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-4">
+                <p className="text-sm text-emerald-700 mb-2">Ingresá los datos para la factura. No es necesario buscar en la agenda.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre o Razón Social *</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      value={clienteExpressData.nombre}
+                      onChange={(e) => setClienteExpressData({ ...clienteExpressData, nombre: e.target.value })}
+                      placeholder="Ej: Consumidor Final"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      value={clienteExpressData.telefono}
+                      onChange={(e) => setClienteExpressData({ ...clienteExpressData, telefono: e.target.value })}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="casualCheckbox"
+                    checked={clienteExpressData.casual}
+                    onChange={(e) => setClienteExpressData({ ...clienteExpressData, casual: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                  />
+                  <label htmlFor="casualCheckbox" className="text-sm text-gray-700">
+                    Es cliente casual (no guardar en la agenda de clientes)
+                  </label>
+                </div>
+              </div>
+            ) : clienteId ? (
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex justify-between items-center shadow-inner">
                 <div>
                   <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">Cliente Seleccionado</p>
@@ -509,7 +574,7 @@ export default function NuevaVenta() {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              disabled={isSubmitting || detalles.length === 0 || !clienteId}
+              disabled={isSubmitting || detalles.length === 0 || (!clienteId && !isClienteExpress)}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Confirmar Venta <ArrowRight className="w-5 h-5" />

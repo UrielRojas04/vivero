@@ -214,6 +214,8 @@ public class ChequeServiceImpl implements ChequeService {
             if (cheque.getCliente() != null) {
                 dto.setClienteId(cheque.getCliente().getId());
                 dto.setClienteNombre(cheque.getCliente().getNombreRazonSocial());
+            } else if (cheque.getVenta() != null && cheque.getVenta().getClienteNombreCasual() != null) {
+                dto.setClienteNombre(cheque.getVenta().getClienteNombreCasual() + " (Casual)");
             }
         } catch (jakarta.persistence.EntityNotFoundException e) {
             dto.setClienteNombre("(eliminado)");

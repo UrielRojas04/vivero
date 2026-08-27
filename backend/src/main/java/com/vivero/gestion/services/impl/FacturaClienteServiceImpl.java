@@ -208,6 +208,7 @@ public class FacturaClienteServiceImpl implements FacturaClienteService {
         dto.setId(factura.getId());
         dto.setClienteId(factura.getCliente().getId());
         dto.setClienteNombre(factura.getCliente().getNombreRazonSocial());
+        dto.setClienteTelefono(factura.getCliente().getTelefono());
         dto.setFechaApertura(factura.getFechaApertura());
         dto.setFechaCierre(factura.getFechaCierre());
         dto.setEstado(factura.getEstado());

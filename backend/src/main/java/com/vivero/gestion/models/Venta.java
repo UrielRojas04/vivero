@@ -23,6 +23,12 @@ public class Venta {
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
+    @Column(name = "cliente_nombre_casual")
+    private String clienteNombreCasual;
+
+    @Column(name = "cliente_telefono_casual")
+    private String clienteTelefonoCasual;
+
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario; // Quien registra la venta
@@ -59,6 +65,10 @@ public class Venta {
     public void setId(Long id) { this.id = id; }
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
+    public String getClienteNombreCasual() { return clienteNombreCasual; }
+    public void setClienteNombreCasual(String clienteNombreCasual) { this.clienteNombreCasual = clienteNombreCasual; }
+    public String getClienteTelefonoCasual() { return clienteTelefonoCasual; }
+    public void setClienteTelefonoCasual(String clienteTelefonoCasual) { this.clienteTelefonoCasual = clienteTelefonoCasual; }
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }

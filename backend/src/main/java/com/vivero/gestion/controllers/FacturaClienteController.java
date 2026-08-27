@@ -20,13 +20,13 @@ public class FacturaClienteController {
     }
 
     @PostMapping("/cliente/{clienteId}/abrir")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('ESCRIBIR_VENTAS')")
     public ResponseEntity<FacturaClienteDTO> abrirFacturaManual(@PathVariable Long clienteId) {
         return ResponseEntity.ok(facturaService.abrirFacturaManual(clienteId));
     }
 
     @GetMapping("/cliente/{clienteId}/activa")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS') or hasAuthority('LEER_CLIENTES')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('LEER_CLIENTES')")
     public ResponseEntity<FacturaClienteDTO> obtenerFacturaActiva(@PathVariable Long clienteId) {
         FacturaClienteDTO factura = facturaService.obtenerFacturaActiva(clienteId);
         if (factura == null) {
@@ -36,31 +36,31 @@ public class FacturaClienteController {
     }
 
     @GetMapping("/cliente/{clienteId}/historial")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS') or hasAuthority('LEER_CLIENTES')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('LEER_CLIENTES')")
     public ResponseEntity<List<FacturaClienteDTO>> listarHistorial(@PathVariable Long clienteId) {
         return ResponseEntity.ok(facturaService.listarHistorialFacturas(clienteId));
     }
 
     @PostMapping("/{facturaId}/conceptos")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('ESCRIBIR_VENTAS')")
     public ResponseEntity<FacturaClienteDTO> agregarConcepto(@PathVariable Long facturaId, @RequestBody FacturaConceptoDTO request) {
         return ResponseEntity.ok(facturaService.agregarConcepto(facturaId, request));
     }
 
     @PostMapping("/{facturaId}/pagos")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('ESCRIBIR_VENTAS')")
     public ResponseEntity<FacturaClienteDTO> registrarPago(@PathVariable Long facturaId, @RequestBody com.vivero.gestion.dto.PagoRequestDTO request) {
         return ResponseEntity.ok(facturaService.registrarPago(facturaId, request));
     }
 
     @PostMapping("/{facturaId}/cerrar")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('ESCRIBIR_VENTAS')")
     public ResponseEntity<FacturaClienteDTO> cerrarFactura(@PathVariable Long facturaId) {
         return ResponseEntity.ok(facturaService.cerrarFactura(facturaId));
     }
 
     @PutMapping("/pagos/{pagoId}/rechazar")
-    @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
+    @PreAuthorize("hasAuthority('LEER_FACTURACION') and hasAuthority('ESCRIBIR_VENTAS')")
     public ResponseEntity<Void> rechazarPago(@PathVariable Long pagoId) {
         facturaService.rechazarPago(pagoId);
         return ResponseEntity.ok().build();

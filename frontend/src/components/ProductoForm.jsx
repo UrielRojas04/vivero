@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Truck } from 'lucide-react';
+import { X, Plus, Trash2, Truck, Download } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUIStore } from '../store/useUIStore';
@@ -57,6 +57,10 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   // sin valor ambiguo — mismo criterio que el backend (Producto.monedaCosto).
   const [monedaCosto, setMonedaCosto] = useState('ARS');
   const [errors, setErrors] = useState({});
+  // Precio que el producto tenía ANTES de abrir el formulario (snapshot al abrir), para poder
+  // avisar en el submit si el precio calculado se movió respecto de este valor (fix del
+  // 2026-08-26, pedido directo del usuario). null en alta (no hay "antes" con qué comparar).
+  const [precioOriginal, setPrecioOriginal] = useState(null);
 
   const { data: proveedores = [] } = useQuery({
     queryKey: ['proveedores'],
@@ -86,6 +90,9 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       // efectivamente vinculado, sin disparar la copia de valores (eso sólo pasa vía
       // handleProveedorChange, ante una elección explícita del usuario — tarea 8.3).
       setProveedorSeleccionadoId(producto.proveedorId ? producto.proveedorId.toString() : '');
+      // Snapshot del precio "de antes" para la confirmación del submit — nunca se vuelve a
+      // recalcular durante la edición, sólo se lee al comparar en handleSubmit.
+      setPrecioOriginal(producto.precio !== null && producto.precio !== undefined ? Number(producto.precio) : null);
     } else {
       setNombre('');
       setDescripcion('');
@@ -105,6 +112,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setDueno('');
       setMonedaCosto('ARS');
       setProveedorSeleccionadoId('');
+      setPrecioOriginal(null);
     }
     setErrors({});
   }, [producto, isOpen]);
@@ -215,35 +223,16 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     );
   };
 
-  // Al elegir proveedor: en un producto NUEVO se copia directo (tarea 8.1); en uno YA EXISTENTE
-  // se pide confirmación explícita antes de pisar sus valores (tarea 8.3, vía askConfirm — nunca
-  // confirm() nativo).
+  // Fix del 2026-08-26 (pedido directo del usuario): elegir un proveedor en el <select> es sólo
+  // navegación — NUNCA pisa los campos de descuentos/IVA/envío/moneda del producto por su cuenta,
+  // ni siquiera con confirmación. Copiar los defaults del proveedor pasa a ser una acción
+  // deliberada y separada: el botón "Aplicar valores por defecto de {proveedor}" de más abajo,
+  // que llama a aplicarPerfilProveedor() directamente al click.
   const handleProveedorChange = (e) => {
-    const nuevoId = e.target.value;
-    if (!nuevoId) {
-      setProveedorSeleccionadoId('');
-      return;
-    }
-    const proveedor = proveedores.find((p) => String(p.id) === nuevoId);
-    if (!proveedor) return;
-
-    if (!producto) {
-      setProveedorSeleccionadoId(nuevoId);
-      aplicarPerfilProveedor(proveedor);
-      return;
-    }
-
-    askConfirm({
-      title: 'Traer valores del proveedor',
-      message: `¿Traer los valores de costeo de "${proveedor.nombre}" (IVA, envío, descuentos y moneda)? Van a reemplazar los que tiene cargados este producto ahora. Vas a poder editarlos después.`,
-      variant: 'warning',
-      confirmLabel: 'Traer valores',
-      onConfirm: () => {
-        setProveedorSeleccionadoId(nuevoId);
-        aplicarPerfilProveedor(proveedor);
-      },
-    });
+    setProveedorSeleccionadoId(e.target.value);
   };
+
+  const proveedorSeleccionado = proveedores.find((p) => String(p.id) === proveedorSeleccionadoId);
 
   // Desglose en vivo (tarea 9.6): una línea por descuento (cascada, en el orden cargado), línea
   // de IVA, línea de envío, costo final y precio de venta — todo desde el mismo utilitario que
@@ -316,36 +305,66 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const guardar = () => {
+    onSave({
+      nombre,
+      descripcion,
+      precio: parseFloat(precio),
+      costoProducto: costoProducto ? parseFloat(costoProducto) : null,
+      porcentajeGanancia: porcentajeGanancia ? parseFloat(porcentajeGanancia) : null,
+      // Este formulario ya no edita descuentoProveedor directamente (Decisión 8: la columna
+      // queda intacta como red de rollback, pero deja de leerse/escribirse desde acá). La
+      // lista de descuentos es la fuente de verdad nueva; no enviarlo deja el valor migrado
+      // sin tocar en el backend (actualizarProducto sólo lo pisa si el DTO trae un valor).
+      descuentos: descuentos.map((d) => ({ nombre: d.nombre.trim(), porcentaje: parseFloat(d.porcentaje) })),
+      // '' -> null (no 0): un campo vacío significa "hereda el default de la unidad de
+      // negocio" (Decisión 5), mismo patrón que ya usa este componente para costoProducto.
+      ivaPorcentaje: ivaPropio !== '' ? parseFloat(ivaPropio) : null,
+      costoEnvioPorcentaje: envioPropio !== '' ? parseFloat(envioPropio) : null,
+      stock: parseInt(stock, 10),
+      lote: lote.trim() || null,
+      dueno: dueno.trim() || null,
+      // Vínculo de catálogo real (grupo 9): reemplaza a marcaId, que este formulario ya no
+      // envía. '' (sin proveedor elegido) -> null, igual criterio que el resto de los campos
+      // opcionales de este formulario.
+      proveedorId: proveedorSeleccionadoId ? parseInt(proveedorSeleccionadoId, 10) : null,
+      // Moneda de costeo del producto (grupo 5/8): siempre viaja informada (nunca null), igual
+      // criterio que el resto de los campos de costeo de este formulario.
+      monedaCosto,
+    });
+  };
+
+  const formatearMonto = (n) =>
+    n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validate()) {
-      onSave({
-        nombre,
-        descripcion,
-        precio: parseFloat(precio),
-        costoProducto: costoProducto ? parseFloat(costoProducto) : null,
-        porcentajeGanancia: porcentajeGanancia ? parseFloat(porcentajeGanancia) : null,
-        // Este formulario ya no edita descuentoProveedor directamente (Decisión 8: la columna
-        // queda intacta como red de rollback, pero deja de leerse/escribirse desde acá). La
-        // lista de descuentos es la fuente de verdad nueva; no enviarlo deja el valor migrado
-        // sin tocar en el backend (actualizarProducto sólo lo pisa si el DTO trae un valor).
-        descuentos: descuentos.map((d) => ({ nombre: d.nombre.trim(), porcentaje: parseFloat(d.porcentaje) })),
-        // '' -> null (no 0): un campo vacío significa "hereda el default de la unidad de
-        // negocio" (Decisión 5), mismo patrón que ya usa este componente para costoProducto.
-        ivaPorcentaje: ivaPropio !== '' ? parseFloat(ivaPropio) : null,
-        costoEnvioPorcentaje: envioPropio !== '' ? parseFloat(envioPropio) : null,
-        stock: parseInt(stock, 10),
-        lote: lote.trim() || null,
-        dueno: dueno.trim() || null,
-        // Vínculo de catálogo real (grupo 9): reemplaza a marcaId, que este formulario ya no
-        // envía. '' (sin proveedor elegido) -> null, igual criterio que el resto de los campos
-        // opcionales de este formulario.
-        proveedorId: proveedorSeleccionadoId ? parseInt(proveedorSeleccionadoId, 10) : null,
-        // Moneda de costeo del producto (grupo 5/8): siempre viaja informada (nunca null), igual
-        // criterio que el resto de los campos de costeo de este formulario.
-        monedaCosto,
+    if (!validate()) return;
+
+    // Fix del 2026-08-26 (pedido directo del usuario): si el precio de venta CALCULADO (el que
+    // se va a persistir) es distinto del que el producto tenía al abrir el formulario, se pide
+    // confirmación explícita antes de guardar — vía askConfirm, nunca confirm() nativo. Alta de
+    // producto (precioOriginal === null) o ediciones que no mueven el precio guardan directo,
+    // sin fricción.
+    const precioNuevo = parseFloat(precio);
+    const huboCambioDePrecio =
+      producto &&
+      precioOriginal !== null &&
+      !Number.isNaN(precioNuevo) &&
+      Math.round(precioNuevo * 100) !== Math.round(precioOriginal * 100);
+
+    if (huboCambioDePrecio) {
+      askConfirm({
+        title: 'Confirmar cambio de precio',
+        message: `El precio de venta va a pasar de $${formatearMonto(precioOriginal)} a $${formatearMonto(precioNuevo)}. ¿Confirmás guardar los cambios?`,
+        variant: 'warning',
+        confirmLabel: 'Guardar cambios',
+        onConfirm: guardar,
       });
+      return;
     }
+
+    guardar();
   };
 
   // Close on backdrop click
@@ -479,13 +498,23 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                   ))}
                 </select>
                 <p className="mt-1 text-[11px] text-gray-400">
-                  Al elegirlo se copian IVA, envío, descuentos y moneda a los campos de abajo — editables después.
+                  Elegirlo NO modifica los valores cargados abajo. Usá el botón "Aplicar valores por defecto" para traerlos.
                 </p>
               </div>
             )}
 
             {unidadNegocioActiva === '2' && (
               <div className="col-span-2 mt-2 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                {proveedorSeleccionado && (
+                  <button
+                    type="button"
+                    onClick={() => aplicarPerfilProveedor(proveedorSeleccionado)}
+                    className="flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Aplicar valores por defecto de {proveedorSeleccionado.nombre}
+                  </button>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                   <div>
                     <label htmlFor="costoProducto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">

@@ -23,7 +23,8 @@ public enum PermisoEnum {
     ESCRIBIR_PEDIDOS(13L),
     LEER_SIEMBRAS(14L),
     ESCRIBIR_SIEMBRAS(15L),
-    ADMIN_SIEMBRAS(16L);
+    ADMIN_SIEMBRAS(16L),
+    LEER_FACTURACION(17L);
 
     private final Long id;
 

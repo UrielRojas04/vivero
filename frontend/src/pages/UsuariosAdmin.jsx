@@ -37,11 +37,13 @@ export default function UsuariosAdmin() {
 
     const SECTIONS = [
         { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES', 'LEER_STOCK'] },
+        { id: 'facturacion', name: 'Facturación', permNames: ['LEER_FACTURACION', 'LEER_CLIENTES'] },
         { id: 'productos', name: isHerramientas ? 'Productos' : 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
         ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_SIEMBRAS', 'ESCRIBIR_SIEMBRAS', 'ADMIN_SIEMBRAS'] }] : []),
         ...(!isHerramientas ? [{ id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] }] : []),
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
         { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'] },
+        ...(isHerramientas ? [{ id: 'pedidos', name: 'Pedidos', permNames: ['LEER_PEDIDOS', 'ESCRIBIR_PEDIDOS'] }] : []),
         ...(isHerramientas ? [{ id: 'finanzas', name: 'Finanzas', permNames: ['LEER_FINANZAS'] }] : []),
         ...(isHerramientas ? [{ id: 'cheques', name: 'Cheques', permNames: ['LEER_FINANZAS'] }] : []),
         { id: 'admin', name: 'Usuarios (Admin)', permNames: ['ADMIN_DB'] }
@@ -181,7 +183,7 @@ export default function UsuariosAdmin() {
             pushToast('success', 'Rol eliminado.');
         } catch (error) {
             console.error(error);
-            pushToast('error', 'Error al eliminar rol');
+            pushToast('error', getErrorMessage(error, 'Error al eliminar rol'));
         }
     };
 

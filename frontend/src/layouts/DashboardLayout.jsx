@@ -19,7 +19,7 @@ const navGroups = [
     title: 'Ventas',
     items: [
       { to: '/ventas/nueva', label: 'Ventas', icon: ShoppingCart, permission: 'ESCRIBIR_VENTAS' },
-      { to: '/facturas', label: 'Facturación', icon: ListChecks, permission: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES'] },
+      { to: '/facturas', label: 'Facturación', icon: ListChecks, permission: 'LEER_FACTURACION' },
     ]
   },
   {
@@ -57,6 +57,9 @@ const DashboardLayout = () => {
   const [alertas, setAlertas] = useState([]);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
+  const activeBusinessId = parseInt(unidadNegocioActiva);
+  const isHerramientas = activeBusinessId === 2;
+
   React.useEffect(() => {
     if (user) {
       if (hasPermission('LEER_STOCK')) {
@@ -87,14 +90,17 @@ const DashboardLayout = () => {
 
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <Leaf className="w-6 h-6 text-emerald-600 mr-2" />
-            <span className="font-bold text-lg text-gray-900">Vivero ERP</span>
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-center w-full h-full py-2">
+            <img 
+              src={isHerramientas ? "/img/Herramientas.png" : "/img/Invernadero.png"} 
+              alt="Logo Negocio" 
+              className="h-12 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105"
+            />
           </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+            className="md:hidden absolute right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,8 +109,6 @@ const DashboardLayout = () => {
         <nav className="flex-1 p-4 overflow-y-auto space-y-6">
           {navGroups.map((group, idx) => {
             // Filtrar los items del grupo según permisos
-            const activeBusinessId = parseInt(unidadNegocioActiva);
-            const isHerramientas = activeBusinessId === 2; // Assuming ID 2 is Herramientas
 
             const visibleItems = group.items.filter((item) => {
               // item.permission acepta un string o un arreglo "cualquiera de estos" (ej. bandejas,
