@@ -123,29 +123,29 @@ const Clientes = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>;
+    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>;
   }
 
   return (
     <div className="space-y-6">
       {/* Header & Actions */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-        
+        <h1 className="text-2xl font-bold text-ink">Clientes</h1>
+
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-faint" />
             <input
               type="text"
               placeholder="Buscar cliente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none w-full sm:w-64 bg-white"
+              className="pl-10 pr-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none w-full sm:w-64 bg-paper"
             />
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center justify-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium cursor-pointer shadow-sm shadow-emerald-200"
+            className="flex items-center justify-center px-4 py-2 bg-accent text-paper rounded-base hover:brightness-95 transition-colors font-medium cursor-pointer"
           >
             <Plus className="w-5 h-5 mr-2" />
             Nuevo Cliente
@@ -154,7 +154,7 @@ const Clientes = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+        <div className="bg-danger-bg text-danger p-4 rounded-base">
           {error}
         </div>
       )}
@@ -164,44 +164,44 @@ const Clientes = () => {
         {filteredClientes.map((cliente) => {
           const saldo = describirSaldo(cliente.balanceDinero);
           return (
-          <div key={cliente.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
+          <div key={cliente.id} className="bg-paper p-4 rounded-panel border border-line flex flex-col gap-3">
             <div className="flex justify-between items-start gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-accent-soft text-accent-ink flex items-center justify-center font-bold">
                   {cliente.nombreRazonSocial.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-gray-900 truncate">{cliente.nombreRazonSocial}</h3>
-                  <p className="text-xs text-gray-400 truncate">{cliente.telefono || 'Sin teléfono'}</p>
+                  <h3 className="font-bold text-ink truncate">{cliente.nombreRazonSocial}</h3>
+                  <p className="text-xs text-faint truncate">{cliente.telefono || 'Sin teléfono'}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end flex-shrink-0">
-                <span className="text-xs uppercase tracking-wide font-semibold text-gray-400">
+                <span className="text-xs uppercase tracking-wide font-semibold text-faint">
                   {saldo.etiqueta}
                 </span>
-                <span className={`text-2xl font-bold ${saldo.tono.texto}`}>
+                <span className={`text-2xl font-bold font-mono tabular-nums ${saldo.tono.texto}`}>
                   $ {saldo.monto}
                 </span>
                 {unidadNegocioActiva !== '2' && (
-                  <span className={`mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                    cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
+                  <span className={`mt-1 px-2 py-0.5 rounded-full text-xs font-medium font-mono tabular-nums ${
+                    cliente.balanceBandejas > 0 ? 'bg-warn-bg text-warn-ink' : 'bg-thead text-body'
                   }`}>
                     {cliente.balanceBandejas || 0} bandejas
                   </span>
                 )}
               </div>
             </div>
-            <div className="flex gap-2 pt-2 border-t border-gray-50">
+            <div className="flex gap-2 pt-2 border-t border-line">
               <button
                 onClick={() => handleOpenModal(cliente)}
-                className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-2.5 text-sm font-medium text-body bg-canvas hover:bg-accent-soft hover:text-accent-ink rounded-base transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Pencil className="w-4 h-4" /> Editar
               </button>
               <button
                 onClick={() => handleOpenFactura(cliente)}
                 title="Cuenta Corriente"
-                className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-2.5 text-sm font-medium text-body bg-canvas hover:bg-accent-soft hover:text-accent-ink rounded-base transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {/* Rótulo corto ("Cuenta") en vez de "Cuenta Corriente" completo: con varios botones
                     en esta fila a 320px el texto completo desborda; el título completo queda en el
@@ -212,13 +212,13 @@ const Clientes = () => {
               <button
                 onClick={() => handleOpenAjusteSaldo(cliente)}
                 title="Ajuste manual de saldo (sin venta asociada) — para deuda o pago suelto que no corresponde a ninguna venta puntual. Para pagar una venta pendiente, usá Cuenta Corriente."
-                className="flex-shrink-0 px-3 py-2.5 text-gray-400 bg-gray-50 hover:bg-gray-100 hover:text-gray-600 rounded-lg transition-colors flex items-center justify-center cursor-pointer"
+                className="flex-shrink-0 px-3 py-2.5 text-faint bg-canvas hover:bg-thead hover:text-body rounded-base transition-colors flex items-center justify-center cursor-pointer"
               >
                 <DollarSign className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleConfirmDelete(cliente.id, cliente.nombreRazonSocial)}
-                className="flex-1 flex justify-center items-center py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition-colors cursor-pointer"
+                className="flex-1 flex justify-center items-center py-2.5 text-danger-ink bg-danger-bg hover:brightness-95 rounded-base font-medium transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4 mr-2" /> Eliminar
               </button>
@@ -227,17 +227,17 @@ const Clientes = () => {
           );
         })}
         {filteredClientes.length === 0 && (
-          <div className="text-center py-8 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="text-center py-8 text-muted bg-paper rounded-panel border border-line">
             No se encontraron clientes.
           </div>
         )}
       </div>
 
       {/* Vista Desktop (Tabla) */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="hidden md:block bg-paper rounded-panel border border-line overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
+            <tr className="bg-thead border-b border-line text-sm text-muted uppercase tracking-wider">
               <th className="p-4 font-semibold">Nombre / Razón Social</th>
               <th className="p-4 font-semibold">Teléfono</th>
               <th className="p-4 font-semibold text-right">Saldo Dinero</th>
@@ -245,32 +245,32 @@ const Clientes = () => {
               <th className="p-4 font-semibold text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-line">
             {filteredClientes.map((cliente) => {
               const saldo = describirSaldo(cliente.balanceDinero);
               return (
-              <tr key={cliente.id} className="hover:bg-gray-50/50 transition-colors">
+              <tr key={cliente.id} className="hover:bg-canvas transition-colors">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                    <div className="w-8 h-8 rounded-full bg-accent-soft text-accent-ink flex items-center justify-center font-bold text-sm">
                       {cliente.nombreRazonSocial.charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-medium text-gray-900">{cliente.nombreRazonSocial}</span>
+                    <span className="font-medium text-ink">{cliente.nombreRazonSocial}</span>
                   </div>
                 </td>
-                <td className="p-4 text-gray-600">{cliente.telefono || '-'}</td>
+                <td className="p-4 text-body">{cliente.telefono || '-'}</td>
                 <td className="p-4 text-right">
                   <span
                     title={saldo.etiqueta}
-                    className={`px-2.5 py-1 rounded-full text-sm font-medium ${saldo.tono.chip}`}
+                    className={`px-2.5 py-1 rounded-full text-sm font-medium font-mono tabular-nums ${saldo.tono.chip}`}
                   >
                     $ {saldo.monto} · {saldo.etiqueta}
                   </span>
                 </td>
                 {unidadNegocioActiva !== '2' && (
                   <td className="p-4 text-right">
-                    <span className={`px-2.5 py-1 rounded-full text-sm font-medium ${
-                      cliente.balanceBandejas > 0 ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-600'
+                    <span className={`px-2.5 py-1 rounded-full text-sm font-medium font-mono tabular-nums ${
+                      cliente.balanceBandejas > 0 ? 'bg-warn-bg text-warn-ink' : 'bg-thead text-body'
                     }`}>
                       {cliente.balanceBandejas || 0}
                     </span>
@@ -280,29 +280,29 @@ const Clientes = () => {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => handleOpenModal(cliente)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 text-faint hover:text-accent-ink hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                       title="Editar"
                     >
                       <Pencil className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleConfirmDelete(cliente.id, cliente.nombreRazonSocial)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 text-faint hover:text-danger hover:bg-danger-bg rounded-base transition-colors cursor-pointer"
                       title="Eliminar"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
-                    <div className="w-px h-6 bg-gray-200 mx-1 self-center"></div>
+                    <div className="w-px h-6 bg-line mx-1 self-center"></div>
                     <button
                       onClick={() => handleOpenFactura(cliente)}
-                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 text-faint hover:text-accent-ink hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                       title="Cuenta Corriente"
                     >
                       <FileText className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleOpenAjusteSaldo(cliente)}
-                      className="p-1.5 text-gray-300 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-faint hover:text-body hover:bg-canvas rounded-base transition-colors cursor-pointer"
                       title="Ajuste manual de saldo (sin venta asociada) — para deuda o pago suelto que no corresponde a ninguna venta puntual. Para pagar una venta pendiente, usá Cuenta Corriente."
                     >
                       <DollarSign className="w-4 h-4" />
@@ -314,7 +314,7 @@ const Clientes = () => {
             })}
             {filteredClientes.length === 0 && (
               <tr>
-                <td colSpan="5" className="p-8 text-center text-gray-500">
+                <td colSpan="5" className="p-8 text-center text-muted">
                   No se encontraron clientes.
                 </td>
               </tr>

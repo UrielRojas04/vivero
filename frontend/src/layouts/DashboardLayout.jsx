@@ -7,6 +7,8 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import { siembrasApi } from '../api/siembras.api';
 import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList } from 'lucide-react';
+import logoVivero from '../assets/logo-vivero.png';
+import logoHerramientas from '../assets/logo-herramientas.png';
 
 const navGroups = [
   {
@@ -60,6 +62,13 @@ const DashboardLayout = () => {
   const activeBusinessId = parseInt(unidadNegocioActiva);
   const isHerramientas = activeBusinessId === 2;
 
+  // Proyecta la unidad activa al DOM para que el acento (--accent y derivadas, resueltas por
+  // [data-unidad="vivero"|"herramientas"] en index.css) retiña todo el árbol sin componentes
+  // duplicados ni props de tema (Decisión 1 de design.md).
+  React.useEffect(() => {
+    document.documentElement.dataset.unidad = isHerramientas ? 'herramientas' : 'vivero';
+  }, [isHerramientas]);
+
   React.useEffect(() => {
     if (user) {
       if (hasPermission('LEER_STOCK')) {
@@ -79,32 +88,71 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-hidden">
+    <div className="min-h-screen bg-canvas flex overflow-hidden">
+      {/* Barra de identidad de la unidad activa (Decisión 3 P3: decoración de identidad → accent) */}
+      <div className="w-1 bg-accent shrink-0" />
+
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-center w-full h-full py-2">
-            <img 
-              src={isHerramientas ? "/img/Herramientas.png" : "/img/Invernadero.png"} 
-              alt="Logo Negocio" 
-              className="h-12 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105"
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-paper border-r border-line flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-[104px] flex items-center justify-center px-6 border-b border-line bg-paper relative">
+          {/* Placa de logo (Decisión 9-bis de design.md, CP1 — dos rondas de feedback del
+              usuario). Vuelta al planteo original de la guía para Vivero ("directo sobre
+              papel", sin placa de color) tras probar tanto la placa verde suave como la
+              tarjeta blanca dentro de la placa: el usuario prefirió sacar el fondo del todo y
+              agrandar el logo, en vez de enmarcarlo. Herramientas SÍ mantiene su placa oscura
+              (`--accent-plate`) sin cambios — el usuario confirmó explícitamente que esa quedó
+              bien, no se toca. */}
+          {isHerramientas ? (
+            <div className="bg-[var(--accent-plate)] h-[82px] w-full flex items-center justify-center px-2.5">
+              <img
+                src={logoHerramientas}
+                alt="Logo Herramientas"
+                className="h-full object-contain transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+          ) : (
+            <img
+              src={logoVivero}
+              alt="Logo Vivero"
+              className="h-[100px] max-w-full object-contain transition-transform duration-300 hover:scale-105 -mx-2"
             />
-          </div>
-          <button 
+          )}
+          <button
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden absolute right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+            className="md:hidden absolute right-4 p-2 text-faint hover:text-body rounded-base cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Placa de unidad de negocio (Decisión 10): envuelve al <select> real, no lo reemplaza */}
+        {negociosDisponibles.length > 0 && user?.username === 'jefe@vivero.com' && (
+          <div className="px-4 py-3 bg-accent-soft border-b border-line">
+            <p className="text-[10px] font-bold text-accent-ink uppercase tracking-wider mb-1">
+              Unidad de Negocio
+            </p>
+            <select
+              value={unidadNegocioActiva || ''}
+              onChange={(e) => {
+                setUnidadNegocioActiva(e.target.value);
+                window.location.reload();
+              }}
+              className="w-full bg-transparent border-none p-0 text-sm font-semibold text-ink focus:outline-none focus:ring-0 cursor-pointer"
+            >
+              {negociosDisponibles.map(n => (
+                <option key={n.id} value={n.id}>{n.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <nav className="flex-1 p-4 overflow-y-auto space-y-6">
           {navGroups.map((group, idx) => {
@@ -140,7 +188,7 @@ const DashboardLayout = () => {
 
             return (
               <div key={idx}>
-                <h3 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                <h3 className="px-4 text-xs font-bold text-faint uppercase tracking-wider mb-2">
                   {group.title}
                 </h3>
                 <div className="space-y-1">
@@ -150,10 +198,10 @@ const DashboardLayout = () => {
                       to={to}
                       onClick={() => setIsSidebarOpen(false)}
                       className={({ isActive }) =>
-                        `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        `flex items-center px-4 py-2 text-sm font-medium border-l-[3px] transition-colors ${
                           isActive
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            ? 'bg-accent-soft text-accent-ink border-accent'
+                            : 'text-body border-transparent hover:bg-canvas'
                         }`
                       }
                     >
@@ -167,70 +215,51 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-200 relative">
+        <div className="p-4 border-t border-line relative">
           {user && (
             <>
-              <button 
+              <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center w-full p-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500"
+                className="flex items-center w-full p-2 hover:bg-canvas rounded-base transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-accent"
               >
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg mr-3 shadow-sm border border-emerald-200 hover:bg-emerald-200 transition-colors shrink-0">
+                <div className="w-10 h-10 rounded-base bg-accent-soft flex items-center justify-center text-accent-ink font-bold text-lg mr-3 border border-line hover:brightness-95 transition-colors shrink-0">
                   {user.username ? user.username.charAt(0).toUpperCase() : '?'}
                 </div>
                 <div className="text-left overflow-hidden flex-1">
-                  <p className="text-sm font-semibold text-gray-800 truncate" title={user.username}>
+                  <p className="text-sm font-semibold text-ink truncate" title={user.username}>
                     {user.username}
                   </p>
-                  <p className="text-xs text-emerald-600 font-medium truncate" title={user.roles?.[0]}>
+                  <p className="text-xs text-accent-ink font-medium truncate" title={user.roles?.[0]}>
                     {user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'SIN ROL'}
                   </p>
                 </div>
-                <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronUp className={`w-4 h-4 text-faint transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Profile Menu Popover */}
               {isProfileMenuOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={() => setIsProfileMenuOpen(false)}
                   />
-                  <div className="absolute bottom-16 left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 animate-in fade-in slide-in-from-bottom-2">
-                    <p className="px-3 py-1 mb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Opciones</p>
-                    
+                  <div className="absolute bottom-16 left-4 right-4 bg-paper border border-line-strong rounded-panel py-2 z-50 animate-in fade-in slide-in-from-bottom-2">
+                    <p className="px-3 py-1 mb-1 text-[10px] font-bold text-faint uppercase tracking-wider">Opciones</p>
+
                     <NavLink
                       to="/configuracion"
                       onClick={() => setIsProfileMenuOpen(false)}
-                      className={({ isActive }) => `flex items-center px-4 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700 hover:bg-gray-50 hover:text-emerald-600'}`}
+                      className={({ isActive }) => `flex items-center px-4 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-accent-soft text-accent-ink' : 'text-body hover:bg-canvas hover:text-accent-ink'}`}
                     >
                       <Settings className="w-4 h-4 mr-3" />
                       Configuración
                     </NavLink>
 
-                    {negociosDisponibles.length > 0 && user?.username === 'jefe@vivero.com' && (
-                      <div className="px-4 py-2">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Negocio Activo</p>
-                        <select 
-                          value={unidadNegocioActiva || ''} 
-                          onChange={(e) => {
-                            setUnidadNegocioActiva(e.target.value);
-                            setIsProfileMenuOpen(false);
-                            window.location.reload(); 
-                          }}
-                          className="w-full bg-gray-50 border border-gray-200 text-sm font-medium text-gray-800 rounded-lg p-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                        >
-                          {negociosDisponibles.map(n => (
-                            <option key={n.id} value={n.id}>{n.nombre}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    
-                    <div className="h-px bg-gray-100 my-2"></div>
-                    
+                    <div className="h-px bg-line my-2"></div>
+
                     <button
                       onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      className="flex items-center w-full px-4 py-2 text-sm font-medium text-danger hover:bg-danger-bg transition-colors cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 mr-3" />
                       Cerrar Sesión
@@ -246,10 +275,10 @@ const DashboardLayout = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
         {/* Topbar for notifications */}
-        <header className="h-16 flex items-center justify-between md:justify-end px-4 md:px-8 border-b border-gray-200 bg-white/50 backdrop-blur-sm sticky top-0 z-20">
-          <button 
+        <header className="h-16 flex items-center justify-between md:justify-end px-4 md:px-8 border-b border-line bg-paper sticky top-0 z-20">
+          <button
             onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+            className="md:hidden p-2 text-muted hover:text-accent hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -257,46 +286,46 @@ const DashboardLayout = () => {
           <div className="relative">
             <button
               onClick={() => setIsAlertsOpen(!isAlertsOpen)}
-              className="relative p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
+              className="relative p-2 text-muted hover:text-accent hover:bg-accent-soft rounded-full transition-colors outline-none focus:ring-2 focus:ring-accent cursor-pointer"
             >
               <Bell className="w-5 h-5" />
               {alertas.length > 0 && (
-                <span className="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                <span className="absolute top-1 right-1.5 w-2 h-2 bg-danger rounded-full ring-2 ring-paper animate-pulse"></span>
               )}
             </button>
 
             {isAlertsOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsAlertsOpen(false)} />
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-800">Notificaciones</h3>
-                    <span className="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{alertas.length}</span>
+                <div className="absolute right-0 mt-2 w-80 bg-paper rounded-panel border border-line-strong overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="px-4 py-3 bg-thead border-b border-line flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-ink">Notificaciones</h3>
+                    <span className="text-xs font-medium bg-paper text-muted border border-line px-2 py-0.5 rounded-full">{alertas.length}</span>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {alertas.length === 0 ? (
-                      <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                      <div className="px-4 py-6 text-center text-muted text-sm">
                         No hay notificaciones nuevas
                       </div>
                     ) : (
-                      <div className="divide-y divide-gray-50">
+                      <div className="divide-y divide-line">
                         {alertas.map(alerta => (
-                          <div key={alerta.id} className="p-4 hover:bg-emerald-50/50 transition-colors">
+                          <div key={alerta.id} className="p-4 hover:bg-accent-soft transition-colors">
                             <div className="flex gap-3">
                               <div className="mt-0.5">
                                 {alerta.estado === 'FINALIZADA' ? (
-                                  <Package className="w-4 h-4 text-emerald-500" />
+                                  <Package className="w-4 h-4 text-ok" />
                                 ) : (
-                                  <Clock className="w-4 h-4 text-amber-500" />
+                                  <Clock className="w-4 h-4 text-warn" />
                                 )}
                               </div>
                               <div>
-                                <p className="text-sm font-medium text-gray-900">
+                                <p className="text-sm font-medium text-ink">
                                   {alerta.variedadPlanta?.nombre} (Siembra {alerta.numeroSiembra || '-'})
                                 </p>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {alerta.estado === 'FINALIZADA' 
-                                    ? 'Lista para pasar a stock' 
+                                <p className="text-xs text-muted mt-0.5">
+                                  {alerta.estado === 'FINALIZADA'
+                                    ? 'Lista para pasar a stock'
                                     : 'Próxima a finalizar (en 5 días o menos)'}
                                 </p>
                               </div>
@@ -306,13 +335,13 @@ const DashboardLayout = () => {
                       </div>
                     )}
                   </div>
-                  <div className="p-2 bg-gray-50 border-t border-gray-100">
+                  <div className="p-2 bg-thead border-t border-line">
                     <button
                       onClick={() => {
                         setIsAlertsOpen(false);
                         navigate('/siembras');
                       }}
-                      className="w-full py-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                      className="w-full py-1.5 text-xs font-semibold text-accent hover:text-accent-ink hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                     >
                       Ver todas las siembras
                     </button>

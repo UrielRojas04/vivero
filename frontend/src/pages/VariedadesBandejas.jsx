@@ -52,14 +52,14 @@ export default function VariedadesBandejas() {
     setIsModalOpen(false);
   };
 
-  if (isLoading) return <div className="p-6">Cargando...</div>;
+  if (isLoading) return <div className="p-6 text-muted">Cargando...</div>;
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex justify-end mb-2">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm cursor-pointer font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-paper rounded-base hover:brightness-95 transition-colors cursor-pointer font-medium"
         >
           <Plus size={20} />
           Nuevo Tipo
@@ -67,46 +67,46 @@ export default function VariedadesBandejas() {
       </div>
 
       {bandejas.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 flex flex-col items-center justify-center text-center">
-          <LayoutDashboard className="w-12 h-12 text-gray-300 mb-4" />
-          <p className="text-gray-500">No hay tipos de bandejas registrados</p>
+        <div className="bg-paper rounded-panel border border-line p-12 flex flex-col items-center justify-center text-center">
+          <LayoutDashboard className="w-12 h-12 text-faint mb-4" />
+          <p className="text-muted">No hay tipos de bandejas registrados</p>
         </div>
       ) : (
         <>
           {/* MOBILE: Cards */}
           <div className="grid grid-cols-1 gap-4 sm:hidden">
             {bandejas.map((bandeja) => (
-              <div key={bandeja.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+              <div key={bandeja.id} className="bg-paper border border-line rounded-panel p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center shrink-0">
                       <LayoutDashboard className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-base">{bandeja.nombre}</h3>
-                      <span className="text-sm text-gray-500">{bandeja.cantidadCeldas} celdas</span>
+                      <h3 className="font-semibold text-ink text-base">{bandeja.nombre}</h3>
+                      <span className="text-sm text-muted">{bandeja.cantidadCeldas} celdas</span>
                     </div>
                   </div>
                   {bandeja.enUso && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100 shrink-0">
+                    <span className="inline-flex items-center px-2 py-1 rounded-base text-xs font-semibold bg-warn-bg text-warn-ink border border-warn-line shrink-0">
                       EN USO
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                   <button
                     onClick={() => handleEdit(bandeja)}
-                    className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                    className="flex-1 py-2 bg-canvas hover:bg-thead text-body font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Edit2 className="w-4 h-4" /> Editar
                   </button>
                   <button
                     onClick={() => handleDelete(bandeja.id)}
                     disabled={bandeja.enUso}
-                    className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                    className={`flex-1 py-2 rounded-base text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                       bandeja.enUso
-                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                        : 'bg-red-50 hover:bg-red-100 text-red-700 cursor-pointer'
+                        ? 'bg-canvas text-faint cursor-not-allowed'
+                        : 'bg-danger-bg hover:brightness-95 text-danger-ink cursor-pointer'
                     }`}
                   >
                     <Trash2 className="w-4 h-4" /> Eliminar
@@ -117,27 +117,27 @@ export default function VariedadesBandejas() {
           </div>
 
           {/* DESKTOP: Table */}
-          <div className="hidden sm:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50/50">
+          <div className="hidden sm:block bg-paper rounded-panel border border-line overflow-hidden">
+            <table className="min-w-full divide-y divide-line">
+              <thead className="bg-thead">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cantidad de Celdas</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted uppercase tracking-wider">Cantidad de Celdas</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-muted uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
+              <tbody className="divide-y divide-line bg-paper">
                 {bandejas.map((bandeja) => (
-                  <tr key={bandeja.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={bandeja.id} className="hover:bg-canvas transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-ink">
                       {bandeja.nombre}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-body">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-thead text-body font-mono tabular-nums">
                         {bandeja.cantidadCeldas} celdas
                       </span>
                       {bandeja.enUso && (
-                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="No se puede eliminar porque está siendo utilizada en siembras">
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warn-bg text-warn-ink" title="No se puede eliminar porque está siendo utilizada en siembras">
                           EN USO
                         </span>
                       )}
@@ -145,17 +145,17 @@ export default function VariedadesBandejas() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => handleEdit(bandeja)}
-                        className="text-blue-600 hover:text-blue-900 mx-2 p-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                        className="text-accent-ink hover:brightness-90 mx-2 p-2 rounded-base hover:bg-accent-soft cursor-pointer transition-colors"
                       >
                         <Edit2 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(bandeja.id)}
                         disabled={bandeja.enUso}
-                        className={`p-2 rounded-lg transition-colors ${
-                          bandeja.enUso 
-                            ? 'text-gray-300 cursor-not-allowed' 
-                            : 'text-red-600 hover:text-red-900 hover:bg-red-50 cursor-pointer'
+                        className={`p-2 rounded-base transition-colors ${
+                          bandeja.enUso
+                            ? 'text-faint cursor-not-allowed'
+                            : 'text-danger hover:brightness-90 hover:bg-danger-bg cursor-pointer'
                         }`}
                       >
                         <Trash2 size={18} />

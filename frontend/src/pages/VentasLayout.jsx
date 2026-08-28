@@ -9,19 +9,19 @@ export default function VentasLayout() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Navegación por Pestañas (Tabs) */}
-      <div className="bg-white px-6 pt-4 rounded-t-2xl border-b border-gray-200">
+      <div className="bg-paper px-6 pt-4 rounded-t-panel border-b border-line">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           <NavLink
             to="/ventas/nueva"
             className={({ isActive }) =>
               `group inline-flex items-center py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                 isActive
-                  ? 'border-emerald-500 text-emerald-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-accent text-accent-ink'
+                  : 'border-transparent text-muted hover:text-body hover:border-line-strong'
               }`
             }
           >
-            <ShoppingCart className={`w-5 h-5 mr-2 ${location.pathname === '/ventas/nueva' ? 'text-emerald-500' : 'text-gray-400 group-hover:text-gray-500'}`} />
+            <ShoppingCart className={`w-5 h-5 mr-2 ${location.pathname === '/ventas/nueva' ? 'text-accent' : 'text-faint group-hover:text-muted'}`} />
             Nueva Venta
           </NavLink>
 
@@ -30,12 +30,12 @@ export default function VentasLayout() {
             className={({ isActive }) =>
               `group inline-flex items-center py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                 isActive
-                  ? 'border-emerald-500 text-emerald-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-accent text-accent-ink'
+                  : 'border-transparent text-muted hover:text-body hover:border-line-strong'
               }`
             }
           >
-            <ListChecks className={`w-5 h-5 mr-2 ${location.pathname === '/ventas/historial' ? 'text-emerald-500' : 'text-gray-400 group-hover:text-gray-500'}`} />
+            <ListChecks className={`w-5 h-5 mr-2 ${location.pathname === '/ventas/historial' ? 'text-accent' : 'text-faint group-hover:text-muted'}`} />
             Historial de Ventas
           </NavLink>
         </nav>

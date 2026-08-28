@@ -37,15 +37,15 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-xl font-bold text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
+      <div className="bg-paper rounded-panel border border-line-strong w-full max-w-md overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-line">
+          <h2 className="text-xl font-bold text-ink">
             {initialData ? 'Editar Cliente' : 'Nuevo Cliente'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-faint hover:text-body hover:bg-canvas rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -53,7 +53,7 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label htmlFor="nombreRazonSocial" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="nombreRazonSocial" className="block text-sm font-medium text-body mb-1">
               Nombre o Razón Social
             </label>
             <input
@@ -63,13 +63,13 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
               value={formData.nombreRazonSocial}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-gray-50 focus:bg-white"
+              className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all bg-canvas focus:bg-paper"
               placeholder="Ej: Juan Pérez o Vivero Sur SRL"
             />
           </div>
 
           <div>
-            <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="telefono" className="block text-sm font-medium text-body mb-1">
               Teléfono (opcional)
             </label>
             <input
@@ -78,7 +78,7 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
               name="telefono"
               value={formData.telefono}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-gray-50 focus:bg-white"
+              className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all bg-canvas focus:bg-paper"
               placeholder="Ej: 341 1234567"
             />
           </div>
@@ -87,13 +87,13 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors cursor-pointer"
+              className="flex-1 px-4 py-2 text-body bg-canvas hover:bg-thead rounded-base font-medium transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition-colors cursor-pointer"
+              className="flex-1 px-4 py-2 text-paper bg-accent hover:brightness-95 rounded-base font-medium transition-colors cursor-pointer"
             >
               {initialData ? 'Guardar Cambios' : 'Crear Cliente'}
             </button>

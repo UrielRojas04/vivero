@@ -143,15 +143,15 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-paper rounded-panel border border-line-strong max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="flex justify-between items-center p-6 border-b border-line">
+          <h2 className="text-xl font-bold text-ink">
             {variedad ? 'Editar Variedad' : 'Nueva Variedad de Planta'}
           </h2>
-          <button 
+          <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-colors cursor-pointer"
+            className="text-faint hover:text-body hover:bg-canvas p-2 rounded-full transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -159,11 +159,11 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label className="block text-sm font-medium text-body mb-1">Nombre</label>
             <input
               type="text"
               required
-              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
+              className="w-full rounded-base border border-line px-4 py-2.5 text-ink focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
               value={formData.nombre}
               onChange={(e) => setFormData({...formData, nombre: e.target.value})}
               placeholder="Ej: Tomate Platense"
@@ -172,33 +172,33 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">Días de Crecimiento (aprox)</label>
-              <div className="flex bg-gray-100 p-1 rounded-lg">
+              <label className="block text-sm font-medium text-body">Días de Crecimiento (aprox)</label>
+              <div className="flex bg-canvas p-1 rounded-base">
                 <button
                   type="button"
                   onClick={() => setModoIngreso('estacion')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${modoIngreso === 'estacion' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3 py-1 text-xs font-medium rounded-base transition-colors cursor-pointer ${modoIngreso === 'estacion' ? 'bg-paper text-ink' : 'text-muted hover:text-body'}`}
                 >
                   Por Estación
                 </button>
                 <button
                   type="button"
                   onClick={() => setModoIngreso('mes')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${modoIngreso === 'mes' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3 py-1 text-xs font-medium rounded-base transition-colors cursor-pointer ${modoIngreso === 'mes' ? 'bg-paper text-ink' : 'text-muted hover:text-body'}`}
                 >
                   Por Mes
                 </button>
               </div>
             </div>
-            
+
             {modoIngreso === 'estacion' ? (
               <div className="grid grid-cols-2 gap-3">
                 {estaciones.map(est => (
                   <div key={est.label}>
-                    <label className="block text-xs text-gray-500 mb-1">{est.label}</label>
+                    <label className="block text-xs text-muted mb-1">{est.label}</label>
                     <FormattedNumberInput
                       required
-                      className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors text-center"
+                      className="w-full rounded-base border border-line px-2 py-1.5 text-sm text-ink focus:ring-2 focus:ring-accent focus:border-accent transition-colors text-center font-mono tabular-nums"
                       value={formData[est.peakKey] === 0 ? '' : formData[est.peakKey]}
                       onChange={(val) => handleEstacionChange(est.key, val)}
                     />
@@ -208,10 +208,10 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
             ) : (
               <>
                 <div className="flex justify-end mb-2">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={handleApplyToAll}
-                    className="text-xs text-green-600 hover:text-green-700 font-medium cursor-pointer flex items-center gap-1 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors"
+                    className="text-xs text-accent-ink hover:brightness-90 font-medium cursor-pointer flex items-center gap-1 bg-accent-soft hover:brightness-95 px-2.5 py-1 rounded-base transition-colors"
                     title="Copia el valor de Enero a todos los meses"
                   >
                     Aplicar Enero a Todos
@@ -220,10 +220,10 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
                 <div className="grid grid-cols-4 gap-3">
                   {meses.map(mes => (
                     <div key={mes.key}>
-                      <label className="block text-xs text-gray-500 mb-1">{mes.label}</label>
+                      <label className="block text-xs text-muted mb-1">{mes.label}</label>
                       <FormattedNumberInput
                         required
-                        className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors text-center"
+                        className="w-full rounded-base border border-line px-2 py-1.5 text-sm text-ink focus:ring-2 focus:ring-accent focus:border-accent transition-colors text-center font-mono tabular-nums"
                         value={formData[mes.key] === 0 ? '' : formData[mes.key]}
                         onChange={(val) => setFormData({...formData, [mes.key]: val === '' ? '' : (parseInt(val) || 0)})}
                       />
@@ -235,9 +235,9 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>
+            <label className="block text-sm font-medium text-body mb-1">Descripción (opcional)</label>
             <textarea
-              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
+              className="w-full rounded-base border border-line px-4 py-2.5 text-ink focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
               value={formData.descripcion}
               onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
               rows={3}
@@ -248,14 +248,14 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer transition-colors"
+              className="px-5 py-2.5 text-sm font-medium text-body bg-paper border border-line rounded-base hover:bg-canvas focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent cursor-pointer transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 cursor-pointer transition-colors shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-paper bg-accent rounded-base hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:opacity-50 cursor-pointer transition-colors"
             >
               <Save size={18} />
               {mutation.isPending ? 'Guardando...' : 'Guardar'}

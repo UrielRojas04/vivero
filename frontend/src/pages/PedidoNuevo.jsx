@@ -718,23 +718,23 @@ const PedidoNuevo = () => {
           type="button"
           onClick={handleVolver}
           title="Volver a Pedidos"
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+          className="p-2 rounded-base text-muted hover:text-body hover:bg-canvas transition-colors cursor-pointer shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 truncate">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-ink truncate">
             Nuevo Pedido a Proveedor
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Elegí el proveedor y cargá los ítems del pedido.</p>
+          <p className="text-sm text-muted mt-0.5">Elegí el proveedor y cargá los ítems del pedido.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-5">
+        <div className="max-w-4xl mx-auto bg-paper rounded-panel border border-line p-5 sm:p-6 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                 Proveedor
               </label>
               <select
@@ -746,8 +746,8 @@ const PedidoNuevo = () => {
                 // confiar en el staleTime de 30s (main.jsx) o en que otra pestaña haya invalidado
                 // la query a tiempo.
                 onFocus={() => queryClient.refetchQueries({ queryKey: ['proveedores'] })}
-                className={`w-full px-4 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                  errors.proveedorId ? 'border-red-300' : 'border-gray-200'
+                className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all ${
+                  errors.proveedorId ? 'border-danger-line' : 'border-line'
                 }`}
               >
                 <option value="">-- Elegir proveedor --</option>
@@ -755,17 +755,17 @@ const PedidoNuevo = () => {
                   <option key={p.id} value={p.id}>{p.nombre}</option>
                 ))}
               </select>
-              {errors.proveedorId && <p className="mt-1 text-xs text-red-500 font-medium">{errors.proveedorId}</p>}
+              {errors.proveedorId && <p className="mt-1 text-xs text-danger font-medium">{errors.proveedorId}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                 Observaciones (opcional)
               </label>
               <input
                 type="text"
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-full px-4 py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                 placeholder="Ej: entrega la semana que viene"
               />
             </div>
@@ -775,8 +775,8 @@ const PedidoNuevo = () => {
               línea en USD. SIEMPRE se pide de nuevo (nace vacía), el prellenado es sólo una
               sugerencia editable con su antigüedad a la vista, nunca se aplica sola. */}
           {hayLineaUsd && (
-            <div className="bg-amber-50/70 border border-amber-100 rounded-xl p-4">
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 uppercase tracking-wider mb-1">
+            <div className="bg-warn-bg border border-warn-line rounded-panel p-4">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-warn-ink uppercase tracking-wider mb-1">
                 <DollarSign className="w-3.5 h-3.5" />
                 Cotización del dólar para este pedido
               </label>
@@ -784,29 +784,29 @@ const PedidoNuevo = () => {
                 value={cotizacionDolar}
                 onChange={(val) => { setCotizacionDolar(val); setCotizacionTocada(true); }}
                 placeholder="Ej: 1460"
-                className={`w-full sm:w-48 px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                  errors.cotizacionDolar ? 'border-red-300' : 'border-amber-200'
+                className={`w-full sm:w-48 px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
+                  errors.cotizacionDolar ? 'border-danger-line' : 'border-warn-line'
                 }`}
               />
               {antiguedadCotizacion && proveedorSeleccionado?.ultimaCotizacionConocida != null && (
-                <p className="mt-1 text-xs text-amber-700">
+                <p className="mt-1 text-xs text-warn-ink">
                   Último valor de {proveedorSeleccionado.nombre}: {Number(proveedorSeleccionado.ultimaCotizacionConocida).toLocaleString('es-AR')} — {antiguedadCotizacion}. Confirmá o editá antes de guardar.
                 </p>
               )}
-              <p className="mt-1 text-xs text-amber-600">
+              <p className="mt-1 text-xs text-warn">
                 Se pide en cada pedido: nunca se reutiliza sola una cotización anterior.
               </p>
-              {errors.cotizacionDolar && <p className="mt-1 text-xs text-red-500 font-medium">{errors.cotizacionDolar}</p>}
+              {errors.cotizacionDolar && <p className="mt-1 text-xs text-danger font-medium">{errors.cotizacionDolar}</p>}
             </div>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div className="bg-paper rounded-panel border border-line p-5 sm:p-6">
           <div className="flex items-center justify-between mb-1">
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">Ítems del pedido</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {items.length} {items.length === 1 ? 'ítem' : 'ítems'} · Total: <span className="font-semibold text-gray-600">${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+              <h2 className="text-sm font-semibold text-ink">Ítems del pedido</h2>
+              <p className="text-xs text-faint mt-0.5">
+                {items.length} {items.length === 1 ? 'ítem' : 'ítems'} · Total: <span className="font-semibold text-body font-mono tabular-nums">${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
               </p>
             </div>
             <button
@@ -815,7 +815,7 @@ const PedidoNuevo = () => {
               disabled={!proveedorId}
               title={!proveedorId ? 'Elegí un proveedor antes de agregar ítems' : undefined}
               className={`flex items-center gap-1 text-sm font-medium shrink-0 ${
-                !proveedorId ? 'text-gray-300 cursor-not-allowed' : 'text-emerald-600 hover:text-emerald-700 cursor-pointer'
+                !proveedorId ? 'text-faint cursor-not-allowed' : 'text-accent hover:text-accent-ink cursor-pointer'
               }`}
             >
               <Plus className="w-4 h-4" /> Agregar ítem
@@ -827,9 +827,9 @@ const PedidoNuevo = () => {
               grilla — ninguna fila se renderiza todavía. */}
           {!proveedorId && items.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <PackageSearch className="w-9 h-9 text-gray-300" />
-              <p className="text-sm font-medium text-gray-500">Elegí un proveedor para empezar a cargar ítems</p>
-              <p className="text-xs text-gray-400 max-w-sm">
+              <PackageSearch className="w-9 h-9 text-faint" />
+              <p className="text-sm font-medium text-muted">Elegí un proveedor para empezar a cargar ítems</p>
+              <p className="text-xs text-faint max-w-sm">
                 El IVA, el envío y los descuentos por defecto de cada ítem salen de la configuración del proveedor.
               </p>
             </div>
@@ -839,7 +839,7 @@ const PedidoNuevo = () => {
               descartan — se muestran debajo de este aviso, con todos sus inputs deshabilitados
               (ver `disabled` en `propsFila`) hasta que se elija un proveedor. */}
           {!proveedorId && items.length > 0 && (
-            <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+            <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-panel bg-warn-bg border border-warn-line text-warn-ink text-xs font-medium">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               Elegí un proveedor para seguir editando estos ítems.
             </div>
@@ -872,7 +872,7 @@ const PedidoNuevo = () => {
                   tarjetas. El presupuesto de ancho de la Decisión 7 de pedido-grilla-visual cierra
                   el recorte medido a 1366px con proveedor USD, pero el umbral de colapso NO se
                   mueve: reabrirlo sería reabrir un problema ya pagado. */}
-              <div className="hidden xl:flex xl:flex-col -mx-5 sm:-mx-6 border border-gray-300 rounded-xl">
+              <div className="hidden xl:flex xl:flex-col -mx-5 sm:-mx-6 border border-line-strong rounded-panel">
                 {/* Encabezado (pedido-grilla-visual, ronda de ajustes post-12.3, puntos 2 y 3b):
                     fondo `bg-gray-100`/texto `gray-700`/`font-bold` en vez de `bg-gray-50`/
                     `gray-600`/`font-semibold` — mismo patrón "encabezado con más peso" que ya usa
@@ -885,19 +885,19 @@ const PedidoNuevo = () => {
                     donde corresponde) para centrarse verticalmente sin depender de que todas las
                     celdas compartan exactamente el mismo padding — necesario porque IVA%/Envío%
                     ahora tienen menos padding horizontal que el resto (ver abajo). */}
-                <div className={`grid ${gridColsClass} sticky top-0 z-10 bg-gray-100 rounded-t-xl border-b-2 border-gray-400`}>
+                <div className={`grid ${gridColsClass} sticky top-0 z-10 bg-thead rounded-t-panel border-b-2 border-line-strong`}>
                   <span aria-hidden="true" />
-                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider border-l border-gray-300 flex items-center">Producto</span>
-                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right border-l border-gray-300 flex items-center justify-end">Cant.</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-body uppercase tracking-wider border-l border-line flex items-center">Producto</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-body uppercase tracking-wider text-right border-l border-line flex items-center justify-end">Cant.</span>
                   {/* Columna USD condicional (revertido — ver comentario junto a GRID_COLS/
                       GRID_COLS_USD): sólo se renderiza cuando el proveedor elegido maneja
                       dólares, igual que antes de la ampliación que la había hecho siempre
                       presente. */}
                   {manejaDolares && (
-                    <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-center border-l border-gray-300 flex items-center justify-center">USD</span>
+                    <span className="px-2 py-1.5 text-xs font-bold text-body uppercase tracking-wider text-center border-l border-line flex items-center justify-center">USD</span>
                   )}
-                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right border-l border-gray-300 flex items-center justify-end">Costo unit.</span>
-                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider border-l border-gray-300 flex items-center">Descuentos</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-body uppercase tracking-wider text-right border-l border-line flex items-center justify-end">Costo unit.</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-body uppercase tracking-wider border-l border-line flex items-center">Descuentos</span>
                   {/* IVA %/Envío % (punto 2 de la ronda de ajustes): menos padding horizontal
                       (`px-1` en vez de `px-2`) y sin `tracking-wider` sólo en estas dos columnas
                       angostas, para ganar el ancho que "Envío %" (7 caracteres) necesita para
@@ -908,10 +908,10 @@ const PedidoNuevo = () => {
                       líneas — muy preferible. Ancho de columna 56/64 en vez de 60/60 (ver
                       GRID_COLS): la suma no cambió, sólo se le sacaron 4px a IVA (le sobraba) para
                       dárselos a Envío. */}
-                  <span className="px-1 py-1.5 text-xs font-bold text-gray-700 uppercase text-right border-l border-gray-300 flex items-center justify-end whitespace-nowrap">IVA %</span>
-                  <span className="px-1 py-1.5 text-xs font-bold text-gray-700 uppercase text-right border-l border-gray-300 flex items-center justify-end whitespace-nowrap">Envío %</span>
-                  <span className="px-2 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right border-l border-gray-300 flex items-center justify-end">Costo total</span>
-                  <span aria-hidden="true" className="border-l border-gray-300" />
+                  <span className="px-1 py-1.5 text-xs font-bold text-body uppercase text-right border-l border-line flex items-center justify-end whitespace-nowrap">IVA %</span>
+                  <span className="px-1 py-1.5 text-xs font-bold text-body uppercase text-right border-l border-line flex items-center justify-end whitespace-nowrap">Envío %</span>
+                  <span className="px-2 py-1.5 text-xs font-bold text-body uppercase tracking-wider text-right border-l border-line flex items-center justify-end">Costo total</span>
+                  <span aria-hidden="true" className="border-l border-line" />
                 </div>
 
                 {items.map((it, idx) => (
@@ -937,23 +937,23 @@ const PedidoNuevo = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
-          <div className="text-sm text-gray-600">
-            Total: <span className="text-lg font-bold text-gray-900">${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+        <div className="flex items-center justify-between gap-3 bg-paper rounded-panel border border-line p-4 sm:p-5">
+          <div className="text-sm text-muted">
+            Total: <span className="text-lg font-bold text-ink font-mono tabular-nums">${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={handleVolver}
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-panel border border-line text-sm font-medium text-body hover:bg-canvas transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 rounded-panel bg-accent hover:brightness-95 text-sm font-semibold text-paper transition-all cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Guardando...' : 'Crear Pedido'}
             </button>

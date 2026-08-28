@@ -1,16 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #10b981;
-  --color-primary-dark: #059669;
-  --color-surface: #ffffff;
-  --color-background: #f3f4f6;
-  --color-text-main: #1f2937;
-  --color-text-muted: #6b7280;
+  --color-paper: #FFFFFF;
+  --color-paper-alt: #FBFAF8;
+  --color-canvas: #F5F3F0;
+  --color-line: #DED9D2;
+  --color-line-strong: #C6BFB6;
+  --color-thead: #EFEBE6;
+  --color-faint: #8C8177;
+  --color-muted: #6E665E;
+  --color-body: #413A34;
+  --color-ink: #221D1A;
 
-  /* Fuente exclusiva del panel de la factura (FacturaCliente.jsx, clase `font-factura`).
-     No reemplaza la fuente global del body — ver más abajo. */
-  --font-factura: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --color-ok: #1F7A4C;     --color-ok-ink: #155C39;
+  --color-ok-bg: #E6F2EA;  --color-ok-line: #B9DCC8;
+  --color-warn: #B4610F;   --color-warn-ink: #8A4A0B;
+  --color-warn-bg: #FBEEE0;--color-warn-line: #EBCFA8;
+  --color-danger: #B3261E; --color-danger-ink: #8C1D18;
+  --color-danger-bg: #FBE9E7;--color-danger-line: #EFC6C2;
+
+  /* el acento se lee de las CSS vars de :root / [data-unidad], no de @theme */
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-hi: var(--accent-hi);
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --radius-base: 2px;
+  --radius-panel: 4px;
 
   --animate-fadeIn: fadeIn 0.2s ease-out forwards;
   --animate-scaleIn: scaleIn 0.2s ease-out forwards;
@@ -26,9 +45,133 @@
   }
 }
 
+/* Fallback defensivo (Decisión 2 de design.md): --accent nunca puede quedar sin resolver.
+   frontend/index.html ya arranca con data-unidad="vivero" en <html>, así que este bloque es
+   una segunda red de seguridad si ese atributo llegara a faltar (login, toasts u otro
+   contenido montado fuera de DashboardLayout, antes del primer render). Valores de Vivero.
+   IMPORTANTE — orden en el archivo: este bloque va ANTES de los [data-unidad="..."] a
+   propósito. :root y [data-unidad="x"] tienen la misma especificidad (ambos matchean <html>),
+   así que en un empate el que aparece DESPUÉS en el CSS gana; si este fallback quedara
+   después, pisaría siempre el valor real de la unidad activa. */
+:root {
+  --accent: #35682F;
+  --accent-ink: #2A5325;
+  --accent-soft: #EEF3E4;
+  --accent-hi: #8CBF3F;
+  --accent-label: #5B7A4E;
+
+  /* Le dice al navegador que la página soporta ambos esquemas y cuál usar según el sistema
+     (en sincronía con el @media (prefers-color-scheme: dark) de abajo), para que los controles
+     nativos (el popup de opciones de <select>, scrollbars) los pinte a juego en vez de asumir
+     un default propio — ver el fix de contraste de <option> más abajo. */
+  color-scheme: light dark;
+}
+
+/* Acento por unidad de negocio (Decisión 1 de design.md): un solo interruptor —
+   document.documentElement.dataset.unidad, seteado desde DashboardLayout — retiñe todo el
+   árbol vía var(--accent). Copiado tal cual de design/vivero-tokens.css. */
+[data-unidad="vivero"] {
+  --accent: #35682F;
+  --accent-ink: #2A5325;
+  --accent-soft: #EEF3E4;
+  --accent-hi: #8CBF3F;
+  --accent-label: #5B7A4E;
+  /* Sin --accent-plate acá a propósito: se probaron placa verde suave y luego una tarjeta
+     blanca dentro de una placa verde (ver historial en design.md, Decisión 9-bis) antes de
+     que el usuario pidiera volver al planteo original de la guía — logo de Vivero directo
+     sobre `bg-paper` del header, sin ninguna placa de color, sólo más grande. Herramientas sí
+     conserva su `--accent-plate` (placa oscura), confirmada explícitamente sin cambios. */
+}
+
+[data-unidad="herramientas"] {
+  --accent: #14666F;
+  --accent-ink: #0E4A51;
+  --accent-soft: #E5EFF0;
+  --accent-hi: #E0872A;
+  --accent-label: #3B7B83;
+  --accent-plate: #123238; /* placa oscura: el logo Serhan es arte blanco */
+}
+
+/* Modo oscuro (neutral cálido invertido, copiado tal cual de design/vivero-tokens.css) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #211D19;
+    --color-paper-alt: #1B1815;
+    --color-canvas: #171412;
+    --color-line: #3A332D;
+    --color-line-strong: #4A423B;
+    --color-thead: #2A2521;
+    --color-faint: #8A8177;
+    --color-muted: #A79E94;
+    --color-body: #DCD5CD;
+    --color-ink: #F2EDE7;
+
+    --color-ok: #7FCB9B;  --color-ok-ink: #7FCB9B;  --color-ok-bg: #1E2B22;  --color-ok-line: #35543F;
+    --color-warn: #E0A44F; --color-warn-ink: #E0A44F; --color-warn-bg: #2C231A; --color-warn-line: #55432B;
+    --color-danger: #E5827A; --color-danger-ink: #E5827A; --color-danger-bg: #2E1F1D; --color-danger-line: #55332F;
+  }
+  /* accent-ink = accent en modo oscuro, igual que ok-ink/warn-ink/danger-ink más arriba: en dark
+     mode los fondos con los que se empareja (--accent-soft, --color-paper) son oscuros, así que el
+     "ink" tiene que ser el tono claro/brillante, no uno oscuro (bug real reportado por el usuario:
+     con --accent-ink oscuro quedaba texto casi negro sobre fondo casi negro en cualquier botón o
+     chip que usara `text-accent-ink` sobre `bg-paper` o `bg-accent-soft`). */
+  [data-unidad="vivero"] { --accent: #A6D65B; --accent-ink: #A6D65B; --accent-soft: #232B1B; --accent-label: #A6D65B; }
+  [data-unidad="herramientas"] { --accent: #5FB3BC; --accent-ink: #5FB3BC; --accent-soft: #1A2A2C; --accent-label: #5FB3BC; }
+}
+
+/* Exportación de factura a imagen (bug reportado: "marco blanco" en celulares con el sistema en
+   modo oscuro): el fondo del PNG que genera `toPng()` en FacturaCliente.jsx queda hardcodeado en
+   claro (`#f9fafb`, ver capturarNodoComoImagen), pero antes de este fix la tarjeta capturada
+   heredaba los tokens de `@media (prefers-color-scheme: dark)` si el celular del usuario estaba en
+   oscuro — tarjeta oscura dentro de un marco claro que no combinaba. Un documento exportado/impreso
+   no debería depender del tema del dispositivo que lo genera, así que se fuerza esta clase (agregada
+   vía className, no toca `capturarNodoComoImagen`) a los valores claros siempre, sin importar el
+   modo del sistema. Los `--accent*` son por unidad de negocio, así que se re-declaran acá con el
+   mismo selector `[data-unidad="..."]` ya usado arriba, para conservar el color correcto de la
+   unidad activa incluso en modo oscuro. */
+.force-light-export {
+  --color-paper: #FFFFFF;       --color-paper-alt: #FBFAF8;
+  --color-canvas: #F5F3F0;      --color-line: #DED9D2;
+  --color-line-strong: #C6BFB6; --color-thead: #EFEBE6;
+  --color-faint: #8C8177;       --color-muted: #6E665E;
+  --color-body: #413A34;        --color-ink: #221D1A;
+
+  --color-ok: #1F7A4C;     --color-ok-ink: #155C39;
+  --color-ok-bg: #E6F2EA;  --color-ok-line: #B9DCC8;
+  --color-warn: #B4610F;   --color-warn-ink: #8A4A0B;
+  --color-warn-bg: #FBEEE0;--color-warn-line: #EBCFA8;
+  --color-danger: #B3261E; --color-danger-ink: #8C1D18;
+  --color-danger-bg: #FBE9E7;--color-danger-line: #EFC6C2;
+}
+[data-unidad="vivero"] .force-light-export {
+  --accent: #35682F; --accent-ink: #2A5325; --accent-soft: #EEF3E4;
+  --accent-hi: #8CBF3F; --accent-label: #5B7A4E;
+}
+[data-unidad="herramientas"] .force-light-export {
+  --accent: #14666F; --accent-ink: #0E4A51; --accent-soft: #E5EFF0;
+  --accent-hi: #E0872A; --accent-label: #3B7B83; --accent-plate: #123238;
+}
+
 body {
-  background-color: var(--color-background);
-  color: var(--color-text-main);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   margin: 0;
+}
+
+/* Números: siempre mono y tabular */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Fix de contraste del popup nativo de <select> (bug reportado en el CP1): el <select> de
+   "Unidad de Negocio" queda sin fondo propio (`bg-transparent`) para que se vea integrado en la
+   placa `bg-accent-soft` que lo envuelve (Decisión 10) — pero `background-color` NO es una
+   propiedad heredada en CSS, así que el popup nativo de <option> (una caja separada que el
+   navegador dibuja con su propio UA-stylesheet) no hereda ese fondo. `color` sí se hereda, y el
+   popup terminaba con texto oscuro (heredado, correcto) sobre un fondo que el navegador decidía
+   por su cuenta — en algunos casos blanco sobre blanco, ilegible. Se fuerza explícitamente fondo
+   claro + texto oscuro en cada <option> del sitio, sea cual sea el fondo del <select> que lo
+   contiene. */
+select option {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
 }

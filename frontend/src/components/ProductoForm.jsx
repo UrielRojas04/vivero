@@ -387,19 +387,19 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white/90 backdrop-blur-md rounded-none sm:rounded-2xl border border-white/20 w-full h-full sm:h-auto max-w-2xl shadow-2xl flex flex-col max-h-screen sm:max-h-[95vh] scale-100 transition-transform duration-300 animate-scaleIn">
+      <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full h-full sm:h-auto max-w-2xl flex flex-col max-h-screen sm:max-h-[95vh] scale-100 transition-transform duration-300 animate-scaleIn">
 
         {/* Header */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-600 text-white sm:rounded-t-2xl">
-          <h2 className="text-lg font-semibold">
+        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-line">
+          <h2 className="text-lg font-semibold text-ink">
             {tituloModal}
           </h2>
           <button
             onClick={onCancel}
-            className="p-1.5 rounded-full hover:bg-emerald-700 transition-colors text-white/90 hover:text-white cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-canvas transition-colors text-faint hover:text-body cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -409,7 +409,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="p-6 space-y-4 overflow-y-auto">
             <div>
-            <label htmlFor="nombre" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+            <label htmlFor="nombre" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
               {labelNombre}
             </label>
             <input
@@ -417,18 +417,18 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className={`w-full px-4 py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                errors.nombre ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+              className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all ${
+                errors.nombre ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
               }`}
               placeholder={placeholderNombre}
             />
             {errors.nombre && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.nombre}</p>
+              <p className="mt-1 text-xs text-danger font-medium">{errors.nombre}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="descripcion" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+            <label htmlFor="descripcion" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
               Descripción
             </label>
             <textarea
@@ -436,7 +436,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               rows="3"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all resize-none"
+              className="w-full px-4 py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all resize-none"
               placeholder="Detalles sobre cuidados, tamaño, riego..."
             />
           </div>
@@ -444,72 +444,72 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
           <div className="grid grid-cols-2 gap-4">
             {unidadNegocioActiva !== '2' && (
               <div>
-                <label htmlFor="precio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="precio" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Precio de Venta (ARS)
                 </label>
                 <FormattedNumberInput
                   id="precio"
                   value={precio}
                   onChange={(val) => setPrecio(val)}
-                  className={`w-full px-4 py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                    errors.precio ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+                  className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
+                    errors.precio ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                   }`}
                   placeholder="0.00"
                 />
                 {errors.precio && (
-                  <p className="mt-1 text-xs text-red-500 font-medium">{errors.precio}</p>
+                  <p className="mt-1 text-xs text-danger font-medium">{errors.precio}</p>
                 )}
               </div>
             )}
 
             <div className={unidadNegocioActiva === '2' ? 'col-span-1' : 'col-span-2'}>
-              <label htmlFor="stock" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <label htmlFor="stock" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                 Stock (Unidades)
               </label>
               <FormattedNumberInput
                 id="stock"
                 value={stock}
                 onChange={(val) => setStock(val)}
-                className={`w-full px-4 py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                  errors.stock ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+                className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
+                  errors.stock ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                 }`}
                 placeholder="0"
               />
               {errors.stock && (
-                <p className="mt-1 text-xs text-red-500 font-medium">{errors.stock}</p>
+                <p className="mt-1 text-xs text-danger font-medium">{errors.stock}</p>
               )}
             </div>
 
             {unidadNegocioActiva === '2' && (
               <div className="col-span-1">
-                <label htmlFor="proveedorId" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Truck className="w-3 h-3 text-emerald-600" />
+                <label htmlFor="proveedorId" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Truck className="w-3 h-3 text-accent" />
                   Proveedor (Opcional)
                 </label>
                 <select
                   id="proveedorId"
                   value={proveedorSeleccionadoId}
                   onChange={handleProveedorChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white/70"
+                  className="w-full px-4 py-2.5 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all bg-paper"
                 >
                   <option value="">-- Sin proveedor --</option>
                   {proveedores.map(p => (
                     <option key={p.id} value={p.id}>{p.nombre}</option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-gray-400">
+                <p className="mt-1 text-[11px] text-faint">
                   Elegirlo NO modifica los valores cargados abajo. Usá el botón "Aplicar valores por defecto" para traerlos.
                 </p>
               </div>
             )}
 
             {unidadNegocioActiva === '2' && (
-              <div className="col-span-2 mt-2 bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div className="col-span-2 mt-2 bg-canvas border border-line rounded-base p-4">
                 {proveedorSeleccionado && (
                   <button
                     type="button"
                     onClick={() => aplicarPerfilProveedor(proveedorSeleccionado)}
-                    className="flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-base text-xs font-semibold text-accent-ink bg-accent-soft hover:brightness-95 transition-colors cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Aplicar valores por defecto de {proveedorSeleccionado.nombre}
@@ -517,19 +517,19 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 )}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <label htmlFor="costoProducto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    <label htmlFor="costoProducto" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                       Costo Catálogo
                     </label>
                     <FormattedNumberInput
                       id="costoProducto"
                       value={costoProducto}
                       onChange={handleCostoChange}
-                      className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
+                      className="w-full px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all border-line focus:border-accent font-mono tabular-nums"
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label htmlFor="ivaPropio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    <label htmlFor="ivaPropio" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                       IVA propio (%)
                     </label>
                     <FormattedNumberInput
@@ -543,12 +543,12 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                       // con el default).
                       value={ivaPropio !== '' ? ivaPropio : ivaDefault}
                       onChange={handleIvaPropioChange}
-                      className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
+                      className="w-full px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all border-line focus:border-accent font-mono tabular-nums"
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label htmlFor="envioPropio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    <label htmlFor="envioPropio" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                       Envío propio (%)
                     </label>
                     <FormattedNumberInput
@@ -558,19 +558,19 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                       // decide qué se manda en el submit.
                       value={envioPropio !== '' ? envioPropio : costoEnvioDefault}
                       onChange={handleEnvioPropioChange}
-                      className="w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-gray-200 focus:border-emerald-500"
+                      className="w-full px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all border-line focus:border-accent font-mono tabular-nums"
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label htmlFor="porcentajeGanancia" className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">
+                    <label htmlFor="porcentajeGanancia" className="block text-xs font-bold text-accent-ink uppercase tracking-wider mb-1">
                       % Ganancia
                     </label>
                     <FormattedNumberInput
                       id="porcentajeGanancia"
                       value={porcentajeGanancia}
                       onChange={handleGananciaChange}
-                      className="w-full px-4 py-2 rounded-xl border-2 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all border-emerald-200 focus:border-emerald-500 text-emerald-900 font-bold text-center"
+                      className="w-full px-4 py-2 rounded-base border-2 bg-accent-soft focus:outline-none focus:ring-2 focus:ring-accent transition-all border-accent focus:border-accent text-accent-ink font-bold text-center font-mono tabular-nums"
                       placeholder="0"
                     />
                   </div>
@@ -580,7 +580,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                     seleccionar un proveedor que maneja dólares la sugiere en USD (tarea 8.1),
                     pero queda libre para corregir producto por producto. */}
                 <div className="mb-4">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                     Moneda del costo de catálogo
                   </label>
                   <div className="flex gap-2">
@@ -589,10 +589,10 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                         key={m}
                         type="button"
                         onClick={() => setMonedaCosto(m)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold border cursor-pointer transition-colors ${
+                        className={`px-4 py-1.5 rounded-base text-sm font-semibold border cursor-pointer transition-colors ${
                           monedaCosto === m
-                            ? 'bg-emerald-600 border-emerald-600 text-white'
-                            : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-300'
+                            ? 'bg-accent border-accent text-paper'
+                            : 'bg-paper border-line text-body hover:border-accent'
                         }`}
                       >
                         {m}
@@ -602,13 +602,13 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 </div>
 
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider">
                     Descuentos estables (Proveedor, Volumen, Pronto pago...)
                   </label>
                   <button
                     type="button"
                     onClick={handleAddDescuento}
-                    className="flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-semibold text-accent-ink hover:brightness-90 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Agregar descuento
@@ -616,7 +616,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                 </div>
 
                 {descuentos.length === 0 && (
-                  <p className="text-xs text-gray-400 italic mb-2">Sin descuentos cargados.</p>
+                  <p className="text-xs text-faint italic mb-2">Sin descuentos cargados.</p>
                 )}
 
                 <div className="space-y-2 mb-3">
@@ -630,67 +630,67 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                           value={d.nombre}
                           onChange={(e) => handleDescuentoNombreChange(index, e.target.value)}
                           placeholder="Ej: Proveedor, Volumen, Pronto pago"
-                          className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                          className="flex-1 min-w-0 px-3 py-2 rounded-base border border-line bg-paper text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
                         />
                         <div className="w-24 shrink-0">
                           <FormattedNumberInput
                             value={d.porcentaje}
                             onChange={(val) => handleDescuentoPorcentajeChange(index, val)}
                             placeholder="%"
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            className="w-full px-3 py-2 rounded-base border border-line bg-paper text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-mono tabular-nums"
                           />
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveDescuento(index)}
-                          className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                          className="p-2 rounded-base text-danger hover:bg-danger-bg transition-colors cursor-pointer shrink-0"
                           aria-label="Quitar descuento"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                       {mult !== null && (
-                        <p className="pl-1 mt-0.5 text-[11px] text-gray-400">= × {mult}</p>
+                        <p className="pl-1 mt-0.5 text-[11px] text-faint font-mono tabular-nums">= × {mult}</p>
                       )}
                     </div>
                     );
                   })}
                 </div>
                 {errors.descuentos && (
-                  <p className="mb-3 text-xs text-red-500 font-medium">{errors.descuentos}</p>
+                  <p className="mb-3 text-xs text-danger font-medium">{errors.descuentos}</p>
                 )}
 
-                <div className="bg-white border border-gray-100 rounded-lg p-3 text-sm text-gray-600 shadow-sm space-y-2">
+                <div className="bg-paper border border-line rounded-base p-3 text-sm text-body space-y-2">
                   {filasDescuento.map((f, index) => (
-                    <div key={index} className="flex justify-between items-center text-gray-500 gap-2">
+                    <div key={index} className="flex justify-between items-center text-muted gap-2">
                       <span className="truncate">{f.nombre || 'Descuento'} (<span className="font-semibold">{f.porcentaje}%</span>):</span>
-                      <strong className="shrink-0">-${f.monto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                      <strong className="shrink-0 font-mono tabular-nums">-${f.monto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                     </div>
                   ))}
-                  <div className="flex justify-between items-center text-gray-500 border-t border-gray-50 pt-2">
+                  <div className="flex justify-between items-center text-muted border-t border-line pt-2">
                     <span>IVA (<span className="font-semibold">{ivaEfectivo}%</span>):</span>
-                    <strong>+${desglose.montoIva.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="font-mono tabular-nums">+${desglose.montoIva.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
-                  <div className="text-rose-600 flex justify-between items-center">
+                  <div className="text-body flex justify-between items-center">
                     <span>Envío (<span className="font-semibold">{envioEfectivo}%</span>):</span>
-                    <strong>+${desglose.montoEnvio.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="font-mono tabular-nums">+${desglose.montoEnvio.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
-                  <div className="flex justify-between items-center border-t border-gray-100 pt-2">
+                  <div className="flex justify-between items-center border-t border-line pt-2">
                     <span>C. Final:</span>
-                    <strong className="text-gray-900">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="text-ink font-mono tabular-nums">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
-                  <div className="text-emerald-700 flex justify-between items-center">
+                  <div className="text-ink flex justify-between items-center">
                     <span className="font-semibold uppercase tracking-wider text-xs">Precio Venta:</span>
-                    <strong className="text-lg">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="text-lg font-mono tabular-nums">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
-                  <div className="text-emerald-600/80 flex justify-between items-center text-xs">
+                  <div className="text-body flex justify-between items-center text-xs">
                     <span>Ganancia Neta:</span>
-                    <strong>+${gananciaMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="font-mono tabular-nums">+${gananciaMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
                   </div>
                 </div>
 
                 {errors.precio && (
-                  <p className="mt-2 text-xs text-red-500 font-medium text-right">{errors.precio}</p>
+                  <p className="mt-2 text-xs text-danger font-medium text-right">{errors.precio}</p>
                 )}
               </div>
             )}
@@ -699,7 +699,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
           {unidadNegocioActiva !== '2' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="lote" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="lote" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Lote (Opcional)
                 </label>
                 <input
@@ -707,12 +707,12 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                   id="lote"
                   value={lote}
                   onChange={(e) => setLote(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all"
                   placeholder="Ej. L-2026-A"
                 />
               </div>
               <div>
-                <label htmlFor="dueno" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="dueno" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Dueño (Opcional)
                 </label>
                 <input
@@ -720,7 +720,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
                   id="dueno"
                   value={dueno}
                   onChange={(e) => setDueno(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all"
                   placeholder="Dueño del lote"
                 />
               </div>
@@ -730,17 +730,17 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
           </div>
 
           {/* Footer Actions */}
-          <div className="flex-none flex items-center justify-end space-x-3 p-4 px-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl">
+          <div className="flex-none flex items-center justify-end space-x-3 p-4 px-6 border-t border-line bg-canvas/50">
             <button
               type="button"
               onClick={onCancel}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-base border border-line text-sm font-medium text-body hover:bg-canvas transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-base bg-accent hover:brightness-95 text-sm font-semibold text-paper transition-all cursor-pointer"
             >
               {producto ? 'Guardar Cambios' : 'Crear Producto'}
             </button>

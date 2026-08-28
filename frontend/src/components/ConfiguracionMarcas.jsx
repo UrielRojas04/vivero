@@ -78,21 +78,21 @@ const ConfiguracionMarcas = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 p-12 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-        <p className="text-gray-500 font-medium">Cargando marcas...</p>
+      <div className="bg-paper rounded-panel border border-line p-12 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 text-accent-ink animate-spin" />
+        <p className="text-muted font-medium">Cargando marcas...</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-          <Tag className="w-5 h-5 text-emerald-600" />
+    <div className="bg-paper rounded-panel border border-line overflow-hidden">
+      <div className="p-6 border-b border-line bg-canvas">
+        <h3 className="text-lg font-bold text-ink flex items-center gap-2">
+          <Tag className="w-5 h-5 text-accent-ink" />
           Marcas Disponibles
         </h3>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted mt-1">
           Gestiona las marcas que aparecerán en los filtros y en la creación de herramientas.
         </p>
       </div>
@@ -104,12 +104,12 @@ const ConfiguracionMarcas = () => {
             value={nuevaMarca}
             onChange={(e) => setNuevaMarca(e.target.value)}
             placeholder="Nueva marca (ej. Total, Ingco)"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+            className="flex-1 px-4 py-2.5 rounded-base border border-line focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all"
           />
           <button
             type="submit"
             disabled={!nuevaMarca.trim() || createMutation.isPending}
-            className="px-5 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm"
+            className="px-5 py-2.5 bg-accent text-paper font-semibold rounded-base hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Agregar
@@ -118,37 +118,37 @@ const ConfiguracionMarcas = () => {
 
         <div className="space-y-3">
           {marcas.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <div className="text-center py-8 text-muted text-sm bg-canvas rounded-base border border-dashed border-line">
               No hay marcas cargadas. Agrega tu primera marca arriba.
             </div>
           ) : (
             marcas.map(marca => (
-              <div key={marca.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group">
+              <div key={marca.id} className="flex items-center justify-between p-4 rounded-base border border-line hover:border-accent hover:bg-accent-soft transition-all group">
                 {editingId === marca.id ? (
                   <form onSubmit={(e) => handleUpdate(e, marca.id)} className="flex items-center gap-3 w-full">
                     <input
                       type="text"
                       value={editNombre}
                       onChange={(e) => setEditNombre(e.target.value)}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      className="flex-1 px-3 py-1.5 rounded-base border border-line-strong focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                       autoFocus
                     />
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                      <button type="button" onClick={() => setEditingId(null)} className="p-1.5 text-muted hover:text-body hover:bg-canvas rounded-base">
                         <X className="w-5 h-5" />
                       </button>
-                      <button type="submit" disabled={!editNombre.trim()} className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-lg">
+                      <button type="submit" disabled={!editNombre.trim()} className="p-1.5 text-accent-ink hover:brightness-95 hover:bg-accent-soft rounded-base">
                         <Save className="w-5 h-5" />
                       </button>
                     </div>
                   </form>
                 ) : (
                   <>
-                    <span className="font-medium text-gray-900 flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-emerald-500" />
+                    <span className="font-medium text-ink flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-accent-ink" />
                       {marca.nombre}
                       {marca.enUso && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[10px] font-bold uppercase tracking-wider ml-2">
+                        <span className="px-2 py-0.5 bg-warn-bg text-warn-ink border border-warn-line rounded-full text-[10px] font-bold uppercase tracking-wider ml-2">
                           En Uso
                         </span>
                       )}
@@ -159,7 +159,7 @@ const ConfiguracionMarcas = () => {
                           setEditingId(marca.id);
                           setEditNombre(marca.nombre);
                         }}
-                        className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                        className="p-2 text-muted hover:text-accent-ink hover:bg-accent-soft rounded-base transition-colors"
                         title="Editar"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -167,10 +167,10 @@ const ConfiguracionMarcas = () => {
                       <button
                         onClick={() => handleDelete(marca.id)}
                         disabled={marca.enUso}
-                        className={`p-2 rounded-lg transition-colors ${
-                          marca.enUso 
-                            ? 'text-gray-300 cursor-not-allowed' 
-                            : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                        className={`p-2 rounded-base transition-colors ${
+                          marca.enUso
+                            ? 'text-faint cursor-not-allowed'
+                            : 'text-muted hover:text-danger hover:bg-danger-bg'
                         }`}
                         title={marca.enUso ? "No se puede eliminar una marca en uso" : "Eliminar"}
                       >

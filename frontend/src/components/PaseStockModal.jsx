@@ -45,23 +45,23 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-md overflow-hidden shadow-2xl scale-100 animate-scaleIn flex flex-col">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-md overflow-hidden scale-100 animate-scaleIn flex flex-col">
+
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-emerald-600 text-white shrink-0 sm:rounded-t-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-line shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <PackagePlus className="w-5 h-5" />
+            <div className="p-2 bg-accent-soft rounded-base">
+              <PackagePlus className="w-5 h-5 text-accent-ink" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Pasar a Stock</h3>
-              <p className="text-sm text-emerald-100">Convierte la siembra en producto</p>
+              <h3 className="font-semibold text-lg text-ink">Pasar a Stock</h3>
+              <p className="text-sm text-muted">Convierte la siembra en producto</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-1.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+            className="p-1.5 text-faint hover:text-body hover:bg-canvas rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -69,58 +69,58 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
 
         {/* Content */}
         <div className="p-6 space-y-5 flex-1 overflow-y-auto">
-          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-            <h4 className="text-sm font-semibold text-emerald-800 mb-1">
+          <div className="bg-canvas rounded-base p-4 border border-line">
+            <h4 className="text-sm font-semibold text-ink mb-1">
               Planta: {siembra.variedadPlanta?.nombre}
             </h4>
-            <p className="text-xs text-emerald-600">
+            <p className="text-xs text-muted">
               Siembra: {siembra.numeroSiembra || '-'}{siembra.codigoLote ? ` • Lote: ${siembra.codigoLote}` : ''} • Dueño: {siembra.dueno}
             </p>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-body mb-1">
                 Stock (Unidades logradas)
               </label>
               <FormattedNumberInput
                 value={stock}
                 onChange={setStock}
-                className={`w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
-                  errors.stock ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
+                className={`w-full px-4 py-2 border rounded-base outline-none focus:ring-2 focus:ring-accent/20 transition-all font-mono tabular-nums ${
+                  errors.stock ? 'border-danger-line focus:border-danger' : 'border-line focus:border-accent'
                 }`}
               />
-              {errors.stock && <p className="mt-1 text-sm text-red-500">{errors.stock}</p>}
+              {errors.stock && <p className="mt-1 text-sm text-danger">{errors.stock}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-body mb-1">
                 Precio de Venta ($)
               </label>
               <FormattedNumberInput
                 value={precio}
                 onChange={setPrecio}
                 placeholder="Ej. 1500"
-                className={`w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
-                  errors.precio ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
+                className={`w-full px-4 py-2 border rounded-base outline-none focus:ring-2 focus:ring-accent/20 transition-all font-mono tabular-nums ${
+                  errors.precio ? 'border-danger-line focus:border-danger' : 'border-line focus:border-accent'
                 }`}
               />
-              {errors.precio && <p className="mt-1 text-sm text-red-500">{errors.precio}</p>}
+              {errors.precio && <p className="mt-1 text-sm text-danger">{errors.precio}</p>}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+        <div className="p-5 border-t border-line flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-200 bg-gray-100 rounded-xl transition-colors"
+            className="px-4 py-2 text-body font-medium border border-line hover:bg-canvas rounded-base transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 text-white font-medium bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-2"
+            className="px-4 py-2 text-paper font-medium bg-accent hover:brightness-95 rounded-base transition-colors flex items-center gap-2 cursor-pointer"
           >
             <PackagePlus className="w-4 h-4" />
             Ingresar a Stock

@@ -15,16 +15,20 @@
 // mostrador. Ajustable de un solo lugar si el uso real lo pide.
 const DIAS_PROXIMO_COBRO = 7;
 
+// EN_CARTERA -> warn (requiere atención, todavía no se resolvió). COBRADO -> neutral de token
+// (Decisión 4 de design.md: el azul informativo no tiene par semántico en la paleta de 3 tonos;
+// se colapsa a neutral en vez de inventar un --color-info fuera de la spec — pendiente de
+// confirmación explícita en el CP2). ENTREGADO -> ok (resuelto, a favor). RECHAZADO -> danger.
 const TONOS_ESTADO = {
-  EN_CARTERA: { chip: 'bg-amber-100 text-amber-800', texto: 'text-amber-800' },
-  COBRADO: { chip: 'bg-blue-100 text-blue-800', texto: 'text-blue-800' },
-  ENTREGADO: { chip: 'bg-emerald-100 text-emerald-800', texto: 'text-emerald-800' },
-  RECHAZADO: { chip: 'bg-red-100 text-red-800', texto: 'text-red-800' },
+  EN_CARTERA: { chip: 'bg-warn-bg text-warn-ink', texto: 'text-warn-ink' },
+  COBRADO: { chip: 'bg-thead text-body border border-line', texto: 'text-muted' },
+  ENTREGADO: { chip: 'bg-ok-bg text-ok-ink', texto: 'text-ok-ink' },
+  RECHAZADO: { chip: 'bg-danger-bg text-danger-ink', texto: 'text-danger-ink' },
 };
 
-const TONO_GRIS = { texto: 'text-gray-500', fondo: 'bg-gray-100', chip: 'bg-gray-100 text-gray-600' };
-const TONO_ROJO = { texto: 'text-red-600', fondo: 'bg-red-50', chip: 'bg-red-50 text-red-700' };
-const TONO_AMBAR = { texto: 'text-amber-600', fondo: 'bg-amber-50', chip: 'bg-amber-50 text-amber-700' };
+const TONO_GRIS = { texto: 'text-muted', fondo: 'bg-thead', chip: 'bg-thead text-body border border-line' };
+const TONO_ROJO = { texto: 'text-danger', fondo: 'bg-danger-bg', chip: 'bg-danger-bg text-danger-ink' };
+const TONO_AMBAR = { texto: 'text-warn', fondo: 'bg-warn-bg', chip: 'bg-warn-bg text-warn-ink' };
 
 /**
  * describirEstadoCheque(cheque) -> { estado, etiqueta, tono, editable, rechazable }
@@ -80,9 +84,13 @@ export const describirEstadoCheque = (cheque) => {
  */
 export const describirOrigenCheque = (cheque) => {
   const esEmisionPropia = !!cheque.esEmisionPropia;
+  // "Emitido a cliente" (sale plata) usaba azul informativo -> neutral de token (Decisión 4,
+  // misma decisión que COBRADO arriba). "Recibido de cliente" (entra plata) es un evento
+  // positivo que depende del mismo dato -> ok, siguiendo la misma asimetría que saldoDisplay.js
+  // (entrada = ok, salida sin ser deuda = neutral).
   return esEmisionPropia
-    ? { esEmisionPropia, etiqueta: 'Emitido a cliente', tono: { chip: 'bg-blue-100 text-blue-800' } }
-    : { esEmisionPropia, etiqueta: 'Recibido de cliente', tono: { chip: 'bg-emerald-100 text-emerald-800' } };
+    ? { esEmisionPropia, etiqueta: 'Emitido a cliente', tono: { chip: 'bg-thead text-body border border-line' } }
+    : { esEmisionPropia, etiqueta: 'Recibido de cliente', tono: { chip: 'bg-ok-bg text-ok-ink' } };
 };
 
 /** Normaliza una Date (o string parseable) a medianoche local. */

@@ -187,31 +187,31 @@ export default function UsuariosAdmin() {
         }
     };
 
-    if (loading) return <div className="p-4 text-gray-500">Cargando...</div>;
+    if (loading) return <div className="p-4 text-muted">Cargando...</div>;
 
     return (
-        <div className="p-4 sm:p-6">  
+        <div className="p-4 sm:p-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Administración</h1>
-                <button 
+                <h1 className="text-2xl font-bold text-ink">Administración</h1>
+                <button
                     onClick={activeTab === 'usuarios' ? () => openUserModal() : () => openRolModal()}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    className="bg-accent hover:brightness-95 text-paper px-4 py-2 rounded-base font-medium transition-colors cursor-pointer"
                 >
                     + Nuevo {activeTab === 'usuarios' ? 'Usuario' : 'Rol'}
                 </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-4 border-b border-gray-200 mb-6">
+            <div className="flex space-x-4 border-b border-line mb-6">
                 <button
                     onClick={() => setActiveTab('usuarios')}
-                    className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'usuarios' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors cursor-pointer ${activeTab === 'usuarios' ? 'border-accent text-accent-ink' : 'border-transparent text-muted hover:text-body hover:border-line-strong'}`}
                 >
                     Usuarios
                 </button>
                 <button
                     onClick={() => setActiveTab('roles')}
-                    className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'roles' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors cursor-pointer ${activeTab === 'roles' ? 'border-accent text-accent-ink' : 'border-transparent text-muted hover:text-body hover:border-line-strong'}`}
                 >
                     Roles y Permisos
                 </button>
@@ -223,32 +223,32 @@ export default function UsuariosAdmin() {
                 {/* MOBILE: Cards */}
                 <div className="grid grid-cols-1 gap-3 sm:hidden">
                   {usuarios.map(u => (
-                    <div key={u.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                    <div key={u.id} className="bg-paper border border-line rounded-panel p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center shrink-0">
                             <UserCircle className="w-6 h-6" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 text-base">{u.username}</h3>
-                            <span className="text-xs text-gray-400">#{u.id}</span>
+                            <h3 className="font-semibold text-ink text-base">{u.username}</h3>
+                            <span className="text-xs text-faint">#{u.id}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {!u.roles || u.roles.length === 0 ? (
-                          <span className="text-gray-400 italic text-sm">Sin roles asignados</span>
+                          <span className="text-faint italic text-sm">Sin roles asignados</span>
                         ) : u.roles.map((r, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200">{r.nombre}</span>
+                          <span key={idx} className="px-2 py-1 bg-accent-soft text-accent-ink text-xs font-medium rounded-full">{r.nombre}</span>
                         ))}
                       </div>
                       {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
-                        <span className="text-gray-400 italic text-sm text-center py-1">Usuario protegido</span>
+                        <span className="text-warn-ink italic text-sm text-center py-1">Usuario protegido</span>
                       ) : (
-                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 pt-3 border-t border-line">
                           <button
                             onClick={() => openUserModal(u)}
-                            className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                            className="flex-1 py-2 bg-canvas hover:bg-thead text-body font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 border border-line"
                           >
                             <Edit2 className="w-4 h-4" /> Editar
                           </button>
@@ -260,7 +260,7 @@ export default function UsuariosAdmin() {
                               confirmLabel: 'Eliminar',
                               onConfirm: () => handleDeleteUser(u.id),
                             })}
-                            className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                            className="flex-1 py-2 bg-danger-bg hover:brightness-95 text-danger-ink font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 border border-danger-line"
                           >
                             <Trash2 className="w-4 h-4" /> Eliminar
                           </button>
@@ -271,38 +271,38 @@ export default function UsuariosAdmin() {
                 </div>
 
                 {/* DESKTOP: Table */}
-                <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="hidden sm:block bg-paper rounded-panel border border-line overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                        <th className="p-4 font-semibold border-b">ID</th>
-                        <th className="p-4 font-semibold border-b">Usuario</th>
-                        <th className="p-4 font-semibold border-b">Accesos</th>
-                        <th className="p-4 font-semibold border-b text-right">Acciones</th>
+                      <tr className="bg-thead text-body text-sm uppercase tracking-wider border-b border-line">
+                        <th className="p-4 font-semibold">ID</th>
+                        <th className="p-4 font-semibold">Usuario</th>
+                        <th className="p-4 font-semibold">Accesos</th>
+                        <th className="p-4 font-semibold text-right">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-line">
                       {usuarios.map(u => (
-                        <tr key={u.id} className="hover:bg-gray-50/50">
-                          <td className="p-4 text-gray-500">#{u.id}</td>
-                          <td className="p-4 font-medium text-gray-800">{u.username}</td>
+                        <tr key={u.id} className="hover:bg-canvas transition-colors">
+                          <td className="p-4 text-muted">#{u.id}</td>
+                          <td className="p-4 font-medium text-ink">{u.username}</td>
                           <td className="p-4">
                             {!u.roles || u.roles.length === 0 ? (
-                              <span className="text-gray-400 italic text-sm">Sin roles asignados</span>
+                              <span className="text-faint italic text-sm">Sin roles asignados</span>
                             ) : (
                               <div className="flex flex-wrap gap-1.5">
                                 {u.roles.map((r, idx) => (
-                                  <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200">{r.nombre}</span>
+                                  <span key={idx} className="px-2 py-1 bg-accent-soft text-accent-ink text-xs font-medium rounded-full">{r.nombre}</span>
                                 ))}
                               </div>
                             )}
                           </td>
                           <td className="p-4 text-right">
                             {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
-                              <span className="text-gray-400 italic text-sm">Usuario protegido</span>
+                              <span className="text-warn-ink italic text-sm">Usuario protegido</span>
                             ) : (
                               <>
-                                <button onClick={() => openUserModal(u)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
+                                <button onClick={() => openUserModal(u)} className="text-body hover:text-accent-ink font-medium mr-4 cursor-pointer">Editar</button>
                                 <button
                                   onClick={() => askConfirm({
                                     title: 'Eliminar Usuario',
@@ -311,7 +311,7 @@ export default function UsuariosAdmin() {
                                     confirmLabel: 'Eliminar',
                                     onConfirm: () => handleDeleteUser(u.id),
                                   })}
-                                  className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                                  className="text-danger hover:text-danger-ink font-medium cursor-pointer"
                                 >Eliminar</button>
                               </>
                             )}
@@ -330,34 +330,34 @@ export default function UsuariosAdmin() {
                 {/* MOBILE: Cards */}
                 <div className="grid grid-cols-1 gap-3 sm:hidden">
                   {roles.map(r => (
-                    <div key={r.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                    <div key={r.id} className="bg-paper border border-line rounded-panel p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center shrink-0">
                             <Shield className="w-5 h-5" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 text-base">{r.nombre}</h3>
-                            <span className="text-xs text-gray-400">#{r.id}</span>
+                            <h3 className="font-semibold text-ink text-base">{r.nombre}</h3>
+                            <span className="text-xs text-faint">#{r.id}</span>
                           </div>
                         </div>
                         {r.enUso && (
-                          <span className="flex items-center text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 shrink-0">
+                          <span className="flex items-center text-xs font-medium bg-warn-bg text-warn-ink px-2 py-0.5 rounded-full border border-warn-line shrink-0">
                             <Lock size={12} className="mr-1" /> En uso
                           </span>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {(!r.permisos || r.permisos.length === 0) ? (
-                          <span className="text-gray-400 italic text-sm">Sin permisos</span>
+                          <span className="text-faint italic text-sm">Sin permisos</span>
                         ) : (r.permisos || []).map(p => (
-                          <span key={p.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded border border-gray-200">{p.nombre}</span>
+                          <span key={p.id} className="px-2 py-1 bg-thead text-body text-xs font-medium rounded-full border border-line">{p.nombre}</span>
                         ))}
                       </div>
-                      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 pt-3 border-t border-line">
                         <button
                           onClick={() => openRolModal(r)}
-                          className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          className="flex-1 py-2 bg-canvas hover:bg-thead text-body font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 border border-line"
                         >
                           <Edit2 className="w-4 h-4" /> Editar
                         </button>
@@ -370,7 +370,7 @@ export default function UsuariosAdmin() {
                             onConfirm: () => handleDeleteRol(r.id),
                           })}
                           disabled={r.enUso}
-                          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 ${r.enUso ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-red-50 hover:bg-red-100 text-red-700 cursor-pointer'}`}
+                          className={`flex-1 py-2 rounded-base text-sm font-medium transition-colors flex items-center justify-center gap-2 border ${r.enUso ? 'bg-canvas text-faint cursor-not-allowed border-line' : 'bg-danger-bg hover:brightness-95 text-danger-ink cursor-pointer border-danger-line'}`}
                         >
                           <Trash2 className="w-4 h-4" /> Eliminar
                         </button>
@@ -380,25 +380,25 @@ export default function UsuariosAdmin() {
                 </div>
 
                 {/* DESKTOP: Table */}
-                <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="hidden sm:block bg-paper rounded-panel border border-line overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                        <th className="p-4 font-semibold border-b">ID</th>
-                        <th className="p-4 font-semibold border-b">Nombre del Rol</th>
-                        <th className="p-4 font-semibold border-b">Permisos Asignados</th>
-                        <th className="p-4 font-semibold border-b text-right">Acciones</th>
+                      <tr className="bg-thead text-body text-sm uppercase tracking-wider border-b border-line">
+                        <th className="p-4 font-semibold">ID</th>
+                        <th className="p-4 font-semibold">Nombre del Rol</th>
+                        <th className="p-4 font-semibold">Permisos Asignados</th>
+                        <th className="p-4 font-semibold text-right">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-line">
                       {roles.map(r => (
-                        <tr key={r.id} className="hover:bg-gray-50/50">
-                          <td className="p-4 text-gray-500">#{r.id}</td>
-                          <td className="p-4 font-medium text-gray-800">
+                        <tr key={r.id} className="hover:bg-canvas transition-colors">
+                          <td className="p-4 text-muted">#{r.id}</td>
+                          <td className="p-4 font-medium text-ink">
                             <div className="flex items-center space-x-2">
                               <span>{r.nombre}</span>
                               {r.enUso && (
-                                <span className="flex items-center text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                <span className="flex items-center text-xs font-medium bg-warn-bg text-warn-ink px-2 py-0.5 rounded-full border border-warn-line">
                                   <Lock size={12} className="mr-1" /> En uso
                                 </span>
                               )}
@@ -407,13 +407,13 @@ export default function UsuariosAdmin() {
                           <td className="p-4">
                             <div className="flex flex-wrap gap-1.5">
                               {(r.permisos || []).map(p => (
-                                <span key={p.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded border border-gray-200">{p.nombre}</span>
+                                <span key={p.id} className="px-2 py-1 bg-thead text-body text-xs font-medium rounded-full border border-line">{p.nombre}</span>
                               ))}
-                              {(!r.permisos || r.permisos.length === 0) && <span className="text-gray-400 italic text-sm">Sin permisos</span>}
+                              {(!r.permisos || r.permisos.length === 0) && <span className="text-faint italic text-sm">Sin permisos</span>}
                             </div>
                           </td>
                           <td className="p-4 text-right">
-                            <button onClick={() => openRolModal(r)} className="text-blue-600 hover:text-blue-800 font-medium mr-4">Editar</button>
+                            <button onClick={() => openRolModal(r)} className="text-body hover:text-accent-ink font-medium mr-4 cursor-pointer">Editar</button>
                             <button
                               onClick={() => askConfirm({
                                 title: 'Eliminar Rol',
@@ -423,7 +423,7 @@ export default function UsuariosAdmin() {
                                 onConfirm: () => handleDeleteRol(r.id),
                               })}
                               disabled={r.enUso}
-                              className={`font-medium cursor-pointer ${r.enUso ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
+                              className={`font-medium cursor-pointer ${r.enUso ? 'text-faint cursor-not-allowed' : 'text-danger hover:text-danger-ink'}`}
                               title={r.enUso ? 'No se puede eliminar un rol en uso' : 'Eliminar rol'}
                             >Eliminar</button>
                           </td>
@@ -437,43 +437,43 @@ export default function UsuariosAdmin() {
 
             {/* Modal Usuario */}
             {modalUserOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h2 className="text-xl font-bold text-gray-800">{editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
-                            <button onClick={() => setModalUserOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm">
+                    <div className="bg-paper rounded-panel border border-line-strong w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-line flex justify-between items-center bg-canvas">
+                            <h2 className="text-xl font-bold text-ink">{editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
+                            <button onClick={() => setModalUserOpen(false)} className="text-faint hover:text-body text-xl font-bold cursor-pointer">&times;</button>
                         </div>
                         <div className="p-6 overflow-y-auto">
                             <form id="usuario-form" onSubmit={handleUserSave} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Username (Email)</label>
-                                    <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                    <label className="block text-sm font-medium text-body mb-1">Username (Email)</label>
+                                    <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} className="w-full p-2.5 border border-line-strong rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña {editingUsuario && <span className="text-gray-400 font-normal">(Dejar en blanco para no cambiar)</span>}</label>
-                                    <input type="password" required={!editingUsuario} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                    <label className="block text-sm font-medium text-body mb-1">Contraseña {editingUsuario && <span className="text-faint font-normal">(Dejar en blanco para no cambiar)</span>}</label>
+                                    <input type="password" required={!editingUsuario} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2.5 border border-line-strong rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all" />
                                 </div>
-                                <div className="pt-4 border-t border-gray-100">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Roles Asignados</h3>
+                                <div className="pt-4 border-t border-line">
+                                    <h3 className="text-lg font-semibold text-ink mb-3">Roles Asignados</h3>
                                     <div className="grid grid-cols-2 gap-3">
                                         {roles.map(r => (
-                                            <label key={r.id} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
-                                                <input 
-                                                    type="checkbox" 
+                                            <label key={r.id} className="flex items-center space-x-3 bg-canvas p-3 rounded-base border border-line cursor-pointer hover:bg-thead transition-colors">
+                                                <input
+                                                    type="checkbox"
                                                     checked={selectedRoles.includes(r.id)}
                                                     onChange={() => handleRoleToggle(r.id)}
-                                                    className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                                                    className="w-4 h-4 text-accent rounded-base border-line-strong focus:ring-accent"
                                                 />
-                                                <span className="text-sm font-medium text-gray-700">{r.nombre}</span>
+                                                <span className="text-sm font-medium text-body">{r.nombre}</span>
                                             </label>
                                         ))}
                                     </div>
                                 </div>
                             </form>
                         </div>
-                        <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                            <button type="button" onClick={() => setModalUserOpen(false)} className="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
-                            <button type="submit" form="usuario-form" className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors">Guardar</button>
+                        <div className="p-5 border-t border-line bg-canvas flex justify-end gap-3">
+                            <button type="button" onClick={() => setModalUserOpen(false)} className="px-5 py-2.5 text-body font-medium hover:bg-thead rounded-base transition-colors cursor-pointer">Cancelar</button>
+                            <button type="submit" form="usuario-form" className="px-5 py-2.5 bg-accent hover:brightness-95 text-paper font-medium rounded-base transition-colors cursor-pointer">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -481,64 +481,64 @@ export default function UsuariosAdmin() {
 
             {/* Modal Rol */}
             {modalRolOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h2 className="text-xl font-bold text-gray-800">{editingRol ? 'Editar Rol' : 'Nuevo Rol'}</h2>
-                            <button onClick={() => setModalRolOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm">
+                    <div className="bg-paper rounded-panel border border-line-strong w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-line flex justify-between items-center bg-canvas">
+                            <h2 className="text-xl font-bold text-ink">{editingRol ? 'Editar Rol' : 'Nuevo Rol'}</h2>
+                            <button onClick={() => setModalRolOpen(false)} className="text-faint hover:text-body text-xl font-bold cursor-pointer">&times;</button>
                         </div>
                         <div className="p-6 overflow-y-auto">
                             <form id="rol-form" onSubmit={handleRolSave} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Rol</label>
-                                    <input type="text" required value={rolNombre} onChange={(e) => setRolNombre(e.target.value.toUpperCase())} className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                    <label className="block text-sm font-medium text-body mb-1">Nombre del Rol</label>
+                                    <input type="text" required value={rolNombre} onChange={(e) => setRolNombre(e.target.value.toUpperCase())} className="w-full p-2.5 border border-line-strong rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all" />
                                 </div>
-                                <div className="pt-4 border-t border-gray-100">
+                                <div className="pt-4 border-t border-line">
                                     <div className="flex justify-between items-center mb-3">
-                                        <h3 className="text-sm font-bold text-gray-700">Asignación de Accesos</h3>
-                                        <div className="flex bg-gray-100 rounded-lg p-1">
-                                            <button 
+                                        <h3 className="text-sm font-bold text-body">Asignación de Accesos</h3>
+                                        <div className="flex bg-canvas rounded-base p-1">
+                                            <button
                                                 type="button"
                                                 onClick={() => setAssignmentMode('secciones')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${assignmentMode === 'secciones' ? 'bg-white shadow-sm text-green-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-base transition-colors cursor-pointer ${assignmentMode === 'secciones' ? 'bg-paper text-accent-ink border border-line' : 'text-muted hover:text-body'}`}
                                             >
                                                 Por Secciones
                                             </button>
-                                            <button 
+                                            <button
                                                 type="button"
                                                 onClick={() => setAssignmentMode('permisos')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${assignmentMode === 'permisos' ? 'bg-white shadow-sm text-green-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-base transition-colors cursor-pointer ${assignmentMode === 'permisos' ? 'bg-paper text-accent-ink border border-line' : 'text-muted hover:text-body'}`}
                                             >
                                                 Avanzado (Permisos)
                                             </button>
                                         </div>
                                     </div>
-                                    
+
                                     {assignmentMode === 'secciones' ? (
                                         <div className="grid grid-cols-2 gap-3">
                                             {SECTIONS.map(s => (
-                                                <label key={s.id} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
-                                                    <input 
-                                                        type="checkbox" 
+                                                <label key={s.id} className="flex items-center space-x-3 bg-canvas p-3 rounded-base border border-line cursor-pointer hover:bg-thead transition-colors">
+                                                    <input
+                                                        type="checkbox"
                                                         checked={selectedSections.includes(s.id)}
                                                         onChange={() => handleSectionToggle(s.id)}
-                                                        className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                                                        className="w-4 h-4 text-accent rounded-base border-line-strong focus:ring-accent"
                                                     />
-                                                    <span className="text-sm font-medium text-gray-700">{s.name}</span>
+                                                    <span className="text-sm font-medium text-body">{s.name}</span>
                                                 </label>
                                             ))}
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3">
                                             {permisos.map(p => (
-                                                <label key={p.id} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
-                                                    <input 
-                                                        type="checkbox" 
+                                                <label key={p.id} className="flex items-center space-x-3 bg-canvas p-3 rounded-base border border-line cursor-pointer hover:bg-thead transition-colors">
+                                                    <input
+                                                        type="checkbox"
                                                         checked={selectedPermisos.includes(p.id)}
                                                         onChange={() => handlePermisoToggle(p.id)}
-                                                        className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                                                        className="w-4 h-4 text-accent rounded-base border-line-strong focus:ring-accent"
                                                     />
-                                                    <span className="text-sm font-medium text-gray-700">{p.nombre}</span>
+                                                    <span className="text-sm font-medium text-body">{p.nombre}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -546,9 +546,9 @@ export default function UsuariosAdmin() {
                                 </div>
                             </form>
                         </div>
-                        <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                            <button type="button" onClick={() => setModalRolOpen(false)} className="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
-                            <button type="submit" form="rol-form" className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors">Guardar</button>
+                        <div className="p-5 border-t border-line bg-canvas flex justify-end gap-3">
+                            <button type="button" onClick={() => setModalRolOpen(false)} className="px-5 py-2.5 text-body font-medium hover:bg-thead rounded-base transition-colors cursor-pointer">Cancelar</button>
+                            <button type="submit" form="rol-form" className="px-5 py-2.5 bg-accent hover:brightness-95 text-paper font-medium rounded-base transition-colors cursor-pointer">Guardar</button>
                         </div>
                     </div>
                 </div>

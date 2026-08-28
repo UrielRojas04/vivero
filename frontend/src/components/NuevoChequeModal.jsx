@@ -82,7 +82,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
     if (!formData.monto || parseFloat(formData.monto) <= 0) {
       return pushToast('error', 'El monto debe ser mayor a 0');
     }
-    
+
     const payload = {
       ...formData,
       monto: parseFloat(formData.monto),
@@ -96,19 +96,19 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
     .filter(c => c.nombreRazonSocial.toLowerCase().includes(searchCliente.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full h-full sm:h-auto max-w-lg rounded-none sm:rounded-2xl shadow-xl flex flex-col max-h-screen sm:max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/50 backdrop-blur-sm">
+      <div className="bg-paper w-full h-full sm:h-auto max-w-lg rounded-none sm:rounded-panel border border-line-strong flex flex-col max-h-screen sm:max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex-none flex items-center justify-between p-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-50 rounded-xl">
-              <CreditCard className="w-5 h-5 text-emerald-600" />
+            <div className="p-2 bg-accent-soft rounded-base">
+              <CreditCard className="w-5 h-5 text-accent-ink" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Registrar Cheque Manual</h2>
-              <p className="text-sm text-gray-500">Ingreso de cheque externo o propio</p>
+              <h2 className="text-lg font-semibold text-ink">Registrar Cheque Manual</h2>
+              <p className="text-sm text-muted">Ingreso de cheque externo o propio</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-2 text-faint hover:text-body hover:bg-canvas rounded-base transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -118,15 +118,15 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
           <div className="space-y-4">
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Cheque</label>
+              <label className="block text-sm font-medium text-body mb-2">Tipo de Cheque</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, esEmisionPropia: false }))}
-                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center p-3 rounded-base border-2 transition-all cursor-pointer ${
                     !formData.esEmisionPropia
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-muted hover:bg-canvas'
                   }`}
                 >
                   De Cliente para mí
@@ -134,10 +134,10 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, esEmisionPropia: true }))}
-                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center p-3 rounded-base border-2 transition-all cursor-pointer ${
                     formData.esEmisionPropia
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-muted hover:bg-canvas'
                   }`}
                 >
                   De mí para Cliente
@@ -146,10 +146,10 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
             </div>
 
             <div ref={dropdownRef} className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cliente (Opcional)</label>
+              <label className="block text-sm font-medium text-body mb-1">Cliente (Opcional)</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+                  <Search className="h-4 w-4 text-faint" />
                 </div>
                 <input
                   type="text"
@@ -163,7 +163,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   }}
                   onFocus={() => setIsDropdownOpen(true)}
                   placeholder="Buscar cliente..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all"
                 />
               </div>
 
@@ -171,9 +171,9 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                 /* D5: en mobile la lista se renderiza EN FLUJO (empuja el contenido del
                    cuerpo scrolleable) para no quedar recortada por overflow-y-auto del
                    panel; desde sm: (>=640px) vuelve a flotar como antes. */
-                <div className="static sm:absolute sm:z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                  <div 
-                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-500 italic border-b border-gray-100"
+                <div className="static sm:absolute sm:z-10 w-full mt-1 bg-paper border border-line-strong rounded-panel max-h-60 overflow-y-auto">
+                  <div
+                    className="px-4 py-3 hover:bg-canvas cursor-pointer text-muted italic border-b border-line"
                     onClick={() => {
                       setFormData(prev => ({ ...prev, clienteId: '' }));
                       setSearchCliente('');
@@ -183,12 +183,12 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                     -- Sin Cliente / Cheque Suelto --
                   </div>
                   {filteredClientes.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-500">No se encontraron clientes</div>
+                    <div className="px-4 py-3 text-sm text-muted">No se encontraron clientes</div>
                   ) : (
                     filteredClientes.map(c => (
-                      <div 
-                        key={c.id} 
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-900 border-b border-gray-50 last:border-0"
+                      <div
+                        key={c.id}
+                        className="px-4 py-3 hover:bg-canvas cursor-pointer text-ink border-b border-line last:border-0"
                         onClick={() => {
                           setFormData(prev => ({ ...prev, clienteId: c.id }));
                           setSearchCliente(c.nombreRazonSocial);
@@ -201,11 +201,11 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   )}
                 </div>
               )}
-              
-              <p className="text-xs text-gray-500 mt-2">
-                {formData.clienteId 
-                  ? (formData.esEmisionPropia 
-                      ? "Este cheque se registrará a nombre del cliente y AUMENTARÁ su deuda (o reducirá su saldo a favor)." 
+
+              <p className="text-xs text-muted mt-2">
+                {formData.clienteId
+                  ? (formData.esEmisionPropia
+                      ? "Este cheque se registrará a nombre del cliente y AUMENTARÁ su deuda (o reducirá su saldo a favor)."
                       : "Este cheque sumará SALDO A FAVOR en la cuenta corriente del cliente.")
                   : "Si no selecciona cliente, el cheque quedará registrado sin afectar ninguna cuenta."}
               </p>
@@ -213,67 +213,67 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
+                <label className="block text-sm font-medium text-body mb-1">Banco</label>
                 <input
                   type="text"
                   name="banco"
                   value={formData.banco}
                   onChange={handleChange}
                   placeholder="Ej: Banco Nación"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">N° de Serie</label>
+                <label className="block text-sm font-medium text-body mb-1">N° de Serie</label>
                 <input
                   type="text"
                   name="numeroSerie"
                   value={formData.numeroSerie}
                   onChange={handleChange}
                   placeholder="Ej: 12345678"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Emisión</label>
+                <label className="block text-sm font-medium text-body mb-1">Fecha Emisión</label>
                 <input
                   type="date"
                   name="fechaRecepcion"
                   required
                   value={formData.fechaRecepcion}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Cobro</label>
+                <label className="block text-sm font-medium text-body mb-1">Fecha de Cobro</label>
                 <input
                   type="date"
                   name="fechaCobro"
                   value={formData.fechaCobro}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+              <label className="block text-sm font-medium text-body mb-1">Monto *</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 font-medium">$</span>
+                  <span className="text-muted font-medium">$</span>
                 </div>
                 <FormattedNumberInput
                   id="monto"
                   required
                   value={formData.monto}
                   onChange={(val) => setFormData(prev => ({ ...prev, monto: val }))}
-                  className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                  className="w-full pl-8 pr-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all font-mono tabular-nums"
                   placeholder="Ej: 150000"
                 />
               </div>
@@ -282,18 +282,18 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-          <div className="flex-none flex gap-3 p-6 border-t border-gray-100 sm:justify-end">
+          <div className="flex-none flex gap-3 p-6 border-t border-line sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-body hover:bg-canvas rounded-base transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !formData.monto}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-paper bg-accent hover:brightness-95 rounded-base transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Registrar Cheque

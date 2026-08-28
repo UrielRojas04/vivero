@@ -42,21 +42,21 @@ export default function ConversorBandejas() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 min-w-[24rem] w-full max-w-[90vw]">
-      <div className="flex items-center gap-2 mb-4 text-emerald-700">
+    <div className="bg-paper rounded-panel border border-line p-4 min-w-[24rem] w-full max-w-[90vw]">
+      <div className="flex items-center gap-2 mb-4 text-accent-ink">
         <Calculator className="w-5 h-5" />
         <h3 className="font-semibold">Conversor Rápido</h3>
       </div>
-      
+
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1">
             Tipo de Bandeja
           </label>
           <select
             value={tipoBandejaId}
             onChange={(e) => setTipoBandejaId(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+            className="w-full px-3 py-2 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors bg-paper"
           >
             <option value="">Seleccionar...</option>
             {bandejas.map(b => (
@@ -69,30 +69,30 @@ export default function ConversorBandejas() {
 
         <div className="flex items-center gap-3">
           <div className="flex-[1.5] min-w-0">
-            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1">
               {modo === 'bandejas' ? 'Bandejas' : 'Semillas'}
             </label>
             <FormattedNumberInput
               value={cantidad}
               onChange={(val) => setCantidad(val)}
               placeholder="0"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              className="w-full px-3 py-2 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors font-mono tabular-nums"
             />
           </div>
 
           <button
             onClick={() => setModo(modo === 'bandejas' ? 'semillas' : 'bandejas')}
-            className="mt-5 p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+            className="mt-5 p-2 text-faint hover:text-accent-ink hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
             title="Invertir conversión"
           >
             <ArrowLeftRight className="w-4 h-4" />
           </button>
 
           <div className="flex-auto min-w-0">
-            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1">
               {modo === 'bandejas' ? 'Semillas' : 'Bandejas'}
             </label>
-            <div className="w-full px-3 py-2 text-sm border border-emerald-100 bg-emerald-50/50 rounded-lg text-emerald-800 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+            <div className="w-full px-3 py-2 text-sm border border-line bg-canvas rounded-base text-ink font-medium font-mono tabular-nums whitespace-nowrap overflow-hidden text-ellipsis">
               {resultado || '-'}
             </div>
           </div>

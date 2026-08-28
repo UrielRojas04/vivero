@@ -156,12 +156,12 @@ const Siembras = () => {
   const getStatusBadge = (estado) => {
     switch (estado) {
       case 'EN_STOCK':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">En Stock</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-thead text-body border border-line">En Stock</span>;
       case 'FINALIZADA':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Finalizada</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-ok-bg text-ok-ink">Finalizada</span>;
       case 'EN_PROCESO':
       default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">En Proceso</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-thead text-body border border-line">En Proceso</span>;
     }
   };
 
@@ -171,20 +171,20 @@ const Siembras = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">Gestión de Siembras</h1>
-            <Sprout className="w-6 h-6 text-emerald-600" />
+            <h1 className="text-2xl font-bold text-ink">Gestión de Siembras</h1>
+            <Sprout className="w-6 h-6 text-accent" />
           </div>
-          <p className="mt-1 text-sm text-gray-500">Administra los lotes en cultivo y su traspaso al catálogo.</p>
+          <p className="mt-1 text-sm text-muted">Administra los lotes en cultivo y su traspaso al catálogo.</p>
         </div>
-        
+
         <div className="flex flex-row items-center gap-2 sm:gap-3 relative w-full sm:w-auto">
           <button
             onClick={() => setShowConversor(!showConversor)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer text-sm sm:text-base"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-paper border border-line hover:bg-canvas text-body font-semibold px-4 py-2.5 rounded-base transition-all cursor-pointer text-sm sm:text-base"
           >
             Conversor
           </button>
-          
+
           {showConversor && (
             <div className="absolute top-full right-0 left-0 sm:left-auto mt-2 z-20">
               <ConversorBandejas />
@@ -196,7 +196,7 @@ const Siembras = () => {
               setSelectedSiembra(null);
               setIsFormOpen(true);
             }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-accent hover:brightness-95 text-paper font-semibold px-4 sm:px-5 py-2.5 rounded-base transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap"
           >
             <Plus className="w-5 h-5 hidden sm:block" />
             Nueva Siembra
@@ -205,26 +205,26 @@ const Siembras = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
+      <div className="bg-paper rounded-panel border border-line p-4 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
         <div className="relative w-full md:max-w-md">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-5 h-5 text-gray-400" />
+            <Search className="h-5 h-5 text-faint" />
           </span>
           <input
             type="text"
             placeholder={searchMode === 'NUMERO_SIEMBRA' ? 'Buscar sólo por número de siembra...' : 'Buscar por variedad, número de siembra, lote o dueño...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50/50 transition-all"
+            className="w-full pl-10 pr-4 py-2 border border-line rounded-base focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-canvas/50 transition-all"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl p-1 shrink-0">
+        <div className="flex items-center gap-1.5 bg-canvas rounded-base p-1 shrink-0">
           <button
             type="button"
             onClick={() => setSearchMode('TODO')}
-            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              searchMode === 'TODO' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-base text-xs font-semibold transition-colors cursor-pointer ${
+              searchMode === 'TODO' ? 'bg-paper text-ink' : 'text-muted hover:text-body'
             }`}
           >
             Todo
@@ -232,8 +232,8 @@ const Siembras = () => {
           <button
             type="button"
             onClick={() => setSearchMode('NUMERO_SIEMBRA')}
-            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              searchMode === 'NUMERO_SIEMBRA' ? 'bg-white text-indigo-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-base text-xs font-semibold transition-colors cursor-pointer ${
+              searchMode === 'NUMERO_SIEMBRA' ? 'bg-paper text-accent-ink' : 'text-muted hover:text-body'
             }`}
           >
             Sólo Nº Siembra
@@ -242,25 +242,25 @@ const Siembras = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="bg-danger-bg border border-danger-line rounded-panel p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-red-800">Error</h3>
-            <p className="mt-1 text-sm text-red-700">{error}</p>
+            <h3 className="text-sm font-semibold text-danger-ink">Error</h3>
+            <p className="mt-1 text-sm text-danger">{error}</p>
           </div>
         </div>
       )}
 
       {/* Table */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-16 flex flex-col items-center justify-center gap-3 shadow-sm">
-          <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+        <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-10 h-10 text-accent animate-spin" />
         </div>
       ) : filteredSiembras.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-16 flex flex-col items-center justify-center text-center shadow-sm">
-          <Inbox className="w-12 h-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900">No hay siembras</h3>
-          <p className="mt-2 text-sm text-gray-500">Comienza registrando un nuevo lote en cultivo.</p>
+        <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center text-center">
+          <Inbox className="w-12 h-12 text-faint mb-4" />
+          <h3 className="text-lg font-semibold text-ink">No hay siembras</h3>
+          <p className="mt-2 text-sm text-muted">Comienza registrando un nuevo lote en cultivo.</p>
         </div>
       ) : (
         <>
@@ -283,7 +283,7 @@ const Siembras = () => {
               const isExpanded = expandedIds.has(siembra.id);
 
               return (
-                <div key={siembra.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <div key={siembra.id} className="bg-paper border border-line rounded-panel overflow-hidden">
                   <button
                     type="button"
                     onClick={() => toggleExpanded(siembra.id)}
@@ -291,11 +291,11 @@ const Siembras = () => {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold font-mono bg-indigo-100 text-indigo-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-base text-sm font-bold font-mono tabular-nums bg-accent-soft text-accent-ink border border-accent">
                           Nº {siembra.numeroSiembra || '-'}
                         </span>
                         {siembra.codigoLote && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold font-mono bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-base text-sm font-bold font-mono tabular-nums bg-accent-soft text-accent-ink border border-accent">
                             Lote {siembra.codigoLote}
                           </span>
                         )}
@@ -305,66 +305,66 @@ const Siembras = () => {
 
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center shrink-0">
                           <Sprout className="w-4 h-4" />
                         </div>
-                        <span className="font-semibold text-gray-900 text-sm truncate">
+                        <span className="font-semibold text-ink text-sm truncate">
                           {siembra.variedadPlanta?.nombre || '-'}
                         </span>
                       </div>
                       {isExpanded
-                        ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0" />
-                        : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />}
+                        ? <ChevronUp className="w-5 h-5 text-faint shrink-0" />
+                        : <ChevronDown className="w-5 h-5 text-faint shrink-0" />}
                     </div>
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
-                      <p className="text-xs text-gray-500">
+                    <div className="px-4 pb-4 flex flex-col gap-3 border-t border-line pt-3">
+                      <p className="text-xs text-muted">
                         {formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}
                       </p>
                       {formatPeriodoSiembra(siembra) && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted">
                           Sembrado: {formatPeriodoSiembra(siembra)}
                         </p>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 rounded-xl p-3 border border-gray-100">
+                      <div className="grid grid-cols-2 gap-2 text-sm bg-canvas rounded-base p-3 border border-line">
                         <div>
-                          <span className="text-gray-500 block text-xs mb-0.5">Dueño</span>
-                          <span className="font-medium text-gray-900">{siembra.dueno}</span>
+                          <span className="text-muted block text-xs mb-0.5">Dueño</span>
+                          <span className="font-medium text-ink">{siembra.dueno}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500 block text-xs mb-0.5">Cant. Inicial</span>
-                          <span className="font-medium text-gray-900">{siembra.cantidad} u.</span>
+                          <span className="text-muted block text-xs mb-0.5">Cant. Inicial</span>
+                          <span className="font-medium text-ink font-mono tabular-nums">{siembra.cantidad} u.</span>
                         </div>
                       </div>
 
                       {est && (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex justify-between items-end">
-                            <span className="text-xs font-medium text-gray-500">Progreso Estimado</span>
-                            <span className="text-xs font-semibold text-gray-700">
+                            <span className="text-xs font-medium text-muted">Progreso Estimado</span>
+                            <span className="text-xs font-semibold text-body font-mono tabular-nums">
                               {est.toLocaleDateString('es-AR')} {diffDays > 0 ? `(${diffDays}d)` : '(Lista)'}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div className="w-full bg-thead rounded-full h-2 overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                              className={`h-full rounded-full transition-all ${progress === 100 ? 'bg-ok' : 'bg-line-strong'}`}
                               style={{ width: `${progress}%` }}
                             />
                           </div>
                         </div>
                       )}
 
-                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                         {(siembra.estado === 'FINALIZADA' || siembra.estado === 'EN_PROCESO') && (
                           <button
                             onClick={() => {
                               setSiembraToPaseStock(siembra);
                               setIsPaseStockOpen(true);
                             }}
-                            className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                            className="flex-1 py-2 bg-accent-soft hover:brightness-95 text-accent-ink font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                           >
                             <PackagePlus className="w-4 h-4" /> Stock
                           </button>
@@ -374,7 +374,7 @@ const Siembras = () => {
                             setSelectedSiembra(siembra);
                             setIsFormOpen(true);
                           }}
-                          className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          className="flex-1 py-2 bg-canvas hover:bg-thead text-body font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                         >
                           <Edit2 className="w-4 h-4" /> Editar
                         </button>
@@ -388,7 +388,7 @@ const Siembras = () => {
                               onConfirm: () => handleDelete(siembra.id),
                             })
                           }
-                          className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          className="flex-1 py-2 bg-danger-bg hover:brightness-95 text-danger-ink font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" /> Eliminar
                         </button>
@@ -401,53 +401,53 @@ const Siembras = () => {
           </div>
 
           {/* DESKTOP VIEW: Table Layout */}
-          <div className="hidden sm:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="hidden sm:block bg-paper rounded-panel border border-line overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/75 border-b border-gray-200">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Variedad / Identificación</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Dueño</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cant. Inicial</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entrega Est.</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+                <tr className="bg-thead border-b border-line">
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Variedad / Identificación</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Dueño</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Cant. Inicial</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Entrega Est.</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-line">
                 {filteredSiembras.map((siembra) => (
-                  <tr key={siembra.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <tr key={siembra.id} className="hover:bg-canvas transition-colors group">
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900">{siembra.variedadPlanta?.nombre || '-'}</div>
+                      <div className="font-semibold text-ink">{siembra.variedadPlanta?.nombre || '-'}</div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold font-mono bg-indigo-100 text-indigo-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-bold font-mono tabular-nums bg-accent-soft text-accent-ink border border-accent">
                           Nº {siembra.numeroSiembra || '-'}
                         </span>
                         {siembra.codigoLote && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold font-mono bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-bold font-mono tabular-nums bg-accent-soft text-accent-ink border border-accent">
                             Lote {siembra.codigoLote}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">{formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}</div>
+                      <div className="text-xs text-muted mt-1">{formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}</div>
                       {formatPeriodoSiembra(siembra) && (
-                        <div className="text-xs text-gray-500">Sembrado: {formatPeriodoSiembra(siembra)}</div>
+                        <div className="text-xs text-muted">Sembrado: {formatPeriodoSiembra(siembra)}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-body">
                       {siembra.dueno}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-body font-mono tabular-nums">
                       {siembra.cantidad} u.
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-body">
                       {(() => {
                         if (!siembra.fechaEstimada) return '-';
                         const est = new Date(siembra.fechaEstimada);
                         const now = new Date();
                         const diffTime = est - now;
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        
+
                         let progress = 0;
                         if (diffDays <= 0) progress = 100;
                         else if (diffDays > 30) progress = 10;
@@ -455,13 +455,13 @@ const Siembras = () => {
 
                         return (
                           <div className="flex flex-col gap-1 w-32">
-                            <span className="text-xs text-gray-600">
-                              {est.toLocaleDateString('es-AR')} 
+                            <span className="text-xs text-body font-mono tabular-nums">
+                              {est.toLocaleDateString('es-AR')}
                               {diffDays > 0 ? ` (en ${diffDays} d)` : ' (Lista)'}
                             </span>
-                            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                              <div 
-                                className={`h-1.5 rounded-full ${progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                            <div className="w-full bg-thead rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-1.5 rounded-full ${progress === 100 ? 'bg-ok' : 'bg-line-strong'}`}
                                 style={{ width: `${progress}%` }}
                               ></div>
                             </div>
@@ -480,7 +480,7 @@ const Siembras = () => {
                               setSiembraToPaseStock(siembra);
                               setIsPaseStockOpen(true);
                             }}
-                            className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 hover:bg-accent-soft text-accent-ink rounded-base transition-colors cursor-pointer"
                             title="Pasar a Stock"
                           >
                             <PackagePlus className="w-4.5 h-4.5" />
@@ -491,7 +491,7 @@ const Siembras = () => {
                             setSelectedSiembra(siembra);
                             setIsFormOpen(true);
                           }}
-                          className="p-1.5 hover:bg-gray-100 text-gray-600 hover:text-emerald-600 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 hover:bg-canvas text-body hover:text-accent-ink rounded-base transition-colors cursor-pointer"
                           title="Editar"
                         >
                           <Edit2 className="w-4.5 h-4.5" />
@@ -506,7 +506,7 @@ const Siembras = () => {
                               onConfirm: () => handleDelete(siembra.id),
                             })
                           }
-                          className="p-1.5 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 hover:bg-danger-bg text-body hover:text-danger rounded-base transition-colors cursor-pointer"
                           title="Eliminar"
                         >
                           <Trash2 className="w-4.5 h-4.5" />

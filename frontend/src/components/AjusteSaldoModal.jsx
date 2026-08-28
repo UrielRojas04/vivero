@@ -48,21 +48,21 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
   const saldo = describirSaldo(cliente.balanceDinero);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full h-full sm:h-auto max-w-md rounded-none sm:rounded-2xl shadow-xl flex flex-col max-h-screen sm:max-h-[95vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/50 backdrop-blur-sm">
+      <div className="bg-paper w-full h-full sm:h-auto max-w-md rounded-none sm:rounded-panel border border-line-strong flex flex-col max-h-screen sm:max-h-[95vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex-none flex items-center justify-between p-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-50 rounded-xl">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
+            <div className="p-2 bg-accent-soft rounded-base">
+              <DollarSign className="w-5 h-5 text-accent-ink" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Ajustar Saldo</h2>
-              <p className="text-sm text-gray-500">{cliente.nombreRazonSocial}</p>
+              <h2 className="text-lg font-semibold text-ink">Ajustar Saldo</h2>
+              <p className="text-sm text-muted">{cliente.nombreRazonSocial}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+            className="p-2 text-faint hover:text-body hover:bg-canvas rounded-base transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,32 +73,32 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
             {/* Desde que existe el pago asociado a una venta puntual (dentro de "Cuenta
                 Corriente"), éste queda como el camino de excepción: deuda o pago suelto que
                 no corresponde a ninguna venta en particular. */}
-            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-800">
+            <div className="bg-warn-bg border border-warn-line rounded-base px-4 py-3 text-xs text-warn-ink">
               Usá esto sólo para deuda o pago <strong>que no corresponde a ninguna venta puntual</strong>.
               Si el cliente está pagando una venta pendiente, hacelo desde <strong>Cuenta Corriente</strong>: queda asociado a esa venta y no acá, suelto.
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <div className="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">
+            <div className="bg-thead p-4 rounded-base">
+              <div className="text-xs uppercase tracking-wide font-semibold text-muted mb-1">
                 {saldo.etiqueta}
               </div>
-              <div className={`text-3xl font-bold ${saldo.tono.texto}`}>
+              <div className={`text-3xl font-bold font-mono tabular-nums ${saldo.tono.texto}`}>
                 $ {saldo.monto}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 ¿Qué tipo de movimiento desea registrar?
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setTipoAjuste('PAGO')}
-                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 p-4 rounded-base border-2 transition-all cursor-pointer ${
                     tipoAjuste === 'PAGO'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:bg-emerald-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-muted hover:bg-canvas'
                   }`}
                 >
                   <ArrowUpRight className="w-4 h-4" />
@@ -107,10 +107,10 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
                 <button
                   type="button"
                   onClick={() => setTipoAjuste('DEUDA')}
-                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 p-4 rounded-base border-2 transition-all cursor-pointer ${
                     tipoAjuste === 'DEUDA'
-                      ? 'border-red-500 bg-red-50 text-red-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-red-200 hover:bg-red-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-muted hover:bg-canvas'
                   }`}
                 >
                   <ArrowDownRight className="w-4 h-4" />
@@ -120,23 +120,23 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
             </div>
 
             <div>
-              <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="monto" className="block text-sm font-medium text-body mb-1">
                 Monto
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 font-medium">$</span>
+                  <span className="text-muted font-medium">$</span>
                 </div>
                 <FormattedNumberInput
                   id="monto"
                   required
                   value={monto}
                   onChange={(val) => setMonto(val)}
-                  className="w-full pl-8 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full pl-8 pr-4 py-2 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all font-mono tabular-nums"
                   placeholder="Ej: 5000"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 {tipoAjuste === 'PAGO'
                   ? 'Este monto se sumará al saldo (reduce deuda).'
                   : 'Este monto se restará del saldo (aumenta deuda).'}
@@ -144,18 +144,18 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
             </div>
           </div>
 
-          <div className="flex-none flex gap-3 p-4 px-6 border-t border-gray-100 sm:justify-end">
+          <div className="flex-none flex gap-3 p-4 px-6 border-t border-line sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-body hover:text-ink hover:bg-canvas rounded-base transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={ajusteMutation.isPending || !monto || parseFloat(monto) <= 0}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-paper bg-accent hover:brightness-95 rounded-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
               {ajusteMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Guardar {tipoAjuste === 'PAGO' ? 'Pago' : 'Deuda'}

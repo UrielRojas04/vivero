@@ -44,46 +44,46 @@ export default function HistorialVentas() {
   }, [ventas, filtro]);
 
   if (loading) {
-    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>;
+    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Historial de Ventas</h1>
+      <h1 className="text-2xl font-bold text-ink">Historial de Ventas</h1>
 
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint pointer-events-none" />
         <input
           type="text"
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
           placeholder="Buscar por cliente, estado o fecha…"
-          className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-shadow"
+          className="w-full pl-9 pr-4 py-2 rounded-base border border-line bg-paper text-sm text-body placeholder-faint focus:outline-none focus:ring-2 focus:ring-accent transition-shadow"
         />
       </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+      <div className="bg-paper rounded-panel border border-line overflow-hidden">
         {/* Vista Mobile (Tarjetas) */}
-        <div className="grid grid-cols-1 sm:hidden divide-y divide-gray-100">
+        <div className="grid grid-cols-1 sm:hidden divide-y divide-line">
           {ventasFiltradas.map((venta) => (
             <div key={venta.id} className="p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-bold text-gray-900 leading-tight">{venta.clienteNombre}</h3>
-                  <p className="text-sm text-gray-500">{new Date(venta.fecha).toLocaleString('es-AR')}</p>
+                  <h3 className="font-bold text-ink leading-tight">{venta.clienteNombre}</h3>
+                  <p className="text-sm text-muted">{new Date(venta.fecha).toLocaleString('es-AR')}</p>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-thead text-body">
                   {venta.estadoPago}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <div className="text-gray-600">
-                  <span className="block">Total: <span className="font-bold text-emerald-700">${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}</span></span>
-                  <span className="block">Pagado: ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}</span>
+                <div className="text-muted">
+                  <span className="block">Total: <span className="font-bold text-ink font-mono tabular-nums">${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}</span></span>
+                  <span className="block font-mono tabular-nums">Pagado: ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}</span>
                 </div>
                 <button
                   onClick={() => setVentaSeleccionada(venta)}
-                  className="bg-emerald-50 text-emerald-700 p-2 rounded-lg flex items-center gap-1 text-sm font-semibold hover:bg-emerald-100 transition-colors"
+                  className="bg-accent-soft text-accent-ink p-2 rounded-base flex items-center gap-1 text-sm font-semibold hover:brightness-95 transition-colors cursor-pointer"
                 >
                   <Receipt className="w-4 h-4" /> Ver
                 </button>
@@ -91,7 +91,7 @@ export default function HistorialVentas() {
             </div>
           ))}
           {ventasFiltradas.length === 0 && (
-            <div className="p-6 text-center text-gray-500">
+            <div className="p-6 text-center text-muted">
               {filtro.trim() ? 'No se encontraron ventas para la búsqueda.' : 'No hay ventas registradas todavía.'}
             </div>
           )}
@@ -101,7 +101,7 @@ export default function HistorialVentas() {
         <div className="hidden sm:block">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase tracking-wider">
+              <tr className="bg-thead border-b border-line text-sm text-muted uppercase tracking-wider">
                 <th className="p-4 font-semibold">Fecha</th>
                 <th className="p-4 font-semibold">Cliente</th>
                 <th className="p-4 font-semibold text-right">Total Final</th>
@@ -110,19 +110,19 @@ export default function HistorialVentas() {
                 <th className="p-4 font-semibold text-center">Comprobante</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-line">
               {ventasFiltradas.map((venta) => (
-                <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-4 text-gray-600">{new Date(venta.fecha).toLocaleString('es-AR')}</td>
-                  <td className="p-4 font-medium text-gray-900">{venta.clienteNombre}</td>
-                  <td className="p-4 text-right font-bold text-emerald-700">
+                <tr key={venta.id} className="hover:bg-canvas transition-colors">
+                  <td className="p-4 text-muted">{new Date(venta.fecha).toLocaleString('es-AR')}</td>
+                  <td className="p-4 font-medium text-ink">{venta.clienteNombre}</td>
+                  <td className="p-4 text-right font-bold text-ink font-mono tabular-nums">
                     ${venta.totalFinal ? venta.totalFinal.toLocaleString('es-AR') : '0'}
                   </td>
-                  <td className="p-4 text-right font-medium text-gray-700">
+                  <td className="p-4 text-right font-medium text-body font-mono tabular-nums">
                     ${(venta.pagos ? venta.pagos.reduce((sum, p) => sum + p.monto, 0) : 0).toLocaleString('es-AR')}
                   </td>
                   <td className="p-4 text-center">
-                    <span className="px-2.5 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                    <span className="px-2.5 py-1 rounded-full text-sm font-medium bg-thead text-body">
                       {venta.estadoPago}
                     </span>
                   </td>
@@ -130,7 +130,7 @@ export default function HistorialVentas() {
                     <button
                       onClick={() => setVentaSeleccionada(venta)}
                       title={`Ver comprobante de la venta #${venta.id}`}
-                      className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 text-muted hover:text-accent hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                     >
                       <Receipt className="w-5 h-5" />
                     </button>
@@ -139,7 +139,7 @@ export default function HistorialVentas() {
               ))}
               {ventasFiltradas.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-gray-500">
+                  <td colSpan="6" className="p-8 text-center text-muted">
                     {filtro.trim()
                       ? 'No se encontraron ventas para la búsqueda.'
                       : 'No hay ventas registradas todavía.'}

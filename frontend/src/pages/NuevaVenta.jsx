@@ -32,7 +32,7 @@ const generarIdLinea = () => (
 export default function NuevaVenta() {
   const { pushToast } = useUIStore();
   const queryClient = useQueryClient();
-  
+
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +61,7 @@ export default function NuevaVenta() {
   // Sincronizar stock en vivo con el estado local
   useEffect(() => {
     if (Object.keys(liveStocks).length === 0) return;
-    setProductos(prev => prev.map(p => 
+    setProductos(prev => prev.map(p =>
       liveStocks[p.id] !== undefined ? { ...p, stock: liveStocks[p.id] } : p
     ));
     setDetalles(prev => prev.map(d => {
@@ -113,17 +113,17 @@ export default function NuevaVenta() {
       }
     };
     fetchData();
-    
+
     // Cargar recientes al iniciar
     setClientesRecientesIds(getRecents('recent_clients'));
     setProductosRecientesIds(getRecents('recent_products'));
   }, []);
 
   // ---- Filtros Cliente ----
-  const clientesFiltrados = busquedaCliente 
+  const clientesFiltrados = busquedaCliente
     ? clientes.filter(c => c.nombreRazonSocial.toLowerCase().includes(busquedaCliente.toLowerCase())).slice(0, 5)
     : [];
-  
+
   // Mantenemos el orden de los recientes
   const clientesRecientes = clientesRecientesIds.map(id => clientes.find(c => c.id === id)).filter(Boolean);
 
@@ -154,10 +154,10 @@ export default function NuevaVenta() {
       }
       updateDetalleCantidad(producto.id, exists.cantidad + 1);
     } else {
-      addDetalle({ 
-        productoId: producto.id, 
-        nombre: producto.nombre, 
-        precio: producto.precio, 
+      addDetalle({
+        productoId: producto.id,
+        nombre: producto.nombre,
+        precio: producto.precio,
         cantidad: 1,
         stock: producto.stock
       });
@@ -176,14 +176,14 @@ export default function NuevaVenta() {
       updateDetalleCantidad(productoId, 1);
       return;
     }
-    
+
     const detalle = detalles.find(d => d.productoId === productoId);
     if (cant > detalle.stock) {
       pushToast('error', `Stock máximo superado. Se ajustó a ${detalle.stock}.`);
       updateDetalleCantidad(productoId, detalle.stock);
       return;
     }
-    
+
     updateDetalleCantidad(productoId, cant);
   };
 
@@ -261,9 +261,9 @@ export default function NuevaVenta() {
       clienteAdHoc: isClienteExpress ? clienteExpressData : null,
       porcentajeDescuento: descuentoVal,
       bandejasEntregadas: parseInt(bandejasEntregadas) || 0,
-      detalles: detalles.map(d => ({ 
-        productoId: d.productoId, 
-        cantidad: parseInt(d.cantidad) || 1 
+      detalles: detalles.map(d => ({
+        productoId: d.productoId,
+        cantidad: parseInt(d.cantidad) || 1
       })),
       pagos: pagosASubir
     };
@@ -272,11 +272,11 @@ export default function NuevaVenta() {
       setIsSubmitting(true);
       await ventasApi.crearVenta(payload);
       pushToast('success', 'Venta registrada con éxito');
-      
+
       // Guardar en recientes (Local Storage para UX)
       addRecent('recent_clients', payload.clienteId);
       payload.detalles.forEach(d => addRecent('recent_products', d.productoId));
-      
+
       // Actualizar estados visuales de recientes
       setClientesRecientesIds(getRecents('recent_clients'));
       setProductosRecientesIds(getRecents('recent_products'));
@@ -306,19 +306,19 @@ export default function NuevaVenta() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Punto de Venta</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-ink">Punto de Venta</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Lado izquierdo: Buscadores */}
         <div className="lg:col-span-2 space-y-6 w-full">
-          
+
           {/* Tarjeta Cliente */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="bg-paper p-6 rounded-panel border border-line">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-accent" />
                 1. Identificar Cliente
               </h2>
               {isHerramientas && (
@@ -328,36 +328,36 @@ export default function NuevaVenta() {
                     setIsClienteExpress(!isClienteExpress);
                     if (!isClienteExpress) setCliente('');
                   }}
-                  className={`text-sm font-semibold px-3 py-1 rounded-lg transition-colors border ${
-                    isClienteExpress 
-                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  className={`text-sm font-semibold px-3 py-1 rounded-base transition-colors border cursor-pointer ${
+                    isClienteExpress
+                      ? 'bg-accent-soft text-accent-ink border-accent'
+                      : 'bg-paper text-muted border-line hover:bg-canvas'
                   }`}
                 >
                   {isClienteExpress ? 'Volver a Agenda' : 'Cliente Express'}
                 </button>
               )}
             </div>
-            
+
             {isClienteExpress ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-4">
-                <p className="text-sm text-emerald-700 mb-2">Ingresá los datos para la factura. No es necesario buscar en la agenda.</p>
+              <div className="p-4 bg-accent-soft border border-line rounded-panel space-y-4">
+                <p className="text-sm text-accent-ink mb-2">Ingresá los datos para la factura. No es necesario buscar en la agenda.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre o Razón Social *</label>
+                    <label className="block text-sm font-medium text-body mb-1">Nombre o Razón Social *</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      className="w-full px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper"
                       value={clienteExpressData.nombre}
                       onChange={(e) => setClienteExpressData({ ...clienteExpressData, nombre: e.target.value })}
                       placeholder="Ej: Consumidor Final"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <label className="block text-sm font-medium text-body mb-1">Teléfono</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      className="w-full px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper"
                       value={clienteExpressData.telefono}
                       onChange={(e) => setClienteExpressData({ ...clienteExpressData, telefono: e.target.value })}
                       placeholder="Opcional"
@@ -370,25 +370,25 @@ export default function NuevaVenta() {
                     id="casualCheckbox"
                     checked={clienteExpressData.casual}
                     onChange={(e) => setClienteExpressData({ ...clienteExpressData, casual: e.target.checked })}
-                    className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                    className="w-4 h-4 text-accent border-line rounded focus:ring-accent cursor-pointer"
                   />
-                  <label htmlFor="casualCheckbox" className="text-sm text-gray-700">
+                  <label htmlFor="casualCheckbox" className="text-sm text-body">
                     Es cliente casual (no guardar en la agenda de clientes)
                   </label>
                 </div>
               </div>
             ) : clienteId ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex justify-between items-center shadow-inner">
+              <div className="p-4 bg-accent-soft border border-line rounded-panel flex justify-between items-center">
                 <div>
-                  <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">Cliente Seleccionado</p>
-                  <p className="font-bold text-lg text-emerald-900">
+                  <p className="text-xs text-accent-ink font-bold uppercase tracking-wider mb-1">Cliente Seleccionado</p>
+                  <p className="font-bold text-lg text-ink">
                     {clientes.find(c => c.id === clienteId)?.nombreRazonSocial}
                   </p>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => setCliente('')} 
-                  className="px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer border border-emerald-200"
+                <button
+                  type="button"
+                  onClick={() => setCliente('')}
+                  className="px-4 py-2 bg-paper text-accent-ink hover:bg-accent-soft rounded-base text-sm font-semibold transition-colors cursor-pointer border border-line"
                 >
                   Cambiar
                 </button>
@@ -397,14 +397,14 @@ export default function NuevaVenta() {
               <div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
+                    <Search className="h-5 w-5 text-faint" />
                   </div>
                   <input
                     type="text"
                     placeholder="Buscá por nombre, razón social o CUIT..."
                     value={busquedaCliente}
                     onChange={(e) => setBusquedaCliente(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 mb-4 shadow-sm"
+                    className="w-full pl-10 pr-4 py-3 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none mb-4"
                   />
                 </div>
 
@@ -412,28 +412,28 @@ export default function NuevaVenta() {
                   {busquedaCliente ? (
                     clientesFiltrados.length > 0 ? (
                       clientesFiltrados.map(c => (
-                        <div key={c.id} onClick={() => seleccionarCliente(c.id)} className="cursor-pointer p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors">
-                          <p className="font-medium text-gray-900">{c.nombreRazonSocial}</p>
+                        <div key={c.id} onClick={() => seleccionarCliente(c.id)} className="cursor-pointer p-3 hover:bg-canvas rounded-base border border-line transition-colors">
+                          <p className="font-medium text-ink">{c.nombreRazonSocial}</p>
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-500 text-sm py-2">No se encontraron clientes.</p>
+                      <p className="text-muted text-sm py-2">No se encontraron clientes.</p>
                     )
                   ) : clientesRecientes.length > 0 ? (
                     <div>
-                      <p className="text-xs text-gray-400 uppercase font-bold mb-3 flex items-center gap-1">
+                      <p className="text-xs text-faint uppercase font-bold mb-3 flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5"/> Últimos seleccionados
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {clientesRecientes.map(c => (
-                          <div key={c.id} onClick={() => seleccionarCliente(c.id)} className="cursor-pointer p-3 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-200 rounded-lg border border-gray-100 transition-all">
-                            <p className="font-medium text-gray-800 text-sm truncate">{c.nombreRazonSocial}</p>
+                          <div key={c.id} onClick={() => seleccionarCliente(c.id)} className="cursor-pointer p-3 bg-canvas hover:bg-accent-soft hover:border-accent rounded-base border border-line transition-all">
+                            <p className="font-medium text-ink text-sm truncate">{c.nombreRazonSocial}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-sm py-2">Buscá un cliente para empezar la venta.</p>
+                    <p className="text-muted text-sm py-2">Buscá un cliente para empezar la venta.</p>
                   )}
                 </div>
               </div>
@@ -441,22 +441,22 @@ export default function NuevaVenta() {
           </div>
 
           {/* Tarjeta Productos */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-emerald-600" />
+          <div className="bg-paper p-6 rounded-panel border border-line">
+            <h2 className="text-lg font-semibold text-ink mb-4 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-accent" />
               2. Agregar Productos
             </h2>
-            
+
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className="h-5 w-5 text-faint" />
               </div>
               <input
                 type="text"
                 placeholder="Escribí el nombre de la planta, maceta o sustrato..."
                 value={busquedaProducto}
                 onChange={(e) => setBusquedaProducto(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 mb-4 shadow-sm"
+                className="w-full pl-10 pr-4 py-3 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none mb-4"
               />
             </div>
 
@@ -464,38 +464,38 @@ export default function NuevaVenta() {
               {busquedaProducto ? (
                 productosFiltrados.length > 0 ? (
                   productosFiltrados.map(prod => (
-                    <div key={prod.id} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors">
+                    <div key={prod.id} className="flex justify-between items-center p-3 hover:bg-canvas rounded-base border border-line transition-colors">
                       <div>
-                        <p className="font-medium text-gray-900">{prod.nombre}</p>
-                        <p className="text-sm text-gray-500">Stock: {prod.stock} | Precio: ${prod.precio}</p>
+                        <p className="font-medium text-ink">{prod.nombre}</p>
+                        <p className="text-sm text-muted">Stock: {prod.stock} | Precio: ${prod.precio}</p>
                       </div>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => agregarProducto(prod)}
-                        className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+                        className="p-2 text-accent hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm py-2">No se encontraron productos.</p>
+                  <p className="text-muted text-sm py-2">No se encontraron productos.</p>
                 )
               ) : productosRecientes.length > 0 ? (
                 <div>
-                  <p className="text-xs text-gray-400 uppercase font-bold mb-3 flex items-center gap-1">
+                  <p className="text-xs text-faint uppercase font-bold mb-3 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5"/> Agregados recientemente
                   </p>
                   {productosRecientes.map(prod => (
-                    <div key={prod.id} className="flex justify-between items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-100 mb-2 transition-colors">
+                    <div key={prod.id} className="flex justify-between items-center p-3 bg-canvas hover:bg-thead rounded-base border border-line mb-2 transition-colors">
                       <div>
-                        <p className="font-medium text-gray-800 text-sm">{prod.nombre}</p>
-                        <p className="text-xs text-gray-500">Stock: {prod.stock} | ${prod.precio}</p>
+                        <p className="font-medium text-ink text-sm">{prod.nombre}</p>
+                        <p className="text-xs text-muted">Stock: {prod.stock} | ${prod.precio}</p>
                       </div>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => agregarProducto(prod)}
-                        className="p-1.5 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-muted hover:text-accent hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -503,7 +503,7 @@ export default function NuevaVenta() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm py-2">Buscá productos para armar el carrito.</p>
+                <p className="text-muted text-sm py-2">Buscá productos para armar el carrito.</p>
               )}
             </div>
           </div>
@@ -512,51 +512,51 @@ export default function NuevaVenta() {
         {/* Lado derecho: Carrito y Totales */}
         {/* En desktop es sticky a la derecha, en mobile es un fixed drawer inferior/fullscreen */}
         <div className={`
-          fixed inset-0 z-40 bg-white flex flex-col transition-transform duration-300 ease-in-out
+          fixed inset-0 z-40 bg-paper flex flex-col transition-transform duration-300 ease-in-out
           ${isCartOpen ? 'translate-y-0' : 'translate-y-full'}
-          lg:relative lg:translate-y-0 lg:bg-gray-50 lg:p-6 lg:rounded-2xl lg:shadow-sm lg:border lg:border-gray-200 lg:h-[calc(100vh-10rem)] lg:sticky lg:top-6 lg:z-auto
+          lg:relative lg:translate-y-0 lg:bg-canvas lg:p-6 lg:rounded-panel lg:border lg:border-line lg:h-[calc(100vh-10rem)] lg:sticky lg:top-6 lg:z-auto
           p-4 pt-8
         `}>
           <div className="flex justify-between items-center mb-6 lg:mb-6">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <ShoppingCart className="w-6 h-6 text-emerald-600" />
+            <h2 className="text-xl font-bold text-ink flex items-center gap-2">
+              <ShoppingCart className="w-6 h-6 text-accent" />
               Detalle de Venta
             </h2>
-            <button 
-              className="lg:hidden text-gray-500 hover:bg-gray-100 p-2 rounded-full"
+            <button
+              className="lg:hidden text-muted hover:bg-canvas p-2 rounded-full cursor-pointer"
               onClick={() => setIsCartOpen(false)}
             >
               Cerrar
             </button>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             {detalles.length === 0 ? (
-              <div className="text-center text-gray-400 mt-10">
+              <div className="text-center text-faint mt-10">
                 <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p>El carrito está vacío</p>
               </div>
             ) : (
               detalles.map(d => (
-                <div key={d.productoId} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative group">
-                  <p className="font-semibold text-gray-800 pr-8 leading-tight">{d.nombre}</p>
-                  <p className="text-sm text-gray-500 mb-3">${d.precio} x ud.</p>
-                  
+                <div key={d.productoId} className="bg-paper p-4 rounded-panel border border-line relative group">
+                  <p className="font-semibold text-ink pr-8 leading-tight">{d.nombre}</p>
+                  <p className="text-sm text-muted mb-3">${d.precio} x ud.</p>
+
                   <div className="flex items-center justify-between">
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={d.cantidad || ''}
                       onChange={(e) => modificarCantidad(d.productoId, e.target.value)}
-                      className="w-20 px-2 py-1 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500"
+                      className="w-20 px-2 py-1 text-center border border-line rounded-base focus:ring-2 focus:ring-accent font-mono tabular-nums"
                       min="1"
                       max={d.stock}
                     />
-                    <span className="font-bold text-gray-900">${formatCurrency(d.precio * d.cantidad)}</span>
+                    <span className="font-bold text-ink font-mono tabular-nums">${formatCurrency(d.precio * d.cantidad)}</span>
                   </div>
-                  
-                  <button 
+
+                  <button
                     onClick={() => eliminarDetalle(d.productoId)}
-                    className="absolute top-3 right-3 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1"
+                    className="absolute top-3 right-3 text-danger hover:text-danger-ink opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -565,17 +565,17 @@ export default function NuevaVenta() {
             )}
           </div>
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-line">
             <div className="flex justify-between items-center mb-6">
-              <span className="text-gray-600 font-medium">Total a cobrar:</span>
-              <span className="text-3xl font-bold text-gray-900">${formatCurrency(totalCalculado)}</span>
+              <span className="text-muted font-medium">Total a cobrar:</span>
+              <span className="text-3xl font-bold text-ink font-mono tabular-nums">${formatCurrency(totalCalculado)}</span>
             </div>
-            
+
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
               disabled={isSubmitting || detalles.length === 0 || (!clienteId && !isClienteExpress)}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-accent hover:brightness-95 text-paper font-bold py-4 rounded-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Confirmar Venta <ArrowRight className="w-5 h-5" />
             </button>
@@ -589,76 +589,76 @@ export default function NuevaVenta() {
         <div className="lg:hidden fixed bottom-6 right-6 z-30">
           <button
             onClick={() => setIsCartOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-lg flex items-center gap-2 transition-transform transform active:scale-95"
+            className="bg-accent hover:brightness-95 text-paper p-4 rounded-full shadow-lg flex items-center gap-2 transition-transform transform active:scale-95 cursor-pointer"
           >
             <div className="relative">
               <ShoppingCart className="w-6 h-6" />
               {detalles.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                <span className="absolute -top-2 -right-2 bg-paper text-accent-ink text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full font-mono tabular-nums">
                   {detalles.reduce((acc, d) => acc + (parseInt(d.cantidad) || 0), 0)}
                 </span>
               )}
             </div>
-            <span className="font-bold ml-1">${formatCurrency(totalCalculado)}</span>
+            <span className="font-bold ml-1 font-mono tabular-nums">${formatCurrency(totalCalculado)}</span>
           </button>
         </div>
       )}
 
       {/* Modal de Liquidación */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Liquidar Venta</h2>
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm p-4">
+          <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
+            <h2 className="text-2xl font-bold text-ink mb-6">Liquidar Venta</h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="bg-canvas p-4 rounded-panel border border-line">
                   <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-semibold text-gray-900">${formatCurrency(totalCalculado)}</span>
+                    <span className="text-muted">Subtotal</span>
+                    <span className="font-semibold text-ink font-mono tabular-nums">${formatCurrency(totalCalculado)}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Descuento (%)</span>
+                    <span className="text-muted">Descuento (%)</span>
                     <div className="flex items-center gap-2">
-                      {descuentoMonto > 0 && <span className="text-sm text-gray-500">(-${formatCurrency(descuentoMonto)})</span>}
+                      {descuentoMonto > 0 && <span className="text-sm text-muted font-mono tabular-nums">(-${formatCurrency(descuentoMonto)})</span>}
                       <FormattedNumberInput
                         id="descuento"
                         value={descuento}
                         onChange={val => setDescuento(val)}
-                        className="w-20 px-2 py-1 text-right border border-gray-300 rounded focus:ring-emerald-500"
+                        className="w-20 px-2 py-1 text-right border border-line rounded focus:ring-accent font-mono tabular-nums"
                       />
                     </div>
                   </div>
 
               {unidadNegocioActiva !== '2' && (
-                <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
-                  <span className="text-gray-600 font-medium">Bandejas prestadas (opcional)</span>
+                <div className="pt-4 border-t border-line flex justify-between items-center">
+                  <span className="text-muted font-medium">Bandejas prestadas (opcional)</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500 font-medium">Cant:</span>
+                    <span className="text-muted font-medium">Cant:</span>
                     <FormattedNumberInput
                       id="bandejasEntregadas"
                       placeholder="0"
                       value={bandejasEntregadas}
                       onChange={(val) => setBandejasEntregadas(val)}
-                      className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right font-semibold"
+                      className="w-24 px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none text-right font-semibold font-mono tabular-nums"
                     />
                   </div>
                 </div>
               )}
 
-              <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-lg">
-                <span className="font-bold text-gray-900">Total a Pagar</span>
-                    <span className="font-bold text-xl text-emerald-700">${formatCurrency(totalFinal)}</span>
+              <div className="pt-4 border-t border-line flex justify-between items-center text-lg">
+                <span className="font-bold text-ink">Total a Pagar</span>
+                    <span className="font-bold text-xl text-ink font-mono tabular-nums">${formatCurrency(totalFinal)}</span>
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-xl border shadow-sm transition-colors ${saldoFinal < 0 ? 'bg-red-50 border-red-200' : saldoFinal > 0 ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                <div className={`p-4 rounded-panel border transition-colors ${saldoFinal < 0 ? 'bg-danger-bg border-danger-line' : saldoFinal > 0 ? 'bg-ok-bg border-ok-line' : 'bg-thead border-line'}`}>
                   <div className="flex justify-between items-center">
-                    <span className={`font-semibold ${saldoFinal < 0 ? 'text-red-700' : saldoFinal > 0 ? 'text-blue-700' : 'text-emerald-700'}`}>
+                    <span className={`font-semibold ${saldoFinal < 0 ? 'text-danger-ink' : saldoFinal > 0 ? 'text-ok-ink' : 'text-body'}`}>
                       {saldoFinal < 0 ? 'Deuda a CC:' : saldoFinal > 0 ? 'A favor en CC:' : 'Pago Exacto'}
                     </span>
                     {saldoFinal !== 0 && (
-                      <span className="font-bold text-xl">
+                      <span className="font-bold text-xl text-ink font-mono tabular-nums">
                         ${formatCurrency(Math.abs(saldoFinal))}
                       </span>
                     )}
@@ -668,58 +668,58 @@ export default function NuevaVenta() {
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Desglose de Pagos</h3>
+                  <h3 className="font-semibold text-ink mb-2">Desglose de Pagos</h3>
                   <div className="flex flex-col gap-3">
                     {pagosLineas.map((linea, index) => (
-                      <div key={linea.id} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                      <div key={linea.id} className="bg-paper p-3 rounded-panel border border-line">
                         <div className="flex flex-col sm:flex-row gap-2">
                           <FormattedNumberInput
                             id={`monto-${linea.id}`}
                             placeholder="Monto"
                             value={linea.monto}
                             onChange={val => updateLineaPago(linea.id, 'monto', val)}
-                            className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 font-semibold"
+                            className="flex-1 w-full sm:w-auto px-3 py-2 border border-line rounded-base focus:ring-accent font-semibold font-mono tabular-nums"
                           />
-                          <select 
+                          <select
                             value={linea.metodoPago}
                             onChange={e => updateLineaPago(linea.id, 'metodoPago', e.target.value)}
-                            className="w-full sm:w-32 shrink-0 px-2 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 bg-gray-50"
+                            className="w-full sm:w-32 shrink-0 px-2 py-2 border border-line rounded-base focus:ring-accent bg-canvas"
                           >
                             <option value="EFECTIVO">Efectivo</option>
                             <option value="TRANSFERENCIA">Transferencia</option>
                             <option value="CHEQUE">Cheque</option>
                           </select>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => removeLineaPago(linea.id)}
                             disabled={pagosLineas.length === 1}
-                            className={`w-full sm:w-auto px-3 py-2 shrink-0 rounded-lg flex items-center justify-center transition-colors ${pagosLineas.length === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-red-500 hover:bg-red-100 hover:text-red-700'}`}
+                            className={`w-full sm:w-auto px-3 py-2 shrink-0 rounded-base flex items-center justify-center transition-colors cursor-pointer ${pagosLineas.length === 1 ? 'text-faint bg-thead cursor-not-allowed' : 'text-danger hover:bg-danger-bg hover:text-danger-ink'}`}
                             title="Eliminar fila"
                           >
                             <Trash2 className="w-5 h-5"/>
                           </button>
                         </div>
                         {linea.metodoPago === 'CHEQUE' && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-3 pl-2 sm:border-l-2 sm:border-emerald-300 border-t-2 sm:border-t-0 pt-2 sm:pt-0 border-emerald-200">
-                            <input type="text" placeholder="Banco" value={linea.banco} onChange={e => updateLineaPago(linea.id, 'banco', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
-                            <input type="text" placeholder="N° Serie" value={linea.numeroSerie} onChange={e => updateLineaPago(linea.id, 'numeroSerie', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-3 pl-2 sm:border-l-2 sm:border-accent border-t-2 sm:border-t-0 pt-2 sm:pt-0 border-line">
+                            <input type="text" placeholder="Banco" value={linea.banco} onChange={e => updateLineaPago(linea.id, 'banco', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />
+                            <input type="text" placeholder="N° Serie" value={linea.numeroSerie} onChange={e => updateLineaPago(linea.id, 'numeroSerie', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />
                             <div className="flex flex-col">
-                              <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha Emisión/Recepción</label>
-                              <input type="date" value={linea.fechaRecepcion} onChange={e => updateLineaPago(linea.id, 'fechaRecepcion', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                              <label className="text-[10px] text-muted font-semibold mb-0.5 ml-1">Fecha Emisión/Recepción</label>
+                              <input type="date" value={linea.fechaRecepcion} onChange={e => updateLineaPago(linea.id, 'fechaRecepcion', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />
                             </div>
                             <div className="flex flex-col">
-                              <label className="text-[10px] text-gray-500 font-semibold mb-0.5 ml-1">Fecha de Cobro</label>
-                              <input type="date" value={linea.fechaCobro} onChange={e => updateLineaPago(linea.id, 'fechaCobro', e.target.value)} className="px-2 py-1.5 border border-gray-300 rounded focus:ring-emerald-500" />
+                              <label className="text-[10px] text-muted font-semibold mb-0.5 ml-1">Fecha de Cobro</label>
+                              <input type="date" value={linea.fechaCobro} onChange={e => updateLineaPago(linea.id, 'fechaCobro', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />
                             </div>
                           </div>
                         )}
                       </div>
                     ))}
-                    
+
                     <button
                       type="button"
                       onClick={addLineaPago}
-                      className="w-full py-3 border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl text-gray-600 font-medium hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 border-2 border-dashed border-line bg-canvas rounded-panel text-muted font-medium hover:border-accent hover:text-accent-ink hover:bg-accent-soft transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Plus className="w-5 h-5"/> Añadir otro pago
                     </button>
@@ -729,17 +729,17 @@ export default function NuevaVenta() {
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 disabled={isSubmitting}
-                className="px-6 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-semibold"
+                className="px-6 py-2 border border-line rounded-panel text-body hover:bg-canvas font-semibold cursor-pointer"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-emerald-600 rounded-xl text-white hover:bg-emerald-700 font-bold flex items-center gap-2"
+                className="px-6 py-2 bg-accent rounded-panel text-paper hover:brightness-95 font-bold flex items-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? 'Guardando...' : 'Confirmar'}
               </button>

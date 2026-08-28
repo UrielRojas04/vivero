@@ -6,9 +6,9 @@
  * y las clases Tailwind (tono) a usar en cada vista (tabla, card, modal).
  *
  * Convención de signo (no se toca la semántica del backend):
- * - balance < 0  -> el cliente DEBE (deuda)      -> rojo
- * - balance > 0  -> el cliente tiene A_FAVOR      -> emerald
- * - balance === 0 / null / undefined -> NEUTRO   -> gris (antes se pintaba verde, bug corregido)
+ * - balance < 0  -> el cliente DEBE (deuda)      -> danger
+ * - balance > 0  -> el cliente tiene A_FAVOR      -> ok
+ * - balance === 0 / null / undefined -> NEUTRO   -> neutral (antes se pintaba verde, bug corregido)
  */
 export const describirSaldo = (balance) => {
   const valor = balance || 0;
@@ -31,19 +31,19 @@ export const describirSaldo = (balance) => {
 
   const tonosPorEstado = {
     DEUDA: {
-      texto: 'text-red-600',
-      fondo: 'bg-red-50',
-      chip: 'bg-red-50 text-red-700',
+      texto: 'text-danger',
+      fondo: 'bg-danger-bg',
+      chip: 'bg-danger-bg text-danger-ink',
     },
     A_FAVOR: {
-      texto: 'text-emerald-600',
-      fondo: 'bg-emerald-50',
-      chip: 'bg-emerald-50 text-emerald-700',
+      texto: 'text-ok',
+      fondo: 'bg-ok-bg',
+      chip: 'bg-ok-bg text-ok-ink',
     },
     NEUTRO: {
-      texto: 'text-gray-500',
-      fondo: 'bg-gray-100',
-      chip: 'bg-gray-100 text-gray-600',
+      texto: 'text-muted',
+      fondo: 'bg-thead',
+      chip: 'bg-thead text-body border border-line',
     },
   };
 

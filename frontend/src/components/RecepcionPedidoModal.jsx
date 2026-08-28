@@ -117,32 +117,32 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm transition-all duration-300"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-w-2xl shadow-2xl flex flex-col max-h-screen sm:max-h-[95vh]">
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-600 text-white sm:rounded-t-2xl">
+      <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full h-full sm:h-auto max-w-2xl flex flex-col max-h-screen sm:max-h-[95vh]">
+        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-line bg-accent text-paper sm:rounded-t-panel">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <PackageCheck className="w-5 h-5" />
             {esPendiente ? 'Confirmar Recepción' : 'Detalle del Pedido'}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-emerald-700 transition-colors text-white/90 hover:text-white cursor-pointer">
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-black/10 transition-colors text-paper/90 hover:text-paper cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          <div className="text-sm text-gray-500">
-            Proveedor: <span className="font-medium text-gray-800">{pedido.proveedorNombre}</span>
+          <div className="text-sm text-muted">
+            Proveedor: <span className="font-medium text-ink">{pedido.proveedorNombre}</span>
           </div>
 
           <div className="space-y-3">
             {(pedido.detalles || []).map((d) => (
-              <div key={d.id} className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                <p className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+              <div key={d.id} className="bg-canvas border border-line rounded-panel p-3">
+                <p className="font-medium text-ink mb-2 flex items-center gap-2">
                   {nombreLinea(d)}
                   {esLineaPendiente(d) && (
-                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-1.5 py-0.5">
+                    <span className="text-[10px] font-semibold text-warn-ink bg-warn-bg border border-warn-line rounded-full px-1.5 py-0.5">
                       Nuevo — se crea al confirmar
                     </span>
                   )}
@@ -150,21 +150,21 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
                 {esPendiente ? (
                   <div className="grid grid-cols-3 gap-3 items-end">
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Pedida</label>
-                      <p className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg">{d.cantidadPedida}</p>
+                      <label className="block text-[10px] font-semibold text-faint uppercase mb-1">Pedida</label>
+                      <p className="px-3 py-2 text-sm text-body bg-paper border border-line rounded-base font-mono tabular-nums">{d.cantidadPedida}</p>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Recibida</label>
+                      <label className="block text-[10px] font-semibold text-faint uppercase mb-1">Recibida</label>
                       <FormattedNumberInput
                         value={cantidades[d.id] ?? ''}
                         onChange={(val) => handleCantidadChange(d.id, val)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-right"
+                        className="w-full px-3 py-2 text-sm border border-line rounded-base bg-paper focus:outline-none focus:ring-2 focus:ring-accent text-right font-mono tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Pendiente</label>
-                      <p className={`px-3 py-2 text-sm font-semibold rounded-lg border ${
-                        remanente(d) > 0 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      <label className="block text-[10px] font-semibold text-faint uppercase mb-1">Pendiente</label>
+                      <p className={`px-3 py-2 text-sm font-semibold rounded-base border font-mono tabular-nums ${
+                        remanente(d) > 0 ? 'text-warn-ink bg-warn-bg border-warn-line' : 'text-ok-ink bg-ok-bg border-ok-line'
                       }`}>
                         {remanente(d)}
                       </p>
@@ -173,16 +173,16 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
                 ) : (
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Pedida</label>
-                      <p className="text-sm font-medium text-gray-800">{d.cantidadPedida}</p>
+                      <label className="block text-[10px] font-semibold text-faint uppercase mb-1">Pedida</label>
+                      <p className="text-sm font-medium text-ink font-mono tabular-nums">{d.cantidadPedida}</p>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Recibida</label>
-                      <p className="text-sm font-medium text-gray-800">{d.cantidadRecibida ?? '-'}</p>
+                      <label className="block text-[10px] font-semibold text-faint uppercase mb-1">Recibida</label>
+                      <p className="text-sm font-medium text-ink font-mono tabular-nums">{d.cantidadRecibida ?? '-'}</p>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Pendiente</label>
-                      <p className={`text-sm font-semibold ${d.cantidadPendiente > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                      <label className="block text-[10px] font-semibold text-faint uppercase mb-1">Pendiente</label>
+                      <p className={`text-sm font-semibold font-mono tabular-nums ${d.cantidadPendiente > 0 ? 'text-warn' : 'text-ok'}`}>
                         {d.cantidadPendiente ?? 0}
                       </p>
                     </div>
@@ -193,18 +193,18 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
           </div>
 
           {esPendiente && haySobrante && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <div className="flex items-start gap-2 p-3 bg-warn-bg border border-warn-line rounded-base text-sm text-warn-ink">
               <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>Hay ítems con cantidad recibida mayor a la pedida. Se aceptan y se suman igual al stock.</p>
             </div>
           )}
         </div>
 
-        <div className="flex-none flex items-center justify-end gap-3 p-4 px-6 border-t border-gray-100 bg-gray-50/50 sm:rounded-b-2xl">
+        <div className="flex-none flex items-center justify-end gap-3 p-4 px-6 border-t border-line bg-canvas sm:rounded-b-panel">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-panel border border-line text-sm font-medium text-body hover:bg-paper transition-colors cursor-pointer"
           >
             {esPendiente ? 'Cancelar' : 'Cerrar'}
           </button>
@@ -213,7 +213,7 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
               type="button"
               disabled={isSubmitting}
               onClick={handleConfirmarClick}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 rounded-panel bg-accent hover:brightness-95 text-sm font-semibold text-paper transition-all cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Confirmando...' : 'Confirmar Recepción'}
             </button>

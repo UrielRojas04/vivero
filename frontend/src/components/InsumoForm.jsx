@@ -74,20 +74,20 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm transition-all duration-300 animate-fadeIn"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white/95 backdrop-blur-md rounded-none sm:rounded-2xl border border-white/20 w-full h-full sm:h-auto max-w-lg shadow-2xl flex flex-col max-h-screen sm:max-h-[90vh] scale-100 transition-transform duration-300 animate-scaleIn overflow-hidden">
-        
+      <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full h-full sm:h-auto max-w-lg flex flex-col max-h-screen sm:max-h-[90vh] scale-100 transition-transform duration-300 animate-scaleIn overflow-hidden">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-4 border-b border-gray-100 bg-sky-600 text-white shrink-0 sm:rounded-t-2xl">
-          <h2 className="text-lg font-semibold">
+        <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-4 border-b border-line shrink-0">
+          <h2 className="text-lg font-semibold text-ink">
             {insumo ? 'Editar Insumo' : 'Nuevo Insumo'}
           </h2>
-          <button 
+          <button
             onClick={onCancel}
-            className="p-2 rounded-full hover:bg-sky-700 transition-colors text-white/90 hover:text-white cursor-pointer"
+            className="p-2 rounded-full hover:bg-canvas transition-colors text-faint hover:text-body cursor-pointer"
           >
             <X className="w-6 h-6 sm:w-5 sm:h-5" />
           </button>
@@ -97,7 +97,7 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
         <div className="overflow-y-auto overflow-x-hidden">
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
             <div>
-              <label htmlFor="nombre" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <label htmlFor="nombre" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                 Nombre del Insumo
               </label>
               <input
@@ -105,18 +105,18 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                className={`w-full px-4 py-3 sm:py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base ${
-                  errors.nombre ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-sky-500'
+                className={`w-full px-4 py-3 sm:py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all text-base ${
+                  errors.nombre ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                 }`}
                 placeholder="Ej: Sustrato universal 50L, Maceta N12"
               />
               {errors.nombre && (
-                <p className="mt-1 text-xs text-red-500 font-medium">{errors.nombre}</p>
+                <p className="mt-1 text-xs text-danger font-medium">{errors.nombre}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="descripcion" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <label htmlFor="descripcion" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                 Descripción
               </label>
               <textarea
@@ -124,51 +124,51 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 rows="3"
-                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all resize-none text-base"
+                className="w-full px-4 py-3 sm:py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all resize-none text-base"
                 placeholder="Detalles sobre marca, tipo, composición..."
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-4">
               <div>
-                <label htmlFor="precio" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="precio" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Precio (ARS)
                 </label>
                 <FormattedNumberInput
                   id="precio"
                   value={precio}
                   onChange={(val) => setPrecio(val)}
-                  className={`w-full px-4 py-3 sm:py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base ${
-                    errors.precio ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-sky-500'
+                  className={`w-full px-4 py-3 sm:py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all text-base ${
+                    errors.precio ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                   }`}
                   placeholder="0.00"
                 />
                 {errors.precio && (
-                  <p className="mt-1 text-xs text-red-500 font-medium">{errors.precio}</p>
+                  <p className="mt-1 text-xs text-danger font-medium">{errors.precio}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="stock" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="stock" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Stock (Unidades)
                 </label>
                 <FormattedNumberInput
                   id="stock"
                   value={stock}
                   onChange={(val) => setStock(val)}
-                  className={`w-full px-4 py-3 sm:py-2.5 rounded-xl border bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base ${
-                    errors.stock ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-sky-500'
+                  className={`w-full px-4 py-3 sm:py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all text-base ${
+                    errors.stock ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                   }`}
                   placeholder="0"
                 />
                 {errors.stock && (
-                  <p className="mt-1 text-xs text-red-500 font-medium">{errors.stock}</p>
+                  <p className="mt-1 text-xs text-danger font-medium">{errors.stock}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label htmlFor="fechaCompra" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <label htmlFor="fechaCompra" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                 Fecha de Compra
               </label>
               <input
@@ -176,23 +176,23 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                 type="date"
                 value={fechaCompra}
                 onChange={(e) => setFechaCompra(e.target.value)}
-                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all text-base sm:text-sm"
+                className="w-full px-4 py-3 sm:py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all text-base sm:text-sm"
               />
-              <p className="mt-1 text-xs text-gray-400">Opcional: se usa para calcular los gastos del período en Finanzas.</p>
+              <p className="mt-1 text-xs text-faint">Opcional: se usa para calcular los gastos del período en Finanzas.</p>
             </div>
 
             {/* Footer Actions */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:space-x-3 pt-5 border-t border-gray-100 mt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:space-x-3 pt-5 border-t border-line mt-2">
               <button
                 type="button"
                 onClick={onCancel}
-                className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-center"
+                className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-base border border-line text-sm font-medium text-body hover:bg-canvas transition-colors cursor-pointer text-center"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 hover:shadow-sky-600/30 transition-all cursor-pointer text-center"
+                className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-base bg-accent hover:brightness-95 text-sm font-semibold text-paper transition-all cursor-pointer text-center"
               >
                 {insumo ? 'Guardar Cambios' : 'Crear Insumo'}
               </button>

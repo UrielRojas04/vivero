@@ -202,25 +202,25 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" 
+      <div
+        className="fixed inset-0 bg-ink/60 backdrop-blur-sm transition-opacity"
         onClick={onCancel}
       />
-      
+
       {/* Modal Content */}
-      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-w-lg overflow-hidden shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-screen sm:max-h-[90vh]">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
+      <div className="bg-paper border border-line-strong rounded-none sm:rounded-panel w-full h-full sm:h-auto max-w-lg overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-screen sm:max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-canvas/50 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+            <div className="w-10 h-10 bg-accent-soft rounded-base flex items-center justify-center text-accent-ink">
               <Sprout className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-ink">
               {isEditMode ? 'Editar Siembra' : 'Nueva Siembra'}
             </h2>
           </div>
           <button
             onClick={onCancel}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-faint hover:text-body hover:bg-canvas rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -230,12 +230,12 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Variedad de Planta *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-gray-400" />
+                    <Search className="h-4 w-4 text-faint" />
                   </div>
                   <input
                     type="text"
@@ -254,39 +254,39 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                       // Pequeño delay para permitir el click en la opción
                       setTimeout(() => setShowDropdown(false), 200);
                     }}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full pl-9 pr-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   />
                   {showDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-paper border border-line-strong rounded-panel max-h-48 overflow-y-auto">
                       {plantasFiltradas.length > 0 ? (
                         plantasFiltradas.map(p => (
-                          <div 
-                            key={p.id} 
+                          <div
+                            key={p.id}
                             onMouseDown={(e) => {
                               e.preventDefault();
                               seleccionarPlanta(p);
                             }}
-                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                            className="px-4 py-2 hover:bg-canvas cursor-pointer text-sm"
                           >
                             {p.nombre}
                           </div>
                         ))
                       ) : (
-                        <div className="px-4 py-2 text-sm text-gray-500">No se encontraron plantas</div>
+                        <div className="px-4 py-2 text-sm text-muted">No se encontraron plantas</div>
                       )}
                     </div>
                   )}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Tipo de Bandeja *
                 </label>
                 <select
                   required
                   value={formData.variedadBandejaId}
                   onChange={handleBandejaChange}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors bg-paper"
                 >
                   <option value="">Seleccionar bandeja...</option>
                   {bandejas.map(b => (
@@ -297,17 +297,17 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Origen de la Semilla *
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, tipoOrigen: 'SOBRE' }))}
-                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center p-3 rounded-base border-2 transition-all cursor-pointer ${
                     formData.tipoOrigen === 'SOBRE'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-body hover:bg-canvas'
                   }`}
                 >
                   Sobre
@@ -315,10 +315,10 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, tipoOrigen: 'SUELTO' }))}
-                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center p-3 rounded-base border-2 transition-all cursor-pointer ${
                     formData.tipoOrigen === 'SUELTO'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-body hover:bg-canvas'
                   }`}
                 >
                   Suelto
@@ -329,7 +329,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {formData.tipoOrigen === 'SOBRE' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-body mb-1">
                     Código de Lote *
                   </label>
                   <input
@@ -337,12 +337,12 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                     required
                     value={formData.codigoLote}
                     onChange={(e) => setFormData({ ...formData, codigoLote: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Número de Siembra *
                 </label>
                 <input
@@ -350,11 +350,11 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                   required
                   value={formData.numeroSiembra}
                   onChange={(e) => setFormData({ ...formData, numeroSiembra: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Cantidad Inicial (Bandejas) *
                 </label>
                 <div className="relative">
@@ -362,10 +362,10 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                     required
                     value={formData.cantidad}
                     onChange={(val) => setFormData({ ...formData, cantidad: val })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   />
                   {formData.cantidad && formData.variedadBandejaId && (
-                    <div className="absolute right-0 top-full mt-1 text-xs text-emerald-600 font-medium">
+                    <div className="absolute right-0 top-full mt-1 text-xs text-accent-ink font-medium font-mono tabular-nums">
                       {
                         (() => {
                           const bandeja = bandejas.find(b => b.id.toString() === formData.variedadBandejaId);
@@ -381,7 +381,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Fecha de Siembra *
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -391,10 +391,10 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                     setModoFechaSiembra('UN_DIA');
                     actualizarFechaSiembra({ fechaSiembraFin: formData.fechaSiembraInicio });
                   }}
-                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center p-3 rounded-base border-2 transition-all cursor-pointer ${
                     modoFechaSiembra === 'UN_DIA'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-body hover:bg-canvas'
                   }`}
                 >
                   Un día
@@ -402,10 +402,10 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 <button
                   type="button"
                   onClick={() => setModoFechaSiembra('RANGO')}
-                  className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center p-3 rounded-base border-2 transition-all cursor-pointer ${
                     modoFechaSiembra === 'RANGO'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-accent bg-accent-soft text-accent-ink font-bold'
+                      : 'border-line bg-paper text-body hover:bg-canvas'
                   }`}
                 >
                   Rango de días
@@ -415,7 +415,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
 
             {modoFechaSiembra === 'UN_DIA' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Fecha de Siembra *
                 </label>
                 <input
@@ -426,13 +426,13 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                     fechaSiembraInicio: e.target.value,
                     fechaSiembraFin: e.target.value
                   })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                 />
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-body mb-1">
                     Sembrado Desde *
                   </label>
                   <input
@@ -440,11 +440,11 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                     required
                     value={formData.fechaSiembraInicio}
                     onChange={(e) => actualizarFechaSiembra({ fechaSiembraInicio: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-body mb-1">
                     Sembrado Hasta *
                   </label>
                   <input
@@ -453,7 +453,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                     min={formData.fechaSiembraInicio}
                     value={formData.fechaSiembraFin}
                     onChange={(e) => actualizarFechaSiembra({ fechaSiembraFin: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   />
                 </div>
               </div>
@@ -461,7 +461,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Dueño *
                 </label>
                 <select
@@ -475,7 +475,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                       setFormData({ ...formData, dueno: busquedaDueno });
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white mb-2"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors bg-paper mb-2"
                 >
                   <option value="jefe">Jefe / Vivero propio</option>
                   <option value="cliente">Cliente</option>
@@ -484,7 +484,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 {tipoDueno === 'cliente' && (
                   <div className="relative mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-400" />
+                      <Search className="h-4 w-4 text-faint" />
                     </div>
                     <input
                       type="text"
@@ -500,25 +500,25 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                       onBlur={() => {
                         setTimeout(() => setShowDuenoDropdown(false), 200);
                       }}
-                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      className="w-full pl-9 pr-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                     />
                     {showDuenoDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-paper border border-line-strong rounded-panel max-h-48 overflow-y-auto">
                         {duenosFiltrados.length > 0 ? (
                           duenosFiltrados.map(d => (
-                            <div 
-                              key={d.id} 
+                            <div
+                              key={d.id}
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 seleccionarDueno(d.nombre);
                               }}
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                              className="px-4 py-2 hover:bg-canvas cursor-pointer text-sm"
                             >
                               {d.nombre}
                             </div>
                           ))
                         ) : (
-                          <div className="px-4 py-2 text-sm text-gray-500">
+                          <div className="px-4 py-2 text-sm text-muted">
                             {busquedaDueno ? 'Presione Enter para usar este nombre' : 'No hay clientes'}
                           </div>
                         )}
@@ -528,7 +528,7 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-body mb-1">
                   Fecha Est. de Entrega *
                 </label>
                 <input
@@ -536,23 +536,23 @@ const SiembraForm = ({ isOpen, siembra, onSave, onCancel }) => {
                   required
                   value={formData.fechaEstimada}
                   onChange={(e) => setFormData({ ...formData, fechaEstimada: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                 />
               </div>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-100">
+          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-line">
             <button
               type="button"
               onClick={onCancel}
-              className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors cursor-pointer"
+              className="px-5 py-2.5 text-sm font-medium text-body bg-paper border border-line rounded-base hover:bg-canvas focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-xl hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors cursor-pointer"
+              className="px-5 py-2.5 text-sm font-medium text-paper bg-accent border border-transparent rounded-base hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors cursor-pointer"
             >
               Guardar Siembra
             </button>

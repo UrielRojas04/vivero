@@ -1,0 +1,99 @@
+/* Sistema Vivero — tokens de diseño
+   Pegar en frontend/src/index.css (reemplaza el bloque @theme actual).
+   El acento se resuelve con [data-unidad="vivero"|"herramientas"] en <html> o <body>,
+   seteado desde unidadNegocioActiva (1 = Vivero, 2 = Herramientas). */
+
+:root {
+  /* Neutral cálido (derivado del marrón de marca #4A3B32) */
+  --paper: #FFFFFF;
+  --paper-alt: #FBFAF8;
+  --canvas: #F5F3F0;
+  --line: #DED9D2;
+  --line-strong: #C6BFB6;
+  --thead: #EFEBE6;
+  --faint: #8C8177;
+  --muted: #6E665E;
+  --body: #413A34;
+  --ink: #221D1A;
+
+  /* Marca */
+  --brand-brown: #4A3B32;
+  --brand-green: #8CBF3F;
+
+  /* Semántico (idéntico en las dos unidades) */
+  --ok: #1F7A4C;      --ok-ink: #155C39;  --ok-bg: #E6F2EA;  --ok-line: #B9DCC8;
+  --warn: #B4610F;    --warn-ink: #8A4A0B; --warn-bg: #FBEEE0; --warn-line: #EBCFA8;
+  --danger: #B3261E;  --danger-ink: #8C1D18; --danger-bg: #FBE9E7; --danger-line: #EFC6C2;
+
+  /* Tipografía */
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* todo importe y código */
+
+  /* Espaciado (base 4) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
+  --row-h: 40px; /* fila de tabla, densidad media */
+
+  /* Bordes y radios */
+  --r-flat: 0;     /* tablas */
+  --r-base: 2px;   /* inputs, botones */
+  --r-panel: 4px;  /* paneles */
+  --r-pill: 999px; /* chips de estado */
+  --accent-bar: 4px; /* barra lateral de indicadores */
+
+  /* Elevación */
+  --e-0: none;
+  --e-1: 0 1px 2px rgba(34, 29, 26, .08);
+  --e-2: 0 8px 24px rgba(34, 29, 26, .16);
+}
+
+/* Acento por unidad de negocio */
+[data-unidad="vivero"] {
+  --accent: #35682F;
+  --accent-ink: #2A5325;
+  --accent-soft: #EEF3E4;
+  --accent-hi: #8CBF3F;
+  --accent-label: #5B7A4E;
+  --accent-plate: #FFFFFF; /* el logo va directo sobre papel */
+}
+
+[data-unidad="herramientas"] {
+  --accent: #14666F;
+  --accent-ink: #0E4A51;
+  --accent-soft: #E5EFF0;
+  --accent-hi: #E0872A;
+  --accent-label: #3B7B83;
+  --accent-plate: #123238; /* placa oscura: el logo Serhan es arte blanco */
+}
+
+/* Modo oscuro (neutral cálido invertido) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #211D19;
+    --paper-alt: #1B1815;
+    --canvas: #171412;
+    --line: #3A332D;
+    --line-strong: #4A423B;
+    --thead: #2A2521;
+    --faint: #8A8177;
+    --muted: #A79E94;
+    --body: #DCD5CD;
+    --ink: #F2EDE7;
+
+    --ok: #7FCB9B;  --ok-ink: #7FCB9B;  --ok-bg: #1E2B22;  --ok-line: #35543F;
+    --warn: #E0A44F; --warn-ink: #E0A44F; --warn-bg: #2C231A; --warn-line: #55432B;
+    --danger: #E5827A; --danger-ink: #E5827A; --danger-bg: #2E1F1D; --danger-line: #55332F;
+  }
+  [data-unidad="vivero"] { --accent: #A6D65B; --accent-ink: #171412; --accent-soft: #232B1B; --accent-label: #A6D65B; }
+  [data-unidad="herramientas"] { --accent: #5FB3BC; --accent-ink: #171412; --accent-soft: #1A2A2C; --accent-label: #5FB3BC; }
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+/* Números: siempre mono y tabular */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

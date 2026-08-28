@@ -139,7 +139,7 @@ const FilaItemPedido = ({
     : null;
 
   const avisoAutoRatchet = disparaAjuste ? (
-    <p className="text-[11px] text-amber-600">
+    <p className="text-[11px] text-warn">
       ⚠️ Este costo es mayor al de la ficha (${costoBaseFicha.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) — al
       confirmar, el costo y el precio de venta del producto se van a actualizar solos hacia este valor.
     </p>
@@ -147,8 +147,8 @@ const FilaItemPedido = ({
 
   // variant="card": SIN CAMBIOS respecto de antes de pedido-grilla-visual — la tarjeta conserva su
   // caja propia por input (Decisión 9 de design.md, grupo 10, fuera del alcance de esta corrida).
-  const inputClassCard = (hasError) => `w-full px-2.5 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-right ${
-    hasError ? 'border-red-300' : 'border-gray-200'
+  const inputClassCard = (hasError) => `w-full px-2.5 py-1.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent text-sm text-right ${
+    hasError ? 'border-danger-line' : 'border-line'
   }`;
 
   // variant="grid": el input pierde su caja propia — la celda ES la caja (pedido-grilla-visual,
@@ -159,7 +159,7 @@ const FilaItemPedido = ({
   //
   // Padding vertical `py-2` → `py-1.5` (ronda de ajustes post-12.3, punto 1): ver la nota completa
   // junto a `gridCellInput` de por qué el input se leía más chico que su celda.
-  const inputClassGrid = () => 'w-full bg-transparent px-2 py-1.5 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 focus:bg-emerald-50/50';
+  const inputClassGrid = () => 'w-full bg-transparent px-2 py-1.5 text-sm text-right font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent focus:bg-accent-soft/50';
 
   // Celda de input de la grilla (pedido-grilla-visual, Decisión 1/2/3.6-3.9): borde vertical entre
   // columnas, fondo de error, fondo/color de deshabilitado, y afordancia de hover ("la celda
@@ -183,10 +183,10 @@ const FilaItemPedido = ({
   //    igual queda determinado por una celda vecina más alta (ej. Descuentos, o esta misma celda
   //    con su texto de error debajo), el input (y su error, si lo hay) se centren verticalmente en
   //    vez de quedar pegados arriba con el sobrante abajo.
-  const gridCellInput = (hasError) => `border-l border-gray-300 flex flex-col justify-center ${
-    hasError ? 'bg-red-50' : ''
+  const gridCellInput = (hasError) => `border-l border-line flex flex-col justify-center ${
+    hasError ? 'bg-danger-bg' : ''
   } ${
-    disabled ? 'bg-gray-50 text-gray-400' : 'hover:bg-white hover:ring-1 hover:ring-inset hover:ring-gray-400'
+    disabled ? 'bg-canvas text-faint' : 'hover:bg-paper hover:ring-1 hover:ring-inset hover:ring-line-strong'
   }`;
 
   // Tamaño del botón reducido (pedido-grilla-visual, ampliación posterior al checkpoint 12.3,
@@ -215,8 +215,8 @@ const FilaItemPedido = ({
       onClick={onEliminar}
       disabled={disabled || !canEliminar}
       title="Quitar ítem"
-      className={`shrink-0 p-1.5 rounded-lg transition-colors ${
-        disabled || !canEliminar ? 'text-gray-300 cursor-not-allowed' : 'text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer'
+      className={`shrink-0 p-1.5 rounded-base transition-colors ${
+        disabled || !canEliminar ? 'text-faint cursor-not-allowed' : 'text-danger hover:text-danger-ink hover:bg-danger-bg cursor-pointer'
       }`}
     >
       <Trash2 className="w-3.5 h-3.5" />
@@ -426,10 +426,10 @@ const FilaItemPedido = ({
           inferior único del grupo (antes vivía repetido en cada celda, tarea 5.2 — así abrir el
           editor de descuentos ya no deja una línea entre la fila y su propia sub-fila), y el hover
           en CSS puro (tarea 5.1 — nunca con estado de React: serían 40 re-renders por `mousemove`). */}
-      <div className={`grid ${gridColsClass} border-b border-gray-300 hover:bg-gray-50/70 transition-colors`}>
+      <div className={`grid ${gridColsClass} border-b border-line hover:bg-canvas transition-colors`}>
         {/* # (posición del ítem, tarea 8.1) */}
         <div className="px-2 py-1.5 flex items-center justify-end">
-          <span className="text-[11px] text-gray-400 tabular-nums">{indice}</span>
+          <span className="text-[11px] text-faint tabular-nums">{indice}</span>
         </div>
 
         {/* Producto: SIN padding vertical propio (ronda de ajustes post-12.3, punto 1) — antes
@@ -437,7 +437,7 @@ const FilaItemPedido = ({
             inflaba el alto de toda la fila (ver la nota larga junto a `gridCellInput` más arriba).
             `flex flex-col justify-center` para centrar el contenido si el alto de fila termina
             gobernado por otra celda (ej. Descuentos). */}
-        <div className="border-l border-gray-300 px-2 relative min-w-0 flex flex-col justify-center">
+        <div className="border-l border-line px-2 relative min-w-0 flex flex-col justify-center">
           <ProductoSearchSelect
             productos={productos}
             productoId={linea.productoId}
@@ -447,7 +447,7 @@ const FilaItemPedido = ({
             hasError={!!errorProducto}
             disabled={disabled}
           />
-          {errorProducto && <p className="mt-1 text-xs text-red-500 font-medium">{errorProducto}</p>}
+          {errorProducto && <p className="mt-1 text-xs text-danger font-medium">{errorProducto}</p>}
         </div>
 
         {/* Cantidad */}
@@ -459,7 +459,7 @@ const FilaItemPedido = ({
             className={inputClassGrid()}
             disabled={disabled}
           />
-          {errorCantidad && <p className="text-xs text-red-500 font-medium px-2 pb-1">{errorCantidad}</p>}
+          {errorCantidad && <p className="text-xs text-danger font-medium px-2 pb-1">{errorCantidad}</p>}
         </div>
 
         {/* USD: columna CONDICIONAL, revertido (ronda de ajustes post-12.3, punto 5 — el usuario
@@ -470,13 +470,13 @@ const FilaItemPedido = ({
             por gate de proveedor" de "deshabilitado por no manejar dólares": si la columna existe,
             el proveedor maneja dólares, así que sólo queda el gate normal (`disabled`). */}
         {manejaDolares && (
-          <div className={`border-l border-gray-300 px-2 py-1.5 flex items-center justify-center ${disabled ? 'bg-gray-50' : ''}`}>
+          <div className={`border-l border-line px-2 py-1.5 flex items-center justify-center ${disabled ? 'bg-canvas' : ''}`}>
             <input
               type="checkbox"
               checked={linea.monedaLinea === 'USD'}
               onChange={onToggleMoneda}
               disabled={disabled}
-              className="cursor-pointer accent-emerald-600 disabled:cursor-not-allowed"
+              className="cursor-pointer accent-accent disabled:cursor-not-allowed"
               title="Línea en dólares"
             />
           </div>
@@ -491,14 +491,14 @@ const FilaItemPedido = ({
             className={inputClassGrid()}
             disabled={disabled}
           />
-          {errorCosto && <p className="text-xs text-red-500 font-medium px-2 pb-1">{errorCosto}</p>}
+          {errorCosto && <p className="text-xs text-danger font-medium px-2 pb-1">{errorCosto}</p>}
         </div>
 
         {/* Descuentos: celda-resumen + sub-fila expandible (grupo 4). `CeldaDescuentos` ya centra
             su propio contenido internamente (`min-h-[28px] flex items-center`), así que esta
             celda se queda `block` — envolverla en `flex` acá rompería el `w-full` implícito que
             hoy le da el layout de bloque (el hijo dejaría de estirarse al ancho completo). */}
-        <div ref={descuentosAnchorRef} className={`border-l border-gray-300 px-2 py-1.5 min-w-0 ${disabled ? 'bg-gray-50' : ''}`}>
+        <div ref={descuentosAnchorRef} className={`border-l border-line px-2 py-1.5 min-w-0 ${disabled ? 'bg-canvas' : ''}`}>
           {celdaDescuentos}
         </div>
 
@@ -511,7 +511,7 @@ const FilaItemPedido = ({
             className={inputClassGrid()}
             disabled={disabled}
           />
-          {errorIva && <p className="text-xs text-red-500 font-medium px-2 pb-1">{errorIva}</p>}
+          {errorIva && <p className="text-xs text-danger font-medium px-2 pb-1">{errorIva}</p>}
         </div>
 
         {/* Envío % */}
@@ -526,19 +526,19 @@ const FilaItemPedido = ({
         </div>
 
         {/* Costo total de la línea */}
-        <div className={`border-l border-gray-300 px-2 py-1.5 text-right flex flex-col justify-center ${disabled ? 'bg-gray-50' : ''}`}>
-          <p className="text-sm font-semibold text-gray-800 tabular-nums whitespace-nowrap">{costoFormateado}</p>
-          {notaUsd && <p className="text-[11px] text-gray-500 tabular-nums whitespace-nowrap">{notaUsd}</p>}
+        <div className={`border-l border-line px-2 py-1.5 text-right flex flex-col justify-center ${disabled ? 'bg-canvas' : ''}`}>
+          <p className="text-sm font-semibold text-ink font-mono tabular-nums whitespace-nowrap">{costoFormateado}</p>
+          {notaUsd && <p className="text-[11px] text-muted font-mono tabular-nums whitespace-nowrap">{notaUsd}</p>}
         </div>
 
         {/* Quitar */}
-        <div className="border-l border-gray-300 px-2 py-1.5 flex items-center justify-center">
+        <div className="border-l border-line px-2 py-1.5 flex items-center justify-center">
           {botonQuitar}
         </div>
 
         {/* Aviso de auto-ratchet: sub-fila sangrada con acento ámbar (tarea 5.5) — la condición de
             disparo (desglose.costoBaseConvertido > costoBaseFicha) no se toca. */}
-        {avisoAutoRatchet && subFilaWrap(avisoAutoRatchet, 'border-amber-300')}
+        {avisoAutoRatchet && subFilaWrap(avisoAutoRatchet, 'border-warn')}
 
         {/* Sub-formulario de producto pendiente: ELIMINADO (grupo 17 de tasks.md) — elegir "+
             Crear producto nuevo…" ya marca la línea como pendiente sin popover intermedio, ver el
@@ -558,14 +558,14 @@ const FilaItemPedido = ({
   // CONSERVAN su caja propia (`inputClassCard`, sin tocar) — sin columnas que hagan de marco acá,
   // sacarles el borde los dejaría sin ninguna referencia.
   const filaPar = (children, ultima = false) => (
-    <div className={`grid grid-cols-2 gap-3 pb-3 ${ultima ? '' : 'border-b border-gray-200 mb-3'}`}>
+    <div className={`grid grid-cols-2 gap-3 pb-3 ${ultima ? '' : 'border-b border-line mb-3'}`}>
       {children}
     </div>
   );
 
   return (
-    <div className="border border-gray-300 rounded-xl p-4">
-      <div className="flex items-start gap-2 pb-3 border-b border-gray-200 mb-3">
+    <div className="border border-line-strong rounded-panel p-4">
+      <div className="flex items-start gap-2 pb-3 border-b border-line mb-3">
         <div className="flex-1 min-w-0 relative">
           <ProductoSearchSelect
             productos={productos}
@@ -576,7 +576,7 @@ const FilaItemPedido = ({
             hasError={!!errorProducto}
             disabled={disabled}
           />
-          {errorProducto && <p className="mt-1 text-xs text-red-500 font-medium">{errorProducto}</p>}
+          {errorProducto && <p className="mt-1 text-xs text-danger font-medium">{errorProducto}</p>}
         </div>
         {botonQuitar}
       </div>
@@ -584,26 +584,26 @@ const FilaItemPedido = ({
       {filaPar(
         <>
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-0.5">Cantidad</label>
+            <label className="block text-[11px] font-medium text-muted mb-0.5">Cantidad</label>
             <FormattedNumberInput
               value={linea.cantidadPedida}
               onChange={(val) => onActualizarCampo('cantidadPedida', val)}
               placeholder="0"
-              className={`${inputClassCard(!!errorCantidad)} tabular-nums`}
+              className={`${inputClassCard(!!errorCantidad)} font-mono tabular-nums`}
               disabled={disabled}
             />
-            {errorCantidad && <p className="mt-1 text-[11px] text-red-500 font-medium">{errorCantidad}</p>}
+            {errorCantidad && <p className="mt-1 text-[11px] text-danger font-medium">{errorCantidad}</p>}
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-0.5">Costo unit.</label>
+            <label className="block text-[11px] font-medium text-muted mb-0.5">Costo unit.</label>
             <FormattedNumberInput
               value={linea.costoUnitarioPactado}
               onChange={(val) => onActualizarCampo('costoUnitarioPactado', val)}
               placeholder="0"
-              className={`${inputClassCard(!!errorCosto)} tabular-nums`}
+              className={`${inputClassCard(!!errorCosto)} font-mono tabular-nums`}
               disabled={disabled}
             />
-            {errorCosto && <p className="mt-1 text-[11px] text-red-500 font-medium">{errorCosto}</p>}
+            {errorCosto && <p className="mt-1 text-[11px] text-danger font-medium">{errorCosto}</p>}
           </div>
         </>
       )}
@@ -613,14 +613,14 @@ const FilaItemPedido = ({
           dólares en vez de estar siempre presente con el checkbox deshabilitado. */}
       {manejaDolares && filaPar(
         <label className={`col-span-2 flex items-center gap-1.5 text-xs font-medium ${
-          disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-500 cursor-pointer'
+          disabled ? 'text-faint cursor-not-allowed' : 'text-muted cursor-pointer'
         }`}>
           <input
             type="checkbox"
             checked={linea.monedaLinea === 'USD'}
             onChange={onToggleMoneda}
             disabled={disabled}
-            className="cursor-pointer accent-emerald-600 disabled:cursor-not-allowed"
+            className="cursor-pointer accent-accent disabled:cursor-not-allowed"
           />
           Línea en USD
         </label>
@@ -629,23 +629,23 @@ const FilaItemPedido = ({
       {filaPar(
         <>
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-0.5">IVA %</label>
+            <label className="block text-[11px] font-medium text-muted mb-0.5">IVA %</label>
             <FormattedNumberInput
               value={linea.ivaPactadoPorcentaje}
               onChange={(val) => onActualizarCampo('ivaPactadoPorcentaje', val)}
               placeholder="0"
-              className={`${inputClassCard(!!errorIva)} tabular-nums`}
+              className={`${inputClassCard(!!errorIva)} font-mono tabular-nums`}
               disabled={disabled}
             />
-            {errorIva && <p className="mt-1 text-[11px] text-red-500 font-medium">{errorIva}</p>}
+            {errorIva && <p className="mt-1 text-[11px] text-danger font-medium">{errorIva}</p>}
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-0.5">Envío %</label>
+            <label className="block text-[11px] font-medium text-muted mb-0.5">Envío %</label>
             <FormattedNumberInput
               value={linea.envioPactadoPorcentaje}
               onChange={(val) => onActualizarCampo('envioPactadoPorcentaje', val)}
               placeholder="0"
-              className={`${inputClassCard(false)} tabular-nums`}
+              className={`${inputClassCard(false)} font-mono tabular-nums`}
               disabled={disabled}
             />
           </div>
@@ -654,17 +654,17 @@ const FilaItemPedido = ({
 
       {filaPar(
         <div className="col-span-2">
-          <label className="block text-[11px] font-medium text-gray-500 mb-0.5">Descuentos</label>
+          <label className="block text-[11px] font-medium text-muted mb-0.5">Descuentos</label>
           {celdaDescuentos}
         </div>,
         true
       )}
 
-      <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-200">
-        <span className="text-gray-500">Costo total</span>
+      <div className="flex items-center justify-between text-sm pt-3 border-t border-line">
+        <span className="text-muted">Costo total</span>
         <div className="text-right">
-          <span className="font-semibold text-gray-900 tabular-nums">{costoFormateado}</span>
-          {notaUsd && <p className="text-[11px] text-gray-500 tabular-nums">{notaUsd}</p>}
+          <span className="font-semibold text-ink font-mono tabular-nums">{costoFormateado}</span>
+          {notaUsd && <p className="text-[11px] text-muted font-mono tabular-nums">{notaUsd}</p>}
         </div>
       </div>
       {avisoAutoRatchet}

@@ -11,16 +11,20 @@
  * componentes), en línea con `chequeDisplay.js` y `saldoDisplay.js`.
  */
 
-const TONO_ENTREGA = { chip: 'bg-orange-50 text-orange-700', texto: 'text-orange-700' };
-const TONO_DEVOLUCION = { chip: 'bg-emerald-50 text-emerald-700', texto: 'text-emerald-700' };
+// TONO_ENTREGA migrado en el barrido de cierre G8 (tasks.md 13.1): el naranja literal no
+// venía de la paleta vieja reemplazada por G0-G7, por eso quedó fuera del grep base de Capa A
+// y sin migrar hasta esta ronda. Semántico por Decisión 3 (depende de `tipo === 'ENTREGA'`,
+// dato de negocio) → `warn`, mismo vocabulario que `EN_CARTERA`/`TONO_AMBAR` en `chequeDisplay.js`.
+const TONO_ENTREGA = { chip: 'bg-warn-bg text-warn-ink', texto: 'text-warn-ink' };
+const TONO_DEVOLUCION = { chip: 'bg-ok-bg text-ok-ink', texto: 'text-ok-ink' };
 
 /**
  * describirTipoMovimiento(tipo) -> { etiqueta, tono: { chip, texto } }
  *
- * `'ENTREGA'` se presenta en tono de salida (naranja); cualquier otro valor
+ * `'ENTREGA'` se presenta en tono de salida (`warn`); cualquier otro valor
  * (incluidos `null`/`undefined`, en la práctica `DEVOLUCION`) se presenta en
- * tono de ingreso (esmeralda). `etiqueta` es el propio `tipo`, con fallback
- * a cadena vacía si viene nulo.
+ * tono de ingreso (ok, Decisión 3 de design.md: depende del dato `tipo`).
+ * `etiqueta` es el propio `tipo`, con fallback a cadena vacía si viene nulo.
  */
 export const describirTipoMovimiento = (tipo) => {
   const etiqueta = tipo || '';

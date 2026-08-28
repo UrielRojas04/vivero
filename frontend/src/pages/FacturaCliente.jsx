@@ -14,15 +14,15 @@ const formatearDinero = (valor) => {
   return `$${numero.toLocaleString('es-AR')}`;
 };
 
-// Chip neutro para el método de pago: separa "cómo se pagó" (siempre gris, informativo)
-// de "cuánto se abonó" (color semántico: verde/naranja/rojo), que es lo que la referencia
+// Chip neutro para el método de pago: separa "cómo se pagó" (siempre neutral, informativo)
+// de "cuánto se abonó" (color semántico: ok/warn/danger), que es lo que la referencia
 // visual muestra — el método nunca lleva el color de estado, sólo el monto lo lleva.
 const MetodoPagoChip = ({ metodo, rechazado }) => (
   <span
     className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border whitespace-nowrap ${
       rechazado
-        ? 'bg-red-50 text-red-600 border-red-200 line-through'
-        : 'bg-gray-100 text-gray-600 border-gray-200'
+        ? 'bg-danger-bg text-danger border-danger-line line-through'
+        : 'bg-thead text-body border-line'
     }`}
   >
     {metodo}
@@ -100,13 +100,13 @@ const FacturaCliente = () => {
   const { clienteId } = useParams();
   const navigate = useNavigate();
   const { pushToast, askConfirm } = useUIStore();
-  
+
   const [factura, setFactura] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('activa'); // 'activa' | 'historial'
   const [isExporting, setIsExporting] = useState(false);
-  
+
   const facturaRef = React.useRef(null);
 
   // Estado para el modal de nuevo concepto
@@ -175,7 +175,7 @@ const FacturaCliente = () => {
     e.preventDefault();
     if (!factura) return;
     if (!conceptoDesc.trim() || !conceptoMonto) return;
-    
+
     try {
       const updatedFactura = await agregarConceptoFactura(factura.id, {
         descripcion: conceptoDesc,
@@ -256,20 +256,20 @@ const FacturaCliente = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>;
+    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>;
   }
 
   const renderFacturaCompleta = (f, isActive = false) => {
     if (!f) return (
-      <div className="bg-white p-12 text-center rounded-xl border border-gray-100 shadow-sm flex flex-col items-center">
-        <Receipt className="w-16 h-16 text-gray-300 mb-4" />
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Sin Factura Activa</h3>
-        <p className="text-gray-500 max-w-md mx-auto mb-6">
+      <div className="bg-paper p-12 text-center rounded-panel border border-line flex flex-col items-center">
+        <Receipt className="w-16 h-16 text-faint mb-4" />
+        <h3 className="text-xl font-bold text-ink mb-2">Sin Factura Activa</h3>
+        <p className="text-muted max-w-md mx-auto mb-6">
           El cliente no tiene ventas pendientes de facturar. Al registrar una nueva venta en Vivero, se abrirá una nueva factura automáticamente.
         </p>
         <button
           onClick={handleAbrirManual}
-          className="px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-100 flex items-center gap-2 font-medium transition-colors cursor-pointer"
+          className="px-4 py-2 bg-accent-soft border border-accent text-accent-ink rounded-base hover:brightness-95 flex items-center gap-2 font-medium transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Abrir Factura Manualmente
         </button>
@@ -277,17 +277,17 @@ const FacturaCliente = () => {
     );
 
     return (
-      <div className={`font-factura ${isExporting ? 'p-6 bg-gray-50' : ''}`} ref={isActive ? facturaRef : null}>
-      <div className={`bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden ${isExporting ? 'border-gray-300' : ''}`}>
+      <div className={`${isExporting ? 'p-6 bg-canvas force-light-export' : ''}`} ref={isActive ? facturaRef : null}>
+      <div className={`bg-paper border border-line rounded-panel overflow-hidden ${isExporting ? 'border-line-strong' : ''}`}>
         {/* Cabecera de la Factura */}
-        <div className="bg-gray-50/60 p-6">
+        <div className="bg-thead/60 p-6">
           <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <h2 className="text-lg font-bold text-gray-900">
+                <h2 className="text-lg font-bold text-ink">
                   Factura #{f.id} - {f.clienteNombre}
                 </h2>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${f.estado === 'ABIERTA' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${f.estado === 'ABIERTA' ? 'bg-ok-bg text-ok-ink' : 'bg-thead text-body border border-line'}`}>
                   {f.estado}
                 </span>
               </div>
@@ -295,28 +295,28 @@ const FacturaCliente = () => {
                 <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap w-full md:w-auto shrink-0">
                   <button
                     onClick={handleDescargarImagen}
-                    className="px-4 py-2 bg-white border-2 border-gray-400 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-paper border-2 border-line-strong text-body hover:bg-canvas flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
                   >
-                    <Download className="w-4 h-4 text-gray-800" /> Descargar
+                    <Download className="w-4 h-4 text-body" /> Descargar
                   </button>
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="px-4 py-2 bg-white border-2 border-gray-400 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-paper border-2 border-line-strong text-body hover:bg-canvas flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
                   >
-                    <PlusCircle className="w-4 h-4 text-gray-800" /> Agregar Concepto
+                    <PlusCircle className="w-4 h-4 text-body" /> Agregar Concepto
                   </button>
                   <button
                     onClick={() => {
                       setPagoMonto(factura.saldoDeudor > 0 ? factura.saldoDeudor : '');
                       setIsPagoModalOpen(true);
                     }}
-                    className="px-4 py-2 bg-white border-2 border-gray-400 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-paper border-2 border-line-strong text-body hover:bg-canvas flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
                   >
-                    <Receipt className="w-4 h-4 text-gray-800" /> Registrar Pago
+                    <Receipt className="w-4 h-4 text-body" /> Registrar Pago
                   </button>
                   <button
                     onClick={handleCerrarFactura}
-                    className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors shadow-sm cursor-pointer"
+                    className="px-4 py-2 bg-ink text-paper hover:brightness-110 flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
                   >
                     <Lock className="w-4 h-4" /> Cerrar Factura
                   </button>
@@ -324,12 +324,12 @@ const FacturaCliente = () => {
               )}
             </div>
             {f.clienteTelefono && (
-              <p className="text-sm text-gray-500 flex items-center gap-1 mt-2">
+              <p className="text-sm text-muted flex items-center gap-1 mt-2">
                 <Phone className="w-3.5 h-3.5" />
                 {f.clienteTelefono}
               </p>
             )}
-            <p className="text-xs text-gray-500 flex items-center mt-1">
+            <p className="text-xs text-muted flex items-center mt-1">
               <FileClock className="w-3.5 h-3.5 mr-1.5" />
               Apertura: {formatFechaLarga(f.fechaApertura)}
               {f.fechaCierre && ` — Cierre: ${formatFechaLarga(f.fechaCierre)}`}
@@ -342,41 +342,46 @@ const FacturaCliente = () => {
             del checkpoint 6.1: ahí se había confirmado que debían aparecer en la imagen
             exportada; ahora el usuario pidió lo contrario). Siguen visibles en pantalla
             normalmente, mismo patrón `{!isExporting && (...)}` que ya usa la botonera del
-            header más abajo. */}
+            header más abajo.
+            Patrón de barra tomado literal del mockup (Sistema-Vivero-Redisenio.dc.html,
+            línea ~1021): "Total Ventas" lleva la barra de acento (decoración de marca, P3,
+            no depende de datos) y valor neutral; "Total Conceptos" barra neutral
+            (border-l-line-strong); "Pagos Recibidos" y "Saldo Deudor" son semánticos
+            (P1, dependen de f.totalPagos / f.saldoDeudor) → ok / danger según corresponda. */}
         {!isExporting && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-gray-200">
-            <div className="p-4 border-l-4 border-l-blue-500 border-r border-gray-200">
+          <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-line">
+            <div className="p-4 border-l-4 border-l-accent border-r border-line">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Total Ventas</p>
-                  <p className="text-2xl font-bold text-gray-900 tabular-nums">{formatearDinero(f.totalVentas)}</p>
+                  <p className="text-xs font-semibold text-muted uppercase">Total Ventas</p>
+                  <p className="text-2xl font-bold text-ink font-mono tabular-nums">{formatearDinero(f.totalVentas)}</p>
                 </div>
-                <TrendingUp className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                <TrendingUp className="w-5 h-5 text-accent shrink-0 mt-0.5" />
               </div>
             </div>
-            <div className="p-4 border-l-4 border-l-gray-300">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Total Conceptos</p>
-              <p className="text-2xl font-bold text-gray-900 tabular-nums">{formatearDinero(f.totalConceptos)}</p>
+            <div className="p-4 border-l-4 border-l-line-strong">
+              <p className="text-xs font-semibold text-muted uppercase">Total Conceptos</p>
+              <p className="text-2xl font-bold text-ink font-mono tabular-nums">{formatearDinero(f.totalConceptos)}</p>
             </div>
-            <div className="p-4 border-l-4 border-l-emerald-500 border-r border-gray-200 border-t border-gray-200 lg:border-t-0">
+            <div className="p-4 border-l-4 border-l-ok border-r border-line border-t border-line lg:border-t-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-xs font-semibold text-emerald-600 uppercase">Pagos Recibidos</p>
-                  <p className="text-2xl font-bold text-emerald-700 tabular-nums">{formatearDinero(f.totalPagos)}</p>
+                  <p className="text-xs font-semibold text-ok-ink uppercase">Pagos Recibidos</p>
+                  <p className="text-2xl font-bold text-ok-ink font-mono tabular-nums">{formatearDinero(f.totalPagos)}</p>
                 </div>
-                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle className="w-5 h-5 text-ok shrink-0 mt-0.5" />
               </div>
             </div>
-            <div className={`p-4 border-l-4 border-t border-gray-200 lg:border-t-0 ${f.saldoDeudor > 0 ? 'border-l-red-500' : 'border-l-emerald-500'}`}>
+            <div className={`p-4 border-l-4 border-t border-line lg:border-t-0 ${f.saldoDeudor > 0 ? 'border-l-danger' : 'border-l-ok'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className={`text-xs font-semibold uppercase ${f.saldoDeudor > 0 ? 'text-red-600' : 'text-emerald-700'}`}>Saldo Deudor</p>
-                  <p className={`text-2xl font-bold tabular-nums ${f.saldoDeudor > 0 ? 'text-red-700' : 'text-emerald-800'}`}>{formatearDinero(f.saldoDeudor)}</p>
+                  <p className={`text-xs font-semibold uppercase ${f.saldoDeudor > 0 ? 'text-danger-ink' : 'text-ok-ink'}`}>Saldo Deudor</p>
+                  <p className={`text-2xl font-bold font-mono tabular-nums ${f.saldoDeudor > 0 ? 'text-danger-ink' : 'text-ok-ink'}`}>{formatearDinero(f.saldoDeudor)}</p>
                 </div>
                 {f.saldoDeudor > 0 ? (
-                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
                 ) : (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-5 h-5 text-ok shrink-0 mt-0.5" />
                 )}
               </div>
             </div>
@@ -384,47 +389,47 @@ const FacturaCliente = () => {
         )}
 
         {/* Desglose de Ventas (Simplificado como Remito/Factura) */}
-        <div className="border-t border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center">
-            <Tag className="w-5 h-5 text-gray-400 mr-2" />
-            <h3 className="font-bold text-gray-800">Detalle de Artículos</h3>
+        <div className="border-t border-line">
+          <div className="px-6 py-4 border-b border-line bg-thead/50 flex items-center">
+            <Tag className="w-5 h-5 text-faint mr-2" />
+            <h3 className="font-bold text-body">Detalle de Artículos</h3>
           </div>
           {f.ventas && f.ventas.length > 0 ? (
             <div className={isExporting ? "w-full" : "overflow-x-auto"}>
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-100 text-xs text-gray-600 uppercase tracking-wide border-b-2 border-gray-300">
+                <thead className="bg-thead text-xs text-muted uppercase tracking-wide border-b-2 border-line-strong">
                   <tr>
-                    <th className="px-6 py-3 font-semibold text-center border-r border-gray-300">Fecha</th>
-                    <th className="px-6 py-3 font-semibold w-20 text-center border-r border-gray-300">Cant.</th>
-                    <th className="px-6 py-3 font-semibold border-r border-gray-300">Descripción</th>
-                    <th className="px-6 py-3 font-semibold text-right border-r border-gray-300">Unitario</th>
-                    <th className="px-6 py-3 font-semibold text-right border-r border-gray-300">Subtotal</th>
-                    <th className="px-6 py-3 font-semibold text-center border-r border-gray-300">Método de Pago</th>
+                    <th className="px-6 py-3 font-semibold text-center border-r border-line-strong">Fecha</th>
+                    <th className="px-6 py-3 font-semibold w-20 text-center border-r border-line-strong">Cant.</th>
+                    <th className="px-6 py-3 font-semibold border-r border-line-strong">Descripción</th>
+                    <th className="px-6 py-3 font-semibold text-right border-r border-line-strong">Unitario</th>
+                    <th className="px-6 py-3 font-semibold text-right border-r border-line-strong">Subtotal</th>
+                    <th className="px-6 py-3 font-semibold text-center border-r border-line-strong">Método de Pago</th>
                     <th className="px-6 py-3 font-semibold text-right">Abonó</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-300 border-b border-gray-300">
+                <tbody className="divide-y divide-line-strong border-b border-line-strong">
                   {[...f.ventas].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).map(v => {
                     const pagosVenta = f.pagos ? f.pagos.filter(p => p.ventaId === v.id) : [];
                     const totalAbonado = pagosVenta.filter(p => !p.estado || p.estado === 'ACREDITADO').reduce((sum, p) => sum + p.monto, 0);
                     const totalVenta = v.detalles.reduce((sum, d) => sum + d.subtotal, 0);
 
-                    let paymentTextClass = 'text-emerald-800';
+                    let paymentTextClass = 'text-ok-ink';
                     let statusText = formatearDinero(totalAbonado);
                     // Fondo de color con presencia real para las celdas de "Método de Pago" +
                     // "Abonó" (las dos últimas columnas) según cuánto se abonó de esta venta.
                     // Sólo esas dos celdas llevan el tinte — el resto de la fila (Fecha, Cant.,
                     // Descripción, Unitario, Subtotal) queda con fondo blanco normal. Cubre
                     // todo el rowSpan de la venta porque ambas celdas usan rowSpan.
-                    let estadoBgClass = 'bg-emerald-100';
+                    let estadoBgClass = 'bg-ok-bg';
 
                     if (totalAbonado === 0) {
-                      paymentTextClass = 'text-red-700';
+                      paymentTextClass = 'text-danger-ink';
                       statusText = 'No abonó';
-                      estadoBgClass = 'bg-red-100';
+                      estadoBgClass = 'bg-danger-bg';
                     } else if (totalAbonado < totalVenta) {
-                      paymentTextClass = 'text-orange-700';
-                      estadoBgClass = 'bg-orange-100';
+                      paymentTextClass = 'text-warn-ink';
+                      estadoBgClass = 'bg-warn-bg';
                     }
 
                     return (
@@ -432,18 +437,18 @@ const FacturaCliente = () => {
                         {v.detalles.map((d, index) => (
                           <tr key={d.id}>
                             {index === 0 && (
-                              <td rowSpan={v.detalles.length} className="px-6 py-3 text-sm text-gray-700 text-center align-middle border-r border-gray-300">
+                              <td rowSpan={v.detalles.length} className="px-6 py-3 text-sm text-body text-center align-middle border-r border-line-strong">
                                 {formatFecha(v.fecha)}
                               </td>
                             )}
-                            <td className="px-6 py-3 text-sm text-gray-900 text-center font-medium border-r border-gray-300">{d.cantidad}</td>
-                            <td className="px-6 py-3 text-sm text-gray-800 border-r border-gray-300">{d.productoNombre}</td>
-                            <td className="px-6 py-3 text-sm text-gray-700 font-medium text-right tabular-nums border-r border-gray-300">{formatearDinero(d.subtotal / d.cantidad)}</td>
-                            <td className="px-6 py-3 text-sm font-semibold text-gray-900 text-right tabular-nums border-r border-gray-300">{formatearDinero(d.subtotal)}</td>
+                            <td className="px-6 py-3 text-sm text-ink text-center font-medium border-r border-line-strong">{d.cantidad}</td>
+                            <td className="px-6 py-3 text-sm text-body border-r border-line-strong">{d.productoNombre}</td>
+                            <td className="px-6 py-3 text-sm text-body font-medium text-right font-mono tabular-nums border-r border-line-strong">{formatearDinero(d.subtotal / d.cantidad)}</td>
+                            <td className="px-6 py-3 text-sm font-semibold text-ink text-right font-mono tabular-nums border-r border-line-strong">{formatearDinero(d.subtotal)}</td>
                             {index === 0 && (
                               totalAbonado > 0 ? (
                                 <>
-                                  <td rowSpan={v.detalles.length} className={`px-6 py-3 text-sm text-center align-middle border-r border-gray-300 ${estadoBgClass}`}>
+                                  <td rowSpan={v.detalles.length} className={`px-6 py-3 text-sm text-center align-middle border-r border-line-strong ${estadoBgClass}`}>
                                     <div className="flex flex-col gap-1 items-center justify-center">
                                       {pagosVenta.map(p => (
                                         <MetodoPagoChip
@@ -454,7 +459,7 @@ const FacturaCliente = () => {
                                       ))}
                                     </div>
                                   </td>
-                                  <td rowSpan={v.detalles.length} className={`px-6 py-3 text-sm font-bold ${paymentTextClass} text-right align-middle tabular-nums ${estadoBgClass}`}>
+                                  <td rowSpan={v.detalles.length} className={`px-6 py-3 text-sm font-bold ${paymentTextClass} text-right align-middle font-mono tabular-nums ${estadoBgClass}`}>
                                     {statusText}
                                   </td>
                                 </>
@@ -474,38 +479,38 @@ const FacturaCliente = () => {
                   {f.pagos && f.pagos.filter(p => !p.ventaId).sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).map(p => {
                     const isRechazado = p.estado === 'RECHAZADO';
                     return (
-                    <tr key={`pago-${p.id}`} className="border-t border-emerald-200 bg-emerald-100">
-                      <td className="px-6 py-3 text-sm text-gray-700 text-center align-middle border-r border-gray-300">
+                    <tr key={`pago-${p.id}`} className="border-t border-ok-line bg-ok-bg">
+                      <td className="px-6 py-3 text-sm text-body text-center align-middle border-r border-line-strong">
                         {formatFecha(p.fecha)}
                       </td>
-                      <td colSpan="4" className="px-6 py-3 text-sm text-gray-700 text-right font-medium border-r border-gray-300">
+                      <td colSpan="4" className="px-6 py-3 text-sm text-body text-right font-medium border-r border-line-strong">
                         Pago a cuenta
                       </td>
-                      <td className="px-6 py-3 text-sm text-center align-middle border-r border-gray-300">
+                      <td className="px-6 py-3 text-sm text-center align-middle border-r border-line-strong">
                         <MetodoPagoChip
                           metodo={isRechazado ? `${p.metodoPago} (RECHAZADO)` : p.metodoPago}
                           rechazado={isRechazado}
                         />
                       </td>
-                      <td className={`px-6 py-3 text-sm font-bold text-right align-middle tabular-nums ${isRechazado ? 'text-red-700 line-through opacity-70' : 'text-emerald-800'}`}>
+                      <td className={`px-6 py-3 text-sm font-bold text-right align-middle font-mono tabular-nums ${isRechazado ? 'text-danger-ink line-through opacity-70' : 'text-ok-ink'}`}>
                         {formatearDinero(p.monto)}
                       </td>
                     </tr>
                     );
                   })}
                 </tbody>
-                <tfoot className="bg-gray-50/70 border-t-2 border-gray-300">
+                <tfoot className="bg-thead/70 border-t-2 border-line-strong">
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-right text-sm font-bold text-gray-700 uppercase border-r border-gray-300">
+                    <td colSpan="4" className="px-6 py-4 text-right text-sm font-bold text-body uppercase border-r border-line-strong">
                       Total Artículos
                     </td>
-                    <td className="px-6 py-4 text-right text-lg font-bold text-gray-900 tabular-nums border-r border-gray-300">
+                    <td className="px-6 py-4 text-right text-lg font-bold text-ink font-mono tabular-nums border-r border-line-strong">
                       {formatearDinero(f.totalVentas)}
                     </td>
-                    <td className="px-6 py-4 text-right text-sm font-bold text-gray-700 uppercase border-r border-gray-300">
+                    <td className="px-6 py-4 text-right text-sm font-bold text-body uppercase border-r border-line-strong">
                       Total Abonado
                     </td>
-                    <td className="px-6 py-4 text-right text-lg font-bold text-gray-900 tabular-nums">
+                    <td className="px-6 py-4 text-right text-lg font-bold text-ink font-mono tabular-nums">
                       {formatearDinero(f.pagos ? f.pagos.filter(p => !p.estado || p.estado === 'ACREDITADO').reduce((sum, p) => sum + p.monto, 0) : 0)}
                     </td>
                   </tr>
@@ -513,32 +518,32 @@ const FacturaCliente = () => {
               </table>
             </div>
           ) : (
-            <div className="p-6 text-center text-gray-500">No hay artículos registrados.</div>
+            <div className="p-6 text-center text-muted">No hay artículos registrados.</div>
           )}
         </div>
 
         {/* Conceptos Extra Separados */}
         {f.conceptos && f.conceptos.length > 0 && (
-          <div className="border-t border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center">
-              <Box className="w-5 h-5 text-gray-400 mr-2" />
-              <h3 className="font-bold text-gray-800">Conceptos Adicionales</h3>
+          <div className="border-t border-line">
+            <div className="px-6 py-4 border-b border-line bg-thead/50 flex items-center">
+              <Box className="w-5 h-5 text-faint mr-2" />
+              <h3 className="font-bold text-body">Conceptos Adicionales</h3>
             </div>
             <div className={isExporting ? "w-full" : "overflow-x-auto"}>
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-100 text-xs text-gray-600 uppercase tracking-wide border-b-2 border-gray-300">
+                <thead className="bg-thead text-xs text-muted uppercase tracking-wide border-b-2 border-line-strong">
                   <tr>
-                    <th className="px-6 py-3 font-semibold border-r border-gray-300">Fecha</th>
-                    <th className="px-6 py-3 font-semibold border-r border-gray-300">Descripción</th>
+                    <th className="px-6 py-3 font-semibold border-r border-line-strong">Fecha</th>
+                    <th className="px-6 py-3 font-semibold border-r border-line-strong">Descripción</th>
                     <th className="px-6 py-3 font-semibold text-right">Monto</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-300">
+                <tbody className="divide-y divide-line-strong">
                   {[...f.conceptos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).map(c => (
                     <tr key={c.id}>
-                      <td className="px-6 py-3 text-sm text-gray-700 border-r border-gray-300">{formatFecha(c.fecha)}</td>
-                      <td className="px-6 py-3 text-sm text-gray-900 border-r border-gray-300">{c.descripcion}</td>
-                      <td className="px-6 py-3 text-sm font-semibold text-gray-900 text-right tabular-nums">{formatearDinero(c.monto)}</td>
+                      <td className="px-6 py-3 text-sm text-body border-r border-line-strong">{formatFecha(c.fecha)}</td>
+                      <td className="px-6 py-3 text-sm text-ink border-r border-line-strong">{c.descripcion}</td>
+                      <td className="px-6 py-3 text-sm font-semibold text-ink text-right font-mono tabular-nums">{formatearDinero(c.monto)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -548,9 +553,9 @@ const FacturaCliente = () => {
         )}
 
         {/* Total a Pagar Final */}
-        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-6">
-          <span className="text-sm font-bold text-gray-600 uppercase">Total a Pagar</span>
-          <span className={`text-2xl font-black tabular-nums ${f.saldoDeudor > 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+        <div className="border-t border-line px-6 py-4 flex items-center justify-end gap-6">
+          <span className="text-sm font-bold text-muted uppercase">Total a Pagar</span>
+          <span className={`text-2xl font-black font-mono tabular-nums ${f.saldoDeudor > 0 ? 'text-danger' : 'text-ok-ink'}`}>
             {formatearDinero(f.saldoDeudor)}
           </span>
         </div>
@@ -577,35 +582,35 @@ const FacturaCliente = () => {
           heredar un `transform` de esa animación, que rompería el fixed a pantalla
           completa. */}
       {isExporting && (
-        <div className="fixed inset-0 z-[100] bg-gray-50 flex flex-col items-center justify-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
-          <p className="text-gray-600 font-medium">Generando imagen...</p>
+        <div className="fixed inset-0 z-[100] bg-canvas flex flex-col items-center justify-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent"></div>
+          <p className="text-muted font-medium">Generando imagen...</p>
         </div>
       )}
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => navigate('/facturas')}
-          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 text-muted hover:text-body hover:bg-canvas rounded-full transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-ink">
           Detalle de Facturación {factura?.clienteNombre ? `- ${factura.clienteNombre}` : ''}
         </h1>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-line">
         <button
           onClick={() => setActiveTab('activa')}
-          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'activa' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center cursor-pointer ${activeTab === 'activa' ? 'border-accent text-accent-ink' : 'border-transparent text-muted hover:text-body hover:border-line-strong'}`}
         >
           <FileText className="w-4 h-4 mr-2" />
           Factura Activa
         </button>
         <button
           onClick={() => setActiveTab('historial')}
-          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'historial' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center cursor-pointer ${activeTab === 'historial' ? 'border-accent text-accent-ink' : 'border-transparent text-muted hover:text-body hover:border-line-strong'}`}
         >
           <History className="w-4 h-4 mr-2" />
           Historial ({facturasCerradas.length})
@@ -621,10 +626,10 @@ const FacturaCliente = () => {
       {activeTab === 'historial' && (
         <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4">
           {historial.length === 0 ? (
-            <div className="bg-white p-12 text-center rounded-xl border border-gray-100 shadow-sm">
-              <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Sin Historial</h3>
-              <p className="text-gray-500">Este cliente no tiene facturas históricas en Vivero.</p>
+            <div className="bg-paper p-12 text-center rounded-panel border border-line">
+              <History className="w-16 h-16 text-faint mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-ink mb-2">Sin Historial</h3>
+              <p className="text-muted">Este cliente no tiene facturas históricas en Vivero.</p>
             </div>
           ) : (
             facturasCerradas.map(h => {
@@ -640,37 +645,37 @@ const FacturaCliente = () => {
                     onClick={() => setExpandedFacturaId(isExpanded ? null : h.id)}
                     role="button"
                     aria-expanded={isExpanded}
-                    className={`bg-white p-4 border transition-all cursor-pointer ${isExpanded ? 'border-emerald-500 shadow-md rounded-t-xl border-b-0' : 'border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md rounded-xl'}`}
+                    className={`bg-paper p-4 border transition-all cursor-pointer ${isExpanded ? 'border-accent rounded-t-panel border-b-0' : 'border-line hover:border-line-strong rounded-panel'}`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`p-3 rounded-full shrink-0 ${isExpanded ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                        <div className={`p-3 rounded-full shrink-0 ${isExpanded ? 'bg-accent-soft text-accent-ink' : 'bg-thead text-muted'}`}>
                           <Receipt className="w-5 h-5" />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-bold text-gray-900">Factura #{h.id}</h4>
-                          <p className="text-sm text-gray-500 flex items-center gap-1 whitespace-nowrap">
+                          <h4 className="font-bold text-ink">Factura #{h.id}</h4>
+                          <p className="text-sm text-muted flex items-center gap-1 whitespace-nowrap">
                             <FileClock className="w-3 h-3 shrink-0" />
                             {formatFecha(h.fechaApertura)} — {formatFecha(h.fechaCierre)}
                           </p>
                         </div>
                       </div>
                       {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <ChevronUp className="w-5 h-5 text-accent-ink shrink-0" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
+                        <ChevronDown className="w-5 h-5 text-faint shrink-0" />
                       )}
                     </div>
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-3">
+                    <div className="mt-3 pt-3 border-t border-line flex items-center justify-between gap-3">
                       {sinMovimientos ? (
-                        <p className="text-sm font-semibold text-gray-400">Cerrada sin movimientos</p>
+                        <p className="text-sm font-semibold text-faint">Cerrada sin movimientos</p>
                       ) : (
                         <>
                           <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase">Total Facturado</p>
-                            <p className="text-lg font-bold text-gray-900 tabular-nums">{formatearDinero(h.totalVentas + h.totalConceptos)}</p>
+                            <p className="text-xs font-semibold text-muted uppercase">Total Facturado</p>
+                            <p className="text-lg font-bold text-ink font-mono tabular-nums">{formatearDinero(h.totalVentas + h.totalConceptos)}</p>
                           </div>
-                          <p className={`text-xs font-semibold text-right tabular-nums ${h.saldoDeudor > 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                          <p className={`text-xs font-semibold text-right font-mono tabular-nums ${h.saldoDeudor > 0 ? 'text-danger' : 'text-ok-ink'}`}>
                             Cerró {h.saldoDeudor > 0 ? 'con saldo deudor' : 'saldada'}<br />{formatearDinero(h.saldoDeudor)}
                           </p>
                         </>
@@ -682,7 +687,7 @@ const FacturaCliente = () => {
                       sin sangría ni overflow-x-auto propio — mismo ancho y eje que la
                       factura activa (corrección del desplazamiento/recorte). */}
                   {isExpanded && (
-                    <div className="animate-in fade-in slide-in-from-top-2 border border-t-0 border-emerald-500 rounded-b-xl shadow-md bg-white">
+                    <div className="animate-in fade-in slide-in-from-top-2 border border-t-0 border-accent rounded-b-panel bg-paper">
                       {/* La botonera lleva su propio padding; el documento capturado
                           (id={`factura-historial-${h.id}`}) queda sin padding propio para
                           que su eje y su ancho coincidan con los de la factura activa —
@@ -708,9 +713,9 @@ const FacturaCliente = () => {
                             } catch (err) { pushToast('error', 'Error al generar imagen'); }
                             finally { setIsExporting(false); }
                           }}
-                          className="px-4 py-2 bg-white border-2 border-gray-400 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
+                          className="px-4 py-2 bg-paper border-2 border-line-strong text-body hover:bg-canvas flex items-center justify-center gap-2 font-bold uppercase tracking-wide text-xs transition-colors cursor-pointer"
                         >
-                          <Download className="w-4 h-4 text-gray-800" /> Descargar
+                          <Download className="w-4 h-4 text-body" /> Descargar
                         </button>
                       </div>
                       <div id={`factura-historial-${h.id}`}>
@@ -729,42 +734,42 @@ const FacturaCliente = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="relative bg-paper rounded-panel border border-line-strong w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Agregar Concepto a Factura</h3>
+              <h3 className="text-xl font-bold text-ink mb-4">Agregar Concepto a Factura</h3>
               <form onSubmit={handleAgregarConcepto} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                  <label className="block text-sm font-medium text-body mb-1">Descripción</label>
                   <input
                     type="text"
                     required
                     value={conceptoDesc}
                     onChange={e => setConceptoDesc(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                    className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                     placeholder="Ej. Intereses por mora, Transporte, etc."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Monto ($)</label>
+                  <label className="block text-sm font-medium text-body mb-1">Monto ($)</label>
                   <FormattedNumberInput
                     required
                     value={conceptoMonto}
                     onChange={setConceptoMonto}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                    className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                     placeholder="0"
                   />
                 </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <div className="flex justify-end gap-3 pt-4 border-t border-line">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium text-body bg-paper border border-line-strong rounded-base hover:bg-canvas focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium text-paper bg-accent border border-transparent rounded-base hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
                   >
                     Guardar
                   </button>
@@ -779,26 +784,26 @@ const FacturaCliente = () => {
       {isPagoModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsPagoModalOpen(false)}></div>
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="relative bg-paper rounded-panel border border-line-strong w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Registrar Pago a Factura</h3>
+              <h3 className="text-xl font-bold text-ink mb-4">Registrar Pago a Factura</h3>
               <form onSubmit={handleRegistrarPago} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Monto ($)</label>
+                  <label className="block text-sm font-medium text-body mb-1">Monto ($)</label>
                   <FormattedNumberInput
                     required
                     value={pagoMonto}
                     onChange={setPagoMonto}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                    className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                     placeholder="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Método de Pago</label>
+                  <label className="block text-sm font-medium text-body mb-1">Método de Pago</label>
                   <select
                     value={pagoMetodo}
                     onChange={e => setPagoMetodo(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                    className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border cursor-pointer"
                   >
                     <option value="EFECTIVO">Efectivo</option>
                     <option value="TRANSFERENCIA">Transferencia</option>
@@ -807,51 +812,51 @@ const FacturaCliente = () => {
                 </div>
 
                 {pagoMetodo === 'CHEQUE' && (
-                  <div className="space-y-4 pt-2 border-t border-gray-100">
+                  <div className="space-y-4 pt-2 border-t border-line">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
+                      <label className="block text-sm font-medium text-body mb-1">Banco</label>
                       <input
                         type="text"
                         required
                         value={pagoBanco}
                         onChange={e => setPagoBanco(e.target.value)}
-                        className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                        className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Número de Serie</label>
+                      <label className="block text-sm font-medium text-body mb-1">Número de Serie</label>
                       <input
                         type="text"
                         required
                         value={pagoNumeroSerie}
                         onChange={e => setPagoNumeroSerie(e.target.value)}
-                        className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                        className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Cobro</label>
+                      <label className="block text-sm font-medium text-body mb-1">Fecha de Cobro</label>
                       <input
                         type="date"
                         required
                         value={pagoFechaCobro}
                         onChange={e => setPagoFechaCobro(e.target.value)}
-                        className="w-full border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white px-3 py-2 border"
+                        className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                       />
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <div className="flex justify-end gap-3 pt-4 border-t border-line">
                   <button
                     type="button"
                     onClick={() => setIsPagoModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium text-body bg-paper border border-line-strong rounded-base hover:bg-canvas focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium text-paper bg-accent border border-transparent rounded-base hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
                   >
                     Confirmar Pago
                   </button>

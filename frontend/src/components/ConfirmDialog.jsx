@@ -35,39 +35,39 @@ const ConfirmDialog = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm animate-fadeIn"
       onClick={closeConfirm}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl border border-gray-100 w-full sm:max-w-md shadow-2xl p-6 animate-scaleIn"
+        className="bg-paper rounded-t-panel sm:rounded-panel border border-line w-full sm:max-w-md shadow-md p-6 animate-scaleIn"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-              isDanger ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+              isDanger ? 'bg-danger-bg text-danger-ink' : 'bg-warn-bg text-warn-ink'
             }`}
           >
             <ConfirmIcon className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-            <p className="mt-2 text-sm text-gray-500">{message}</p>
+            <h3 className="text-lg font-bold text-ink">{title}</h3>
+            <p className="mt-2 text-sm text-muted">{message}</p>
           </div>
         </div>
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
           <button
             onClick={closeConfirm}
-            className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-center"
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-line rounded-base text-sm font-medium text-body hover:bg-canvas transition-colors cursor-pointer text-center"
           >
             {cancelLabel}
           </button>
           <button
             onClick={handleConfirm}
-            className={`w-full sm:w-auto px-4 py-3 sm:py-2 text-white rounded-xl text-sm font-semibold shadow-lg transition-all cursor-pointer text-center ${
+            className={`w-full sm:w-auto px-4 py-3 sm:py-2 text-paper rounded-base text-sm font-semibold transition-all cursor-pointer text-center ${
               isDanger
-                ? 'bg-red-600 hover:bg-red-700 shadow-red-600/10 hover:shadow-red-600/20'
-                : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/10 hover:shadow-amber-600/20'
+                ? 'bg-danger hover:brightness-95'
+                : 'bg-warn hover:brightness-95'
             }`}
           >
             {confirmLabel}

@@ -66,26 +66,26 @@ export default function ConfiguracionHerramientas() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-12">
-        <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-accent-ink animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl">
+    <div className="bg-paper rounded-panel border border-line p-6 max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+        <div className="p-2 bg-accent-soft text-accent-ink rounded-base">
           <Settings className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Costos y Recargos Generales</h2>
-          <p className="text-sm text-gray-500">Configuración global para la unidad de negocio Herramientas</p>
+          <h2 className="text-lg font-bold text-ink">Costos y Recargos Generales</h2>
+          <p className="text-sm text-muted">Configuración global para la unidad de negocio Herramientas</p>
         </div>
       </div>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-body mb-2">
             Costo de Envío por defecto (%)
           </label>
           <div className="flex items-center gap-4">
@@ -94,10 +94,10 @@ export default function ConfiguracionHerramientas() {
                 value={costoEnvioPorcentaje}
                 onChange={setCostoEnvioPorcentaje}
                 placeholder="Ej: 5.00"
-                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+                className="w-full px-4 py-2 rounded-base border border-line focus:outline-none focus:ring-2 focus:ring-accent transition-colors"
               />
             </div>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted">
               Recargo porcentual aplicado al costo base (luego del descuento) para calcular el costo de inventario.
               Es el valor por defecto de la unidad: un producto puede tener su propio envío y usarlo en su lugar.
             </span>
@@ -105,7 +105,7 @@ export default function ConfiguracionHerramientas() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-body mb-2">
             IVA por defecto (%)
           </label>
           <div className="flex items-center gap-4">
@@ -114,24 +114,24 @@ export default function ConfiguracionHerramientas() {
                 value={ivaPorcentaje}
                 onChange={setIvaPorcentaje}
                 placeholder="Ej: 21.00"
-                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+                className="w-full px-4 py-2 rounded-base border border-line focus:outline-none focus:ring-2 focus:ring-accent transition-colors"
               />
             </div>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted">
               IVA aplicado sobre el costo neto (con descuentos ya aplicados) para calcular el costo de inventario.
               Es el valor por defecto de la unidad: un producto puede tener su propio IVA y usarlo en su lugar.
             </span>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100 flex justify-end">
+        <div className="pt-4 border-t border-line flex justify-end">
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-              isSaved 
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                : 'bg-gray-900 hover:bg-gray-800 text-white'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-base text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+              isSaved
+                ? 'bg-ok text-paper hover:brightness-95'
+                : 'bg-ink text-paper hover:brightness-95'
             }`}
           >
             {updateMutation.isPending ? (

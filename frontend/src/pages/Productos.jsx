@@ -138,18 +138,18 @@ const Productos = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
-            <Sparkles className="w-5 h-5 text-emerald-500 animate-pulse" />
+            <h1 className="text-2xl font-bold text-ink">Catálogo de Productos</h1>
+            <Sparkles className="w-5 h-5 text-accent animate-pulse" />
           </div>
-          <p className="mt-1 text-sm text-gray-500">Gestión de plantas, inventario y precios de venta.</p>
+          <p className="mt-1 text-sm text-muted">Gestión de plantas, inventario y precios de venta.</p>
         </div>
-        
+
         <button
           onClick={() => {
             setSelectedProducto(null);
             setIsFormOpen(true);
           }}
-          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-accent hover:brightness-95 text-paper font-semibold px-5 py-2.5 rounded-base transition-all cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           Nuevo Producto
@@ -157,27 +157,27 @@ const Productos = () => {
       </div>
 
       {/* Search and Feedback Area */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
+      <div className="bg-paper rounded-panel border border-line p-4 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
         <div className="relative w-full md:max-w-md">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-5 h-5 text-gray-400" />
+            <Search className="h-5 h-5 text-faint" />
           </span>
           <input
             type="text"
             placeholder={searchMode === 'NUMERO_SIEMBRA' ? 'Buscar sólo por número de siembra...' : 'Buscar por nombre, lote o Nº de siembra...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50/50 transition-all"
+            className="w-full pl-10 pr-4 py-2 border border-line rounded-base focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-canvas/50 transition-all"
           />
         </div>
 
         {unidadNegocioActiva === '1' && (
-          <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl p-1 shrink-0 self-start md:self-auto w-full md:w-auto">
+          <div className="flex items-center gap-1.5 bg-canvas rounded-base p-1 shrink-0 self-start md:self-auto w-full md:w-auto">
             <button
               type="button"
               onClick={() => setSearchMode('TODO')}
-              className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                searchMode === 'TODO' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 md:flex-none px-3 py-1.5 rounded-base text-xs font-semibold transition-colors cursor-pointer ${
+                searchMode === 'TODO' ? 'bg-paper text-ink' : 'text-muted hover:text-body'
               }`}
             >
               Todo
@@ -185,8 +185,8 @@ const Productos = () => {
             <button
               type="button"
               onClick={() => setSearchMode('NUMERO_SIEMBRA')}
-              className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                searchMode === 'NUMERO_SIEMBRA' ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 md:flex-none px-3 py-1.5 rounded-base text-xs font-semibold transition-colors cursor-pointer ${
+                searchMode === 'NUMERO_SIEMBRA' ? 'bg-paper text-accent-ink' : 'text-muted hover:text-body'
               }`}
             >
               Sólo Nº Siembra
@@ -194,8 +194,8 @@ const Productos = () => {
           </div>
         )}
 
-        <div className="text-sm text-gray-500 font-medium whitespace-nowrap self-end md:self-auto">
-          Total: <span className="text-gray-900 font-semibold">{filteredProductos.length}</span> {unidadNegocioActiva === '2' ? 'herramientas' : 'plantas'}
+        <div className="text-sm text-muted font-medium whitespace-nowrap self-end md:self-auto">
+          Total: <span className="text-ink font-semibold font-mono tabular-nums">{filteredProductos.length}</span> {unidadNegocioActiva === '2' ? 'herramientas' : 'plantas'}
         </div>
       </div>
 
@@ -206,8 +206,8 @@ const Productos = () => {
             onClick={() => setSelectedProveedor('Todos')}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
               selectedProveedor === 'Todos'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-accent text-paper'
+                : 'bg-paper text-body border border-line hover:bg-canvas hover:text-ink'
             }`}
           >
             Todos los Proveedores
@@ -218,8 +218,8 @@ const Productos = () => {
               onClick={() => setSelectedProveedor(proveedor)}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
                 selectedProveedor === proveedor
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-accent text-paper'
+                  : 'bg-paper text-body border border-line hover:bg-canvas hover:text-ink'
               }`}
             >
               {proveedor}
@@ -230,30 +230,30 @@ const Productos = () => {
 
       {/* Main Content Area */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="bg-danger-bg border border-danger-line rounded-panel p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-red-800">Error de Acceso</h3>
-            <p className="mt-1 text-sm text-red-700">{error}</p>
+            <h3 className="text-sm font-semibold text-danger-ink">Error de Acceso</h3>
+            <p className="mt-1 text-sm text-danger">{error}</p>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-16 flex flex-col items-center justify-center gap-3 shadow-sm">
-          <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-          <p className="text-sm font-medium text-gray-500">Cargando inventario de plantas...</p>
+        <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-10 h-10 text-accent animate-spin" />
+          <p className="text-sm font-medium text-muted">Cargando inventario de plantas...</p>
         </div>
       ) : filteredProductos.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-16 flex flex-col items-center justify-center text-center shadow-sm">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
-            {searchTerm ? <Search className="w-8 h-8 text-gray-400" /> : <Inbox className="w-8 h-8 text-gray-400" />}
+        <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mb-4 border border-line">
+            {searchTerm ? <Search className="w-8 h-8 text-faint" /> : <Inbox className="w-8 h-8 text-faint" />}
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-ink">
             {searchTerm ? 'No se encontraron resultados' : 'El catálogo está vacío'}
           </h3>
-          <p className="mt-2 text-sm text-gray-500 max-w-sm">
-            {searchTerm 
+          <p className="mt-2 text-sm text-muted max-w-sm">
+            {searchTerm
               ? 'Prueba modificando los términos de búsqueda o borrando el filtro.'
               : 'Comienza agregando tu primer producto al vivero presionando el botón "Nuevo Producto".'}
           </p>
@@ -263,7 +263,7 @@ const Productos = () => {
                 setSelectedProducto(null);
                 setIsFormOpen(true);
               }}
-              className="mt-6 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold rounded-xl text-sm transition-colors border border-emerald-100 cursor-pointer"
+              className="mt-6 px-4 py-2 bg-accent-soft hover:brightness-95 text-accent-ink font-semibold rounded-base text-sm transition-colors cursor-pointer"
             >
               Crear primer planta
             </button>
@@ -276,33 +276,33 @@ const Productos = () => {
             {filteredProductos.map((producto) => (
               <div 
                 key={producto.id} 
-                className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all cursor-pointer hover:shadow-md"
+                className="bg-paper border border-line rounded-panel p-4 flex flex-col gap-3 transition-all cursor-pointer hover:border-line-strong"
                 onClick={() => setExpandedMobileId(expandedMobileId === producto.id ? null : producto.id)}
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-semibold shrink-0">
+                    <div className="w-10 h-10 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center font-semibold shrink-0">
                       <Leaf className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-base leading-tight">
+                      <h3 className="font-semibold text-ink text-base leading-tight">
                         {producto.nombre}
                         {unidadNegocioActiva === '2' && producto.proveedorNombre && (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-2">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-thead text-body border border-line ml-2">
                             {producto.proveedorNombre.toUpperCase()}
                           </span>
                         )}
                       </h3>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-ink font-mono tabular-nums">
                           ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                         </p>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold ${
-                          producto.stock === 0 
-                            ? 'bg-red-50 text-red-700 border border-red-100' 
-                            : producto.stock <= 5 
-                              ? 'bg-yellow-50 text-yellow-700 border border-yellow-100' 
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-base text-[10px] font-bold ${
+                          producto.stock === 0
+                            ? 'bg-danger-bg text-danger-ink border border-danger-line'
+                            : producto.stock <= 5
+                              ? 'bg-warn-bg text-warn-ink border border-warn-line'
+                              : 'bg-ok-bg text-ok-ink border border-ok-line'
                         }`}>
                           Stock: {producto.stock}
                         </span>
@@ -312,10 +312,10 @@ const Productos = () => {
                           return (
                             <span
                               title={`Margen real actual: ${margen.margenReal.toFixed(1)}%`}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-base text-[10px] font-bold border ${
                                 margen.nivel === 'perdida'
-                                  ? 'bg-red-50 text-red-700 border-red-100'
-                                  : 'bg-amber-50 text-amber-700 border-amber-100'
+                                  ? 'bg-danger-bg text-danger-ink border-danger-line'
+                                  : 'bg-warn-bg text-warn-ink border-warn-line'
                               }`}
                             >
                               <AlertCircle className="w-3 h-3" />
@@ -326,41 +326,41 @@ const Productos = () => {
                       </div>
                     </div>
                   </div>
-                  <button className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
+                  <button className="p-1 hover:bg-canvas rounded-base text-faint transition-colors">
                     {expandedMobileId === producto.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                 </div>
-                
+
                 {expandedMobileId === producto.id && (
-                  <div 
-                    className="flex flex-col gap-3 pt-2 border-t border-gray-100 mt-1 animate-in slide-in-from-top-2 duration-200"
+                  <div
+                    className="flex flex-col gap-3 pt-2 border-t border-line mt-1 animate-in slide-in-from-top-2 duration-200"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {producto.descripcion && (
-                      <p className="text-sm text-gray-500 leading-snug">
+                      <p className="text-sm text-muted leading-snug">
                         {producto.descripcion}
                       </p>
                     )}
 
                     {unidadNegocioActiva === '2' ? (
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                        <span className="font-semibold">Costo: ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                      <div className="flex flex-wrap gap-2 text-xs text-body bg-canvas p-2.5 rounded-base border border-line">
+                        <span className="font-semibold font-mono tabular-nums">Costo: ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
                         <span>•</span>
-                        <span className="font-semibold text-emerald-600">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
+                        <span className="font-semibold text-ink">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-1 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <div className="flex flex-col gap-1 text-xs text-body bg-canvas p-2.5 rounded-base border border-line">
                         <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-500">Siembra</span>
-                          <span className="font-semibold text-gray-900">{producto.numeroSiembra ? `${producto.numeroSiembra}` : '-'}</span>
+                          <span className="font-medium text-muted">Siembra</span>
+                          <span className="font-semibold text-ink">{producto.numeroSiembra ? `${producto.numeroSiembra}` : '-'}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-500">Lote</span>
-                          <span className="font-semibold text-gray-900">{producto.lote || 'Sin lote'}</span>
+                          <span className="font-medium text-muted">Lote</span>
+                          <span className="font-semibold text-ink">{producto.lote || 'Sin lote'}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-500">Dueño</span>
-                          <span className="font-semibold text-gray-900">{producto.dueno || 'Manual'}</span>
+                          <span className="font-medium text-muted">Dueño</span>
+                          <span className="font-semibold text-ink">{producto.dueno || 'Manual'}</span>
                         </div>
                       </div>
                     )}
@@ -372,7 +372,7 @@ const Productos = () => {
                           setSelectedProducto(producto);
                           setIsFormOpen(true);
                         }}
-                        className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 border border-gray-200"
+                        className="flex-1 py-2 bg-canvas hover:bg-thead text-body font-semibold rounded-base text-sm transition-colors flex items-center justify-center gap-2 border border-line"
                       >
                         <Edit2 className="w-4 h-4" /> Editar
                       </button>
@@ -387,7 +387,7 @@ const Productos = () => {
                             onConfirm: () => handleDelete(producto.id),
                           });
                         }}
-                        className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 border border-red-100"
+                        className="flex-1 py-2 bg-danger-bg hover:brightness-95 text-danger-ink font-semibold rounded-base text-sm transition-colors flex items-center justify-center gap-2 border border-danger-line"
                       >
                         <Trash2 className="w-4 h-4" /> Eliminar
                       </button>
@@ -399,54 +399,54 @@ const Productos = () => {
           </div>
 
           {/* DESKTOP VIEW: Table Layout */}
-          <div className="hidden sm:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="hidden sm:block bg-paper rounded-panel border border-line overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/75 border-b border-gray-200">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Planta</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Descripción</th>
+                <tr className="bg-thead border-b border-line">
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Planta</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Descripción</th>
                   {unidadNegocioActiva === '2' ? (
                     <>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Costo</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">% Gan.</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Costo</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">% Gan.</th>
                     </>
                   ) : (
                     <>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Siembra</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Lote / Dueño</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Siembra</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Lote / Dueño</th>
                     </>
                   )}
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Precio</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Precio</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-line">
                 {filteredProductos.map((producto) => (
-                  <tr key={producto.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <tr key={producto.id} className="hover:bg-canvas transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-semibold">
+                        <div className="w-9 h-9 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center font-semibold">
                           <Leaf className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold text-gray-900 text-sm">{producto.nombre}</span>
+                        <span className="font-semibold text-ink text-sm">{producto.nombre}</span>
                         {unidadNegocioActiva === '2' && producto.proveedorNombre && (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-1">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-thead text-body border border-line ml-1">
                             {producto.proveedorNombre.toUpperCase()}
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-500 max-w-md truncate" title={producto.descripcion}>
-                        {producto.descripcion || <span className="text-gray-300 italic">Sin descripción</span>}
+                      <p className="text-sm text-muted max-w-md truncate" title={producto.descripcion}>
+                        {producto.descripcion || <span className="text-faint italic">Sin descripción</span>}
                       </p>
                     </td>
                     {unidadNegocioActiva === '2' ? (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-sm font-semibold text-ink font-mono tabular-nums">
                             ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
                           </span>
                           {(() => {
@@ -455,10 +455,10 @@ const Productos = () => {
                             return (
                               <span
                                 title={`Margen real actual: ${margen.margenReal.toFixed(1)}%`}
-                                className={`ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                                className={`ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-base text-[10px] font-bold border ${
                                   margen.nivel === 'perdida'
-                                    ? 'bg-red-50 text-red-700 border-red-100'
-                                    : 'bg-amber-50 text-amber-700 border-amber-100'
+                                    ? 'bg-danger-bg text-danger-ink border-danger-line'
+                                    : 'bg-warn-bg text-warn-ink border-warn-line'
                                 }`}
                               >
                                 <AlertCircle className="w-3 h-3" />
@@ -468,7 +468,7 @@ const Productos = () => {
                           })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                          <span className="text-sm font-semibold text-ink bg-thead px-2.5 py-1 rounded-base font-mono tabular-nums">
                             {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}
                           </span>
                         </td>
@@ -476,34 +476,34 @@ const Productos = () => {
                     ) : (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-ink">
                             {producto.numeroSiembra ? `${producto.numeroSiembra}` : '-'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-gray-900">
-                              {producto.lote ? `Lote ${producto.lote}` : <span className="text-gray-300 italic">Sin lote</span>}
+                            <span className="text-sm font-medium text-ink">
+                              {producto.lote ? `Lote ${producto.lote}` : <span className="text-faint italic">Sin lote</span>}
                             </span>
-                            <span className="text-xs text-gray-500">
-                              {producto.dueno ? producto.dueno : <span className="text-gray-300 italic">Manual</span>}
+                            <span className="text-xs text-muted">
+                              {producto.dueno ? producto.dueno : <span className="text-faint italic">Manual</span>}
                             </span>
                           </div>
                         </td>
                       </>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-gray-900">
+                      <span className="text-sm font-semibold text-ink font-mono tabular-nums">
                         ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        producto.stock === 0 
-                          ? 'bg-red-50 text-red-700' 
-                          : producto.stock <= 5 
-                            ? 'bg-yellow-50 text-yellow-700' 
-                            : 'bg-emerald-50 text-emerald-700'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold font-mono tabular-nums ${
+                        producto.stock === 0
+                          ? 'bg-danger-bg text-danger-ink'
+                          : producto.stock <= 5
+                            ? 'bg-warn-bg text-warn-ink'
+                            : 'bg-ok-bg text-ok-ink'
                       }`}>
                         {producto.stock} unidades
                       </span>
@@ -515,7 +515,7 @@ const Productos = () => {
                             setSelectedProducto(producto);
                             setIsFormOpen(true);
                           }}
-                          className="p-1.5 hover:bg-gray-100 text-gray-600 hover:text-emerald-600 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 hover:bg-canvas text-body hover:text-accent-ink rounded-base transition-colors cursor-pointer"
                           title="Editar"
                         >
                           <Edit2 className="w-4.5 h-4.5" />
@@ -530,7 +530,7 @@ const Productos = () => {
                               onConfirm: () => handleDelete(producto.id),
                             })
                           }
-                          className="p-1.5 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 hover:bg-danger-bg text-body hover:text-danger rounded-base transition-colors cursor-pointer"
                           title="Eliminar"
                         >
                           <Trash2 className="w-4.5 h-4.5" />

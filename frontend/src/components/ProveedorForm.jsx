@@ -159,30 +159,30 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
   };
 
   const tabClass = (key) =>
-    `flex-1 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
-      seccion === key ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+    `flex-1 py-2.5 text-sm font-semibold rounded-base transition-colors cursor-pointer ${
+      seccion === key ? 'bg-paper text-accent-ink' : 'text-muted hover:text-body'
     }`;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm transition-all duration-300"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-auto max-w-lg shadow-2xl flex flex-col max-h-screen sm:max-h-[95vh]">
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-600 text-white sm:rounded-t-2xl">
-          <h2 className="text-lg font-semibold">
+      <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full h-full sm:h-auto max-w-lg flex flex-col max-h-screen sm:max-h-[95vh]">
+        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-line">
+          <h2 className="text-lg font-semibold text-ink">
             {proveedor ? 'Editar Proveedor' : 'Nuevo Proveedor'}
           </h2>
           <button
             onClick={onCancel}
-            className="p-1.5 rounded-full hover:bg-emerald-700 transition-colors text-white/90 hover:text-white cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-canvas transition-colors text-faint hover:text-body cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-none flex gap-1 p-1.5 mx-6 mt-4 bg-gray-100 rounded-xl">
+          <div className="flex-none flex gap-1 p-1.5 mx-6 mt-4 bg-canvas rounded-base">
             <button type="button" onClick={() => setSeccion('datos')} className={tabClass('datos')}>
               Datos
             </button>
@@ -195,7 +195,7 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
             {seccion === 'datos' && (
               <>
                 <div>
-                  <label htmlFor="nombre" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  <label htmlFor="nombre" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                     Nombre
                   </label>
                   <input
@@ -203,16 +203,16 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                     type="text"
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                      errors.nombre ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+                    className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all ${
+                      errors.nombre ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                     }`}
                     placeholder="Ej: Distribuidora Ferretera SA"
                   />
-                  {errors.nombre && <p className="mt-1 text-xs text-red-500 font-medium">{errors.nombre}</p>}
+                  {errors.nombre && <p className="mt-1 text-xs text-danger font-medium">{errors.nombre}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="contacto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  <label htmlFor="contacto" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                     Persona de contacto (opcional)
                   </label>
                   <input
@@ -220,13 +220,13 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                     type="text"
                     value={contacto}
                     onChange={(e) => setContacto(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                    className="w-full px-4 py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
                     placeholder="Ej: Marcelo"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="telefono" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  <label htmlFor="telefono" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                     Teléfono (opcional)
                   </label>
                   <input
@@ -234,7 +234,7 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                     type="tel"
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                    className="w-full px-4 py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
                     placeholder="Ej: 341 1234567"
                   />
                 </div>
@@ -243,8 +243,8 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
 
             {seccion === 'costeo' && (
               <>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <div className="bg-canvas border border-line rounded-base p-4 space-y-3">
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider">
                     Tratamiento del IVA
                   </label>
                   <div className="flex flex-col gap-2">
@@ -254,12 +254,12 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                         name="ivaIncluido"
                         checked={ivaIncluidoEnPrecio}
                         onChange={() => setIvaIncluidoEnPrecio(true)}
-                        className="mt-0.5 cursor-pointer"
+                        className="mt-0.5 cursor-pointer accent-accent"
                       />
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-body">
                         <strong>IVA incluido en el precio</strong>
                         <br />
-                        <span className="text-xs text-gray-500">El precio de lista ya trae el IVA (se guarda 0% explícito en cada producto).</span>
+                        <span className="text-xs text-muted">El precio de lista ya trae el IVA (se guarda 0% explícito en cada producto).</span>
                       </span>
                     </label>
                     <label className="flex items-start gap-2 cursor-pointer">
@@ -268,76 +268,76 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                         name="ivaIncluido"
                         checked={!ivaIncluidoEnPrecio}
                         onChange={() => setIvaIncluidoEnPrecio(false)}
-                        className="mt-0.5 cursor-pointer"
+                        className="mt-0.5 cursor-pointer accent-accent"
                       />
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-body">
                         <strong>IVA aparte</strong>
                         <br />
-                        <span className="text-xs text-gray-500">El IVA se suma aparte del precio de lista.</span>
+                        <span className="text-xs text-muted">El IVA se suma aparte del precio de lista.</span>
                       </span>
                     </label>
                   </div>
 
                   {!ivaIncluidoEnPrecio && (
                     <div>
-                      <label htmlFor="ivaPorDefecto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                      <label htmlFor="ivaPorDefecto" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                         IVA por defecto (%)
                       </label>
                       <FormattedNumberInput
                         id="ivaPorDefecto"
                         value={ivaPorDefectoPorcentaje}
                         onChange={setIvaPorDefectoPorcentaje}
-                        className={`w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                          errors.iva ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+                        className={`w-full px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
+                          errors.iva ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                         }`}
                         placeholder="Ej: 21"
                       />
-                      <p className="mt-1 text-xs text-gray-400">Sólo comodidad de tipeo: editable producto por producto, no gobierna ningún cálculo.</p>
-                      {errors.iva && <p className="mt-1 text-xs text-red-500 font-medium">{errors.iva}</p>}
+                      <p className="mt-1 text-xs text-faint">Sólo comodidad de tipeo: editable producto por producto, no gobierna ningún cálculo.</p>
+                      {errors.iva && <p className="mt-1 text-xs text-danger font-medium">{errors.iva}</p>}
                     </div>
                   )}
                 </div>
 
-                <label className="flex items-center gap-2 cursor-pointer bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <label className="flex items-center gap-2 cursor-pointer bg-canvas border border-line rounded-base p-4">
                   <input
                     type="checkbox"
                     checked={manejaDolares}
                     onChange={(e) => setManejaDolares(e.target.checked)}
-                    className="w-4 h-4 cursor-pointer accent-emerald-600"
+                    className="w-4 h-4 cursor-pointer accent-accent"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-body">
                     <strong>Maneja dólares</strong>
                     <br />
-                    <span className="text-xs text-gray-500">Este proveedor cotiza algunos de sus productos en USD (no implica que todos lo estén).</span>
+                    <span className="text-xs text-muted">Este proveedor cotiza algunos de sus productos en USD (no implica que todos lo estén).</span>
                   </span>
                 </label>
 
                 <div>
-                  <label htmlFor="envioPorDefecto" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  <label htmlFor="envioPorDefecto" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                     Envío por defecto (%)
                   </label>
                   <FormattedNumberInput
                     id="envioPorDefecto"
                     value={costoEnvioPorDefectoPorcentaje}
                     onChange={setCostoEnvioPorDefectoPorcentaje}
-                    className={`w-full px-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                      errors.envio ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:border-emerald-500'
+                    className={`w-full px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
+                      errors.envio ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                     }`}
                     placeholder="Ej: 5"
                   />
-                  <p className="mt-1 text-xs text-gray-400">Siempre como porcentaje del costo neto; no admite un monto fijo.</p>
-                  {errors.envio && <p className="mt-1 text-xs text-red-500 font-medium">{errors.envio}</p>}
+                  <p className="mt-1 text-xs text-faint">Siempre como porcentaje del costo neto; no admite un monto fijo.</p>
+                  {errors.envio && <p className="mt-1 text-xs text-danger font-medium">{errors.envio}</p>}
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-muted uppercase tracking-wider">
                       Descuentos por defecto
                     </label>
                     <button
                       type="button"
                       onClick={handleAddDescuento}
-                      className="flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+                      className="flex items-center gap-1 text-xs font-semibold text-accent-ink hover:brightness-90 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Agregar descuento
@@ -345,7 +345,7 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                   </div>
 
                   {descuentosPorDefecto.length === 0 && (
-                    <p className="text-xs text-gray-400 italic mb-2">Sin descuentos cargados.</p>
+                    <p className="text-xs text-faint italic mb-2">Sin descuentos cargados.</p>
                   )}
 
                   <div className="space-y-2">
@@ -359,51 +359,51 @@ const ProveedorForm = ({ proveedor, isOpen, onSave, onCancel }) => {
                               value={d.nombre}
                               onChange={(e) => handleDescuentoNombreChange(index, e.target.value)}
                               placeholder="Ej: Descuento 1"
-                              className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                              className="flex-1 min-w-0 px-3 py-2 rounded-base border border-line bg-paper text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
                             />
                             <div className="w-16 shrink-0">
                               <FormattedNumberInput
                                 value={d.porcentaje}
                                 onChange={(val) => handleDescuentoPorcentajeChange(index, val)}
                                 placeholder="%"
-                                className="w-full px-2 py-2 rounded-lg border border-gray-200 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                                className="w-full px-2 py-2 rounded-base border border-line bg-paper text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
                               />
                             </div>
                             <button
                               type="button"
                               onClick={() => handleRemoveDescuento(index)}
-                              className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                              className="p-2 rounded-base text-danger hover:bg-danger-bg transition-colors cursor-pointer shrink-0"
                               aria-label="Quitar descuento"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                           {mult !== null && (
-                            <p className="pl-1 mt-0.5 text-[11px] text-gray-400">= × {mult}</p>
+                            <p className="pl-1 mt-0.5 text-[11px] text-faint">= × {mult}</p>
                           )}
                         </div>
                       );
                     })}
                   </div>
                   {errors.descuentos && (
-                    <p className="mt-2 text-xs text-red-500 font-medium">{errors.descuentos}</p>
+                    <p className="mt-2 text-xs text-danger font-medium">{errors.descuentos}</p>
                   )}
                 </div>
               </>
             )}
           </div>
 
-          <div className="flex-none flex items-center justify-end gap-3 p-4 px-6 border-t border-gray-100 bg-gray-50/50 sm:rounded-b-2xl">
+          <div className="flex-none flex items-center justify-end gap-3 p-4 px-6 border-t border-line bg-canvas/50 sm:rounded-b-panel">
             <button
               type="button"
               onClick={onCancel}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-base border border-line text-sm font-medium text-body hover:bg-canvas transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-base bg-accent hover:brightness-95 text-sm font-semibold text-paper transition-all cursor-pointer"
             >
               {proveedor ? 'Guardar Cambios' : 'Crear Proveedor'}
             </button>

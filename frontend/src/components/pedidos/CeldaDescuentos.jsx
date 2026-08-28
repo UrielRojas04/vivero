@@ -45,20 +45,20 @@ const CeldaDescuentos = ({
         // para "atributo positivo/activo".
         <span
           key={i}
-          className="shrink-0 flex items-center gap-0.5 max-w-[110px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-[11px] font-medium text-emerald-700"
+          className="shrink-0 flex items-center gap-0.5 max-w-[110px] px-1.5 py-0.5 rounded-full bg-accent-soft text-[11px] font-medium text-accent-ink"
         >
           <span className="truncate min-w-0">{d.nombre}</span>
           <span className="shrink-0">{parseFloat(d.porcentaje)}%</span>
         </span>
       ))}
       {efectivoPorcentaje != null && (
-        <span className="shrink-0 text-[11px] font-semibold text-emerald-700">
+        <span className="shrink-0 text-[11px] font-semibold text-accent-ink">
           (-{efectivoPorcentaje.toLocaleString('es-AR', { maximumFractionDigits: 2 })}%)
         </span>
       )}
     </span>
   ) : (
-    <span className="text-xs text-gray-400">—</span>
+    <span className="text-xs text-faint">—</span>
   );
 
   return (
@@ -75,8 +75,8 @@ const CeldaDescuentos = ({
         <span className="min-w-0 flex-1 overflow-hidden">{chips}</span>
         {hayDescuentos && (
           expandida
-            ? <ChevronUp className="w-3 h-3 text-gray-400 shrink-0 group-hover:text-gray-600" />
-            : <ChevronDown className="w-3 h-3 text-gray-400 shrink-0 group-hover:text-gray-600" />
+            ? <ChevronUp className="w-3 h-3 text-faint shrink-0 group-hover:text-muted" />
+            : <ChevronDown className="w-3 h-3 text-faint shrink-0 group-hover:text-muted" />
         )}
       </button>
       <button
@@ -84,7 +84,7 @@ const CeldaDescuentos = ({
         onClick={onAgregar}
         disabled={disabled}
         title="Agregar descuento"
-        className={`shrink-0 p-0.5 rounded text-emerald-600 hover:bg-emerald-50 ${
+        className={`shrink-0 p-0.5 rounded text-accent hover:bg-accent-soft ${
           disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
         }`}
       >

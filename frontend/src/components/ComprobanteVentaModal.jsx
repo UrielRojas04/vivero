@@ -37,10 +37,10 @@ const normalizarTelefonoWhatsApp = (tel) => {
 };
 
 const estiloEstadoPago = (estadoPago) => {
-  if (estadoPago === 'PAGADO') return 'bg-emerald-50 text-emerald-700';
-  if (estadoPago === 'PARCIAL') return 'bg-amber-50 text-amber-700';
-  if (estadoPago === 'DEBE') return 'bg-red-50 text-red-700';
-  return 'bg-gray-100 text-gray-600';
+  if (estadoPago === 'PAGADO') return 'bg-ok-bg text-ok-ink';
+  if (estadoPago === 'PARCIAL') return 'bg-warn-bg text-warn-ink';
+  if (estadoPago === 'DEBE') return 'bg-danger-bg text-danger-ink';
+  return 'bg-thead text-body';
 };
 
 const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
@@ -395,45 +395,45 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl animate-fade-in-up max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm">
+      <div className="bg-paper rounded-panel border border-line-strong w-full max-w-2xl overflow-hidden animate-fade-in-up max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-6 border-b border-line flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+            <div className="p-2 bg-accent-soft text-accent-ink rounded-base">
               <Receipt className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Comprobante de Venta</h2>
-              <p className="text-sm text-gray-500">Venta #{venta.id}</p>
+              <h2 className="text-xl font-bold text-ink">Comprobante de Venta</h2>
+              <p className="text-sm text-muted">Venta #{venta.id}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+          <button onClick={onClose} className="text-faint hover:text-body transition-colors cursor-pointer">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 bg-gray-50/50 p-6">
+        <div className="overflow-y-auto flex-1 bg-canvas p-6">
           <div
             ref={previewRef}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mx-auto max-w-lg"
+            className="bg-paper rounded-panel border border-line p-6 mx-auto max-w-lg"
           >
-            <div className="flex justify-between items-start border-b-2 border-emerald-600 pb-4">
+            <div className="flex justify-between items-start border-b-2 border-accent pb-4">
               <div>
-                <p className="text-xl font-bold text-emerald-700">{NOMBRE_VIVERO}</p>
-                <p className="text-sm text-gray-500 tracking-wide">REMITO DE VENTA</p>
+                <p className="text-xl font-bold text-accent-ink">{NOMBRE_VIVERO}</p>
+                <p className="text-sm text-muted tracking-wide">REMITO DE VENTA</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">Nº {venta.id}</p>
-                <p className="text-sm text-gray-500">{formatearFecha(venta.fecha)}</p>
+                <p className="text-2xl font-bold text-ink">Nº {venta.id}</p>
+                <p className="text-sm text-muted">{formatearFecha(venta.fecha)}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
               <div>
-                <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Cliente</p>
-                <p className="font-semibold text-gray-900">{clienteNombreLimpio}</p>
+                <p className="text-xs uppercase tracking-wider text-faint font-semibold">Cliente</p>
+                <p className="font-semibold text-ink">{clienteNombreLimpio}</p>
                 {venta.clienteTelefono && (
-                  <p className="text-sm text-gray-600 mt-0.5">{venta.clienteTelefono}</p>
+                  <p className="text-sm text-muted mt-0.5">{venta.clienteTelefono}</p>
                 )}
               </div>
             </div>
@@ -441,25 +441,25 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
             <div className="overflow-x-auto w-full">
               <table className="w-full mt-5 text-sm min-w-[350px]">
                 <thead>
-                  <tr className="bg-emerald-50 text-left text-xs uppercase tracking-wider text-emerald-700">
+                  <tr className="bg-accent-soft text-left text-xs uppercase tracking-wider text-accent-ink">
                     <th className="py-2 pr-2 font-semibold">Producto</th>
                     <th className="py-2 px-2 text-right font-semibold">Cant.</th>
                     <th className="py-2 px-2 text-right font-semibold">P. Unitario</th>
                     <th className="py-2 pl-2 text-right font-semibold">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-line">
                   {detalles.map((detalle) => (
                     <tr key={detalle.id || detalle.productoId}>
-                      <td className="py-2.5 pr-2 text-gray-800 break-words max-w-[150px]">{detalle.productoNombre || '-'}</td>
-                      <td className="py-2.5 px-2 text-right text-gray-600">{detalle.cantidad}</td>
-                      <td className="py-2.5 px-2 text-right text-gray-600">{formatearDinero(detalle.precioUnitarioHistorico)}</td>
-                      <td className="py-2.5 pl-2 text-right font-semibold text-gray-900">{formatearDinero(detalle.subtotal)}</td>
+                      <td className="py-2.5 pr-2 text-ink break-words max-w-[150px]">{detalle.productoNombre || '-'}</td>
+                      <td className="py-2.5 px-2 text-right text-muted font-mono tabular-nums">{detalle.cantidad}</td>
+                      <td className="py-2.5 px-2 text-right text-muted font-mono tabular-nums">{formatearDinero(detalle.precioUnitarioHistorico)}</td>
+                      <td className="py-2.5 pl-2 text-right font-semibold text-ink font-mono tabular-nums">{formatearDinero(detalle.subtotal)}</td>
                     </tr>
                   ))}
                   {detalles.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="py-3 text-center text-gray-400">Sin ítems</td>
+                      <td colSpan="4" className="py-3 text-center text-faint">Sin ítems</td>
                     </tr>
                   )}
                 </tbody>
@@ -469,40 +469,40 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
             <div className="mt-4 flex justify-end">
               <div className="w-60 space-y-1.5 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span className="font-medium text-gray-800">{formatearDinero(venta.subtotal)}</span>
+                  <span className="text-muted">Subtotal</span>
+                  <span className="font-medium text-ink font-mono tabular-nums">{formatearDinero(venta.subtotal)}</span>
                 </div>
                 {Number(venta.descuento) > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">
+                    <span className="text-muted">
                       Descuento{Number(venta.porcentajeDescuento) > 0 ? ` (${venta.porcentajeDescuento}%)` : ''}
                     </span>
-                    <span className="font-medium text-red-600">-{formatearDinero(venta.descuento)}</span>
+                    <span className="font-medium text-danger font-mono tabular-nums">-{formatearDinero(venta.descuento)}</span>
                   </div>
                 )}
-                <div className="flex justify-between border-t border-gray-200 pt-2">
-                  <span className="font-bold text-gray-900">Total Final</span>
-                  <span className="font-bold text-emerald-700">{formatearDinero(venta.totalFinal)}</span>
+                <div className="flex justify-between border-t border-line pt-2">
+                  <span className="font-bold text-ink">Total Final</span>
+                  <span className="font-bold text-ink font-mono tabular-nums">{formatearDinero(venta.totalFinal)}</span>
                 </div>
               </div>
             </div>
 
             {pagos.length > 0 && (
-              <div className="mt-4 border-t border-gray-100 pt-3 text-sm">
-                <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Pagos</p>
+              <div className="mt-4 border-t border-line pt-3 text-sm">
+                <p className="text-xs uppercase tracking-wider text-faint font-semibold mb-2">Pagos</p>
                 <ul className="space-y-1.5">
                   {pagos.map((pago, index) => (
                     <li key={pago.id || index} className="flex justify-between">
-                      <span className="text-gray-600">{pago.metodoPago || '-'}</span>
-                      <span className="font-medium text-gray-900">{formatearDinero(pago.monto)}</span>
+                      <span className="text-muted">{pago.metodoPago || '-'}</span>
+                      <span className="font-medium text-ink font-mono tabular-nums">{formatearDinero(pago.monto)}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="mt-4 flex justify-between items-center border-t-2 border-emerald-600 pt-3">
-              <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Estado de pago</span>
+            <div className="mt-4 flex justify-between items-center border-t-2 border-accent pt-3">
+              <span className="text-xs uppercase tracking-wider text-faint font-semibold">Estado de pago</span>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${estiloEstadoPago(venta.estadoPago)}`}>
                 {venta.estadoPago || '-'}
               </span>
@@ -510,31 +510,31 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-100 bg-white flex-shrink-0">
+        <div className="flex flex-wrap gap-2 sm:gap-3 p-4 sm:p-6 border-t border-line bg-paper flex-shrink-0">
           <button
             onClick={descargarPDF}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm sm:text-base"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-accent hover:brightness-95 text-paper rounded-base font-semibold transition-colors cursor-pointer text-sm sm:text-base"
           >
             <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">Descargar</span> PDF
           </button>
           <button
             onClick={descargarImagen}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm sm:text-base"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-ink hover:brightness-125 text-paper rounded-base font-semibold transition-colors cursor-pointer text-sm sm:text-base"
           >
             {soportaCompartirArchivos
-              ? <><Share2 className="w-4 h-4" /> Compartir</>  
+              ? <><Share2 className="w-4 h-4" /> Compartir</>
               : <><FileImage className="w-4 h-4" /> <span className="hidden sm:inline">Descargar</span> Imagen</>
             }
           </button>
           <button
             onClick={enviarWhatsApp}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm sm:text-base"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-accent hover:brightness-95 text-paper rounded-base font-semibold transition-colors cursor-pointer text-sm sm:text-base"
           >
             <MessageCircle className="w-4 h-4" /> WhatsApp
           </button>
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-colors cursor-pointer text-sm sm:text-base"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-paper border border-line hover:bg-canvas text-body rounded-base font-semibold transition-colors cursor-pointer text-sm sm:text-base"
           >
             Cerrar
           </button>

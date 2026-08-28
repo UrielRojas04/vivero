@@ -629,16 +629,16 @@ const CuentaCorrienteCliente = () => {
           <button
             onClick={() => navigate('/clientes')}
             title="Volver a Clientes"
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer flex-shrink-0"
+            className="p-2 text-faint hover:text-body hover:bg-canvas rounded-base transition-colors cursor-pointer flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg flex-shrink-0">
+          <div className="p-1.5 bg-accent-soft text-accent-ink rounded-base flex-shrink-0">
             <FileText className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">Cuenta Corriente</h1>
-            <p className="text-sm text-gray-500 truncate">
+            <h1 className="text-lg font-bold text-ink leading-tight truncate">Cuenta Corriente</h1>
+            <p className="text-sm text-muted truncate">
               {isLoading ? 'Cargando…' : (factura?.clienteNombre || '-')}
             </p>
           </div>
@@ -648,14 +648,14 @@ const CuentaCorrienteCliente = () => {
           <button
             onClick={descargarPDF}
             disabled={!factura}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-accent hover:brightness-95 text-paper rounded-base font-semibold transition-colors cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileDown className="w-4 h-4" /> PDF
           </button>
           <button
             onClick={descargarImagen}
             disabled={!factura}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-ink hover:brightness-110 text-paper rounded-base font-semibold transition-colors cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {soportaCompartirArchivos
               ? <><Share2 className="w-4 h-4" /> Compartir</>
@@ -665,7 +665,7 @@ const CuentaCorrienteCliente = () => {
           <button
             onClick={enviarWhatsApp}
             disabled={!factura}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-accent hover:brightness-95 text-paper rounded-base font-semibold transition-colors cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <MessageCircle className="w-4 h-4" /> WhatsApp
           </button>
@@ -674,35 +674,35 @@ const CuentaCorrienteCliente = () => {
 
       {/* Barra de armado del documento: qué entra y con cuánto detalle. No es parte del papel. */}
       {factura && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-3 sm:px-5 py-2.5 text-xs space-y-2">
+        <div className="bg-paper rounded-panel border border-line px-3 sm:px-5 py-2.5 text-xs space-y-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700 font-medium">
+            <label className="flex items-center gap-2 cursor-pointer text-body font-medium">
               <input
                 ref={checkTodasRef}
                 type="checkbox"
                 checked={todasSeleccionadas}
                 onChange={alternarSeleccionarTodas}
                 disabled={ventasEnRango.length === 0}
-                className="accent-emerald-600 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
+                className="accent-accent cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
               />
               Todas
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+            <label className="flex items-center gap-2 cursor-pointer text-body">
               <input
                 type="checkbox"
                 checked={mostrarDetalle}
                 onChange={(e) => setMostrarDetalle(e.target.checked)}
-                className="accent-emerald-600 cursor-pointer flex-shrink-0"
+                className="accent-accent cursor-pointer flex-shrink-0"
               />
               Incluir detalle de productos
             </label>
             {cheques.length > 0 && (
-              <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer text-body">
                 <input
                   type="checkbox"
                   checked={mostrarCheques}
                   onChange={(e) => setMostrarCheques(e.target.checked)}
-                  className="accent-emerald-600 cursor-pointer flex-shrink-0"
+                  className="accent-accent cursor-pointer flex-shrink-0"
                 />
                 Mostrar cheques
               </label>
@@ -710,30 +710,30 @@ const CuentaCorrienteCliente = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+            <label className="flex items-center gap-2 cursor-pointer text-body">
               <input
                 type="checkbox"
                 checked={soloSeleccionadas}
                 onChange={(e) => setSoloSeleccionadas(e.target.checked)}
                 disabled={!algunaSeleccionada}
-                className="accent-emerald-600 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
+                className="accent-accent cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
               />
               Mostrar sólo seleccionadas
             </label>
-            <span className="text-gray-500">
+            <span className="text-muted">
               {ventasIncluidas.length} de {ventasEnRango.length} venta(s)
               {ventasOcultasPorRango > 0 ? ` (${ventasOcultasPorRango} fuera del rango)` : ''}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-gray-600">
+          <div className="flex flex-wrap items-center gap-1.5 text-body">
             <span className="flex-shrink-0">Rango:</span>
             <input
               type="date"
               value={fechaDesde}
               onChange={(e) => setFechaDesde(e.target.value)}
               max={fechaHasta || undefined}
-              className="min-w-0 flex-1 px-1.5 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer"
+              className="min-w-0 flex-1 px-1.5 py-1 border border-line rounded-base text-xs focus:ring-1 focus:ring-accent outline-none cursor-pointer"
             />
             <span className="flex-shrink-0">a</span>
             <input
@@ -741,12 +741,12 @@ const CuentaCorrienteCliente = () => {
               value={fechaHasta}
               onChange={(e) => setFechaHasta(e.target.value)}
               min={fechaDesde || undefined}
-              className="min-w-0 flex-1 px-1.5 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer"
+              className="min-w-0 flex-1 px-1.5 py-1 border border-line rounded-base text-xs focus:ring-1 focus:ring-accent outline-none cursor-pointer"
             />
             {hayRangoActivo && (
               <button
                 onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
-                className="flex-shrink-0 text-emerald-700 hover:underline cursor-pointer"
+                className="flex-shrink-0 text-accent-ink hover:underline cursor-pointer"
               >
                 Quitar
               </button>
@@ -757,51 +757,51 @@ const CuentaCorrienteCliente = () => {
 
       {isLoading && (
         <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
         </div>
       )}
 
       {factura && (
         <div
           ref={previewRef}
-          className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-8 mx-auto max-w-2xl"
+          className="bg-paper rounded-panel border border-line p-5 sm:p-8 mx-auto max-w-2xl"
         >
-          <div className="flex justify-between items-start gap-3 border-b-2 border-emerald-600 pb-3">
+          <div className="flex justify-between items-start gap-3 border-b-2 border-accent pb-3">
             <div>
-              <p className="text-lg font-bold text-emerald-700 leading-tight">{NOMBRE_VIVERO}</p>
-              <p className="text-xs text-gray-500 tracking-wide">{TITULO_DOCUMENTO}</p>
+              <p className="text-lg font-bold text-accent-ink leading-tight">{NOMBRE_VIVERO}</p>
+              <p className="text-xs text-muted tracking-wide">{TITULO_DOCUMENTO}</p>
             </div>
-            <p className="text-xs text-gray-500 text-right flex-shrink-0">{formatearFecha(factura.fechaGeneracion)}</p>
+            <p className="text-xs text-muted text-right flex-shrink-0">{formatearFecha(factura.fechaGeneracion)}</p>
           </div>
 
           <div className="mt-3">
-            <p className="font-bold text-gray-900 text-lg leading-tight">{factura.clienteNombre || '-'}</p>
-            <p className="text-xs text-gray-500">
+            <p className="font-bold text-ink text-lg leading-tight">{factura.clienteNombre || '-'}</p>
+            <p className="text-xs text-muted">
               {factura.clienteTelefono ? `Tel: ${factura.clienteTelefono}  ·  ` : ''}
               {ventasIncluidas.length} venta(s) en este resumen
             </p>
           </div>
 
           {/* ÚNICO encabezado de columnas de todo el documento */}
-          <div className="mt-4 flex justify-between text-[11px] uppercase tracking-wider text-gray-400 font-semibold border-b border-gray-200 pb-1.5">
+          <div className="mt-4 flex justify-between text-[11px] uppercase tracking-wider text-faint font-semibold border-b border-line pb-1.5">
             <span>Detalle</span>
             <span>Falta pagar</span>
           </div>
 
           {ventas.length === 0 && (
-            <div className="mt-4 text-center text-gray-500 text-sm py-6 border border-dashed border-gray-200 rounded-lg">
+            <div className="mt-4 text-center text-muted text-sm py-6 border border-dashed border-line rounded-base">
               Este cliente no tiene ventas registradas.
             </div>
           )}
 
           {ventas.length > 0 && ventasEnRango.length === 0 && (
-            <div className="mt-4 text-center text-gray-500 text-sm py-6 border border-dashed border-gray-200 rounded-lg">
+            <div className="mt-4 text-center text-muted text-sm py-6 border border-dashed border-line rounded-base">
               Ninguna venta cae dentro del rango de fechas elegido.
             </div>
           )}
 
           {ventasEnRango.length > 0 && !hayPendientes && ventasIncluidas.length === 0 && (
-            <div className="mt-4 text-center text-emerald-700 bg-emerald-50 text-sm py-4 px-3 rounded-lg">
+            <div className="mt-4 text-center text-ok-ink bg-ok-bg text-sm py-4 px-3 rounded-base">
               {hayRangoActivo ? 'Sin ventas pendientes en el rango elegido.' : 'Este cliente no tiene ventas pendientes de pago.'}
             </div>
           )}
@@ -820,7 +820,7 @@ const CuentaCorrienteCliente = () => {
               <div
                 key={venta.id}
                 data-export-hide={incluida ? undefined : true}
-                className={`mt-3 pb-3 border-b border-gray-100 last:border-b-0 ${incluida ? '' : 'opacity-40'}`}
+                className={`mt-3 pb-3 border-b border-line last:border-b-0 ${incluida ? '' : 'opacity-40'}`}
               >
                 <div className="flex justify-between items-baseline gap-2 text-sm">
                   <span className="flex items-center gap-2 min-w-0">
@@ -829,40 +829,40 @@ const CuentaCorrienteCliente = () => {
                       data-export-hide
                       checked={incluida}
                       onChange={() => alternarSeleccion(venta.id)}
-                      className="accent-emerald-600 cursor-pointer flex-shrink-0"
+                      className="accent-accent cursor-pointer flex-shrink-0"
                     />
-                    <span className="font-bold text-emerald-700 truncate">
-                      Venta Nº {venta.id} <span className="text-gray-400 font-normal">· {formatearFechaCorta(venta.fecha)}</span>
+                    <span className="font-bold text-accent-ink truncate">
+                      Venta Nº {venta.id} <span className="text-faint font-normal">· {formatearFechaCorta(venta.fecha)}</span>
                     </span>
                   </span>
                   {pendiente > 0 ? (
-                    <span className="font-bold text-red-600 flex-shrink-0">{formatearDinero(pendiente)}</span>
+                    <span className="font-bold text-danger flex-shrink-0 font-mono tabular-nums">{formatearDinero(pendiente)}</span>
                   ) : (
-                    <span className="font-semibold text-emerald-600 text-xs flex-shrink-0">PAGADA</span>
+                    <span className="font-semibold text-ok-ink text-xs flex-shrink-0">PAGADA</span>
                   )}
                 </div>
 
-                <div className="text-xs text-gray-500 pl-6 mt-0.5">
+                <div className="text-xs text-muted pl-6 mt-0.5 font-mono tabular-nums">
                   Total {formatearDinero(venta.totalFinal)} · Pagado {formatearDinero(pagado)}
                 </div>
 
                 {mostrarDetalle && (venta.detalles || []).map((detalle) => (
                   <div
                     key={detalle.id || detalle.productoId}
-                    className="flex justify-between items-baseline gap-2 text-xs text-gray-600 pl-6 mt-0.5"
+                    className="flex justify-between items-baseline gap-2 text-xs text-body pl-6 mt-0.5"
                   >
                     <span className="break-words">{describirItem(detalle)}</span>
-                    <span className="flex-shrink-0">{formatearDinero(detalle.subtotal)}</span>
+                    <span className="flex-shrink-0 font-mono tabular-nums">{formatearDinero(detalle.subtotal)}</span>
                   </div>
                 ))}
 
                 {pagosDeLaVenta.map((pago, index) => (
                   <div
                     key={pago.id || index}
-                    className="flex justify-between items-baseline gap-2 text-xs text-emerald-600 pl-6 mt-0.5"
+                    className="flex justify-between items-baseline gap-2 text-xs text-ok-ink pl-6 mt-0.5"
                   >
                     <span>{describirPago(pago)}</span>
-                    <span className="font-medium flex-shrink-0">-{formatearDinero(pago.monto)}</span>
+                    <span className="font-medium flex-shrink-0 font-mono tabular-nums">-{formatearDinero(pago.monto)}</span>
                   </div>
                 ))}
 
@@ -871,24 +871,24 @@ const CuentaCorrienteCliente = () => {
                   <button
                     data-export-hide
                     onClick={() => abrirFormularioPago(venta)}
-                    className="mt-1.5 ml-6 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-md transition-colors cursor-pointer"
+                    className="mt-1.5 ml-6 inline-flex items-center gap-1 text-xs font-medium text-accent-ink bg-accent-soft hover:brightness-95 px-2 py-1 rounded-base transition-colors cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Registrar pago
                   </button>
                 )}
 
                 {ventaPagoAbierto === venta.id && (
-                  <div data-export-hide className="mt-2 ml-6 p-2.5 bg-emerald-50 border border-emerald-100 rounded-lg flex flex-wrap gap-2 items-stretch">
+                  <div data-export-hide className="mt-2 ml-6 p-2.5 bg-accent-soft border border-accent rounded-base flex flex-wrap gap-2 items-stretch">
                     <FormattedNumberInput
                       value={montoPago}
                       onChange={setMontoPago}
                       placeholder="Monto"
-                      className="flex-1 min-w-[100px] px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
+                      className="flex-1 min-w-[100px] px-2 py-1.5 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                     />
                     <select
                       value={metodoPago}
                       onChange={(e) => setMetodoPago(e.target.value)}
-                      className="flex-1 min-w-[110px] px-2 py-1.5 text-sm border border-gray-200 rounded-md bg-white focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
+                      className="flex-1 min-w-[110px] px-2 py-1.5 text-sm border border-line rounded-base bg-paper focus:ring-2 focus:ring-accent outline-none cursor-pointer"
                     >
                       <option value="EFECTIVO">Efectivo</option>
                       <option value="TRANSFERENCIA">Transferencia</option>
@@ -897,13 +897,13 @@ const CuentaCorrienteCliente = () => {
                       <button
                         onClick={() => confirmarPago(venta)}
                         disabled={pagoMutation.isPending}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium transition-colors cursor-pointer disabled:opacity-50"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 text-sm bg-accent hover:brightness-95 text-paper rounded-base font-medium transition-colors cursor-pointer disabled:opacity-50"
                       >
                         <Check className="w-3.5 h-3.5" /> Guardar
                       </button>
                       <button
                         onClick={() => setVentaPagoAbierto(null)}
-                        className="flex-1 sm:flex-none px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                        className="flex-1 sm:flex-none px-2.5 py-1.5 text-sm text-muted hover:bg-canvas rounded-base transition-colors cursor-pointer"
                       >
                         Cancelar
                       </button>
@@ -918,8 +918,8 @@ const CuentaCorrienteCliente = () => {
               real. Los ajustes manuales de saldo no tienen historial (ver renglón informativo
               del cierre) y por eso no pueden desglosarse acá. */}
           {cheques.length > 0 && mostrarCheques && (
-            <div className="mt-4 pt-3 border-t border-gray-200">
-              <p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1.5">
+            <div className="mt-4 pt-3 border-t border-line">
+              <p className="text-[11px] uppercase tracking-wider text-faint font-semibold mb-1.5">
                 Cheques
               </p>
               <div className="space-y-1">
@@ -927,14 +927,14 @@ const CuentaCorrienteCliente = () => {
                   const estadoCheque = describirEstadoCheque(cheque);
                   return (
                     <div key={cheque.id} className="flex justify-between items-baseline gap-2 text-xs">
-                      <span className="text-gray-600">
+                      <span className="text-body">
                         {formatearFechaCorta(cheque.fechaRecepcion)} · {cheque.banco || 'Suelto'}
                         {cheque.numeroSerie ? ` Nº${cheque.numeroSerie}` : ''}
                         <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${estadoCheque.tono.chip}`}>
                           {estadoCheque.etiqueta}
                         </span>
                       </span>
-                      <span className="font-medium text-gray-800 flex-shrink-0">{formatearDinero(cheque.monto)}</span>
+                      <span className="font-medium text-body flex-shrink-0 font-mono tabular-nums">{formatearDinero(cheque.monto)}</span>
                     </div>
                   );
                 })}
@@ -943,33 +943,33 @@ const CuentaCorrienteCliente = () => {
           )}
 
           {/* Cierre orientado a la deuda */}
-          <div className="mt-4 pt-3 border-t-2 border-emerald-600 space-y-1.5 text-sm">
+          <div className="mt-4 pt-3 border-t-2 border-accent space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Total de las ventas incluidas</span>
-              <span className="font-medium text-gray-800">{formatearDinero(totalIncluido)}</span>
+              <span className="text-muted">Total de las ventas incluidas</span>
+              <span className="font-medium text-body font-mono tabular-nums">{formatearDinero(totalIncluido)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Pagado</span>
-              <span className="font-medium text-gray-800">{formatearDinero(pagadoIncluido)}</span>
+              <span className="text-muted">Pagado</span>
+              <span className="font-medium text-body font-mono tabular-nums">{formatearDinero(pagadoIncluido)}</span>
             </div>
             <div className="flex justify-between items-center pt-2">
-              <span className="font-bold text-gray-900">TOTAL A PAGAR</span>
-              <span className="text-2xl font-bold text-red-600">{formatearDinero(totalAPagar)}</span>
+              <span className="font-bold text-ink">TOTAL A PAGAR</span>
+              <span className="text-2xl font-bold text-danger font-mono tabular-nums">{formatearDinero(totalAPagar)}</span>
             </div>
 
             {/* Informativo: el saldo de cuenta corriente es global y puede no coincidir con el
                 total de arriba, que corresponde sólo a las ventas incluidas en este resumen. */}
-            <div className="pt-2 mt-1 border-t border-gray-100 space-y-0.5">
+            <div className="pt-2 mt-1 border-t border-line space-y-0.5">
               <div className="flex justify-between gap-2 text-xs">
-                <span className="text-gray-400">Saldo de cuenta corriente (todas las ventas)</span>
-                <span className={`font-medium flex-shrink-0 ${saldoFinal.tono.texto}`}>
+                <span className="text-faint">Saldo de cuenta corriente (todas las ventas)</span>
+                <span className={`font-medium flex-shrink-0 font-mono tabular-nums ${saldoFinal.tono.texto}`}>
                   {saldoFinal.etiqueta} $ {saldoFinal.monto}
                 </span>
               </div>
               {hayOtrosMovimientos && (
                 <div className="flex justify-between gap-2 text-xs">
-                  <span className="text-gray-400">Incluye otros ajustes sin detalle disponible</span>
-                  <span className="text-gray-500 flex-shrink-0">{formatearDinero(factura.diferenciaNoItemizada)}</span>
+                  <span className="text-faint">Incluye otros ajustes sin detalle disponible</span>
+                  <span className="text-muted flex-shrink-0 font-mono tabular-nums">{formatearDinero(factura.diferenciaNoItemizada)}</span>
                 </div>
               )}
             </div>

@@ -9,7 +9,7 @@ import { describirEstadoCheque } from '../utils/chequeDisplay';
 export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
   const { pushToast, askConfirm } = useUIStore();
   const queryClient = useQueryClient();
-  
+
   const [estadoEdit, setEstadoEdit] = useState('');
   const [tipoEndoso, setTipoEndoso] = useState('TERCERO');
   const [entregadoAEdit, setEntregadoAEdit] = useState('');
@@ -179,43 +179,43 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
   const { etiqueta: etiquetaEstadoActual, tono: tonoEstadoActual } = describirEstadoCheque(cheque);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full h-full sm:h-auto max-w-md rounded-none sm:rounded-2xl shadow-xl flex flex-col max-h-screen sm:max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/50 backdrop-blur-sm">
+      <div className="bg-paper w-full h-full sm:h-auto max-w-md rounded-none sm:rounded-panel border border-line-strong flex flex-col max-h-screen sm:max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex-none flex justify-between items-center px-6 py-4 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">Actualizar Estado</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-xl cursor-pointer">
+        <div className="flex-none flex justify-between items-center px-6 py-4 border-b border-line">
+          <h2 className="text-xl font-bold text-ink">Actualizar Estado</h2>
+          <button onClick={onClose} className="text-faint hover:text-body p-2 hover:bg-canvas rounded-base cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Cuerpo scrolleable */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 space-y-2 text-sm">
+          <div className="bg-canvas p-4 rounded-panel border border-line mb-6 space-y-2 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">Estado actual:</span>
+              <span className="text-muted">Estado actual:</span>
               <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase ${tonoEstadoActual.chip}`}>{etiquetaEstadoActual}</span>
             </div>
-            <p><span className="text-gray-500">Banco:</span> <span className="font-semibold text-gray-900">{cheque.banco || '-'}</span></p>
-            <p className="text-2xl font-bold text-emerald-700 pt-1">{cheque.monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p>
-            <p><span className="text-gray-500">Origen:</span> <span className="font-semibold text-gray-900">{cheque.clienteNombre || 'Suelto'}</span></p>
+            <p><span className="text-muted">Banco:</span> <span className="font-semibold text-ink">{cheque.banco || '-'}</span></p>
+            <p className="text-2xl font-bold text-ink font-mono tabular-nums pt-1">{cheque.monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p>
+            <p><span className="text-muted">Origen:</span> <span className="font-semibold text-ink">{cheque.clienteNombre || 'Suelto'}</span></p>
           </div>
 
           <div className="space-y-4">
             {esReboteDeChequeEndosado && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <div className="p-3 bg-warn-bg border border-warn-line rounded-base text-sm text-warn-ink">
                 Este cheque está <span className="font-semibold">endosado</span>
                 {cheque.entregadoA ? <> a <span className="font-semibold">{cheque.entregadoA}</span></> : null}.
                 La única acción posible es registrar su rebote.
               </div>
             )}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+              <label className="block text-sm font-semibold text-body mb-1">Estado</label>
               <select
                 value={estadoEdit}
                 onChange={(e) => setEstadoEdit(e.target.value)}
                 disabled={esReboteDeChequeEndosado}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-shadow disabled:bg-gray-100 disabled:text-gray-500"
+                className="w-full px-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-shadow disabled:bg-thead disabled:text-muted cursor-pointer"
               >
                 {esReboteDeChequeEndosado ? (
                   <option value="RECHAZADO">RECHAZADO (Rebote de cheque endosado)</option>
@@ -233,19 +233,19 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
             </div>
 
             {necesitaSeleccionarEndosatario && (
-              <div className="space-y-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <div className="space-y-4 p-4 bg-warn-bg border border-warn-line rounded-base">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-body mb-2">
                     ¿A quién se le había endosado este cheque?
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-muted mb-2">
                     Este cheque fue entregado antes de que el sistema pudiera identificar al
                     endosatario como cliente. Elegilo para que se le acredite el saldo a favor
                     correspondiente, o indicá que fue un tercero.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className={`flex items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      tipoEndoso === 'CLIENTE' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'
+                    <label className={`flex items-center gap-2 p-4 rounded-base border-2 cursor-pointer transition-colors ${
+                      tipoEndoso === 'CLIENTE' ? 'border-accent bg-accent-soft' : 'border-line bg-paper'
                     }`}>
                       <input
                         type="radio"
@@ -253,12 +253,12 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                         value="CLIENTE"
                         checked={tipoEndoso === 'CLIENTE'}
                         onChange={() => setTipoEndoso('CLIENTE')}
-                        className="accent-emerald-600"
+                        className="accent-accent cursor-pointer"
                       />
-                      <span className="text-sm font-medium text-gray-800">Fue un cliente</span>
+                      <span className="text-sm font-medium text-body">Fue un cliente</span>
                     </label>
-                    <label className={`flex items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      tipoEndoso === 'TERCERO' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'
+                    <label className={`flex items-center gap-2 p-4 rounded-base border-2 cursor-pointer transition-colors ${
+                      tipoEndoso === 'TERCERO' ? 'border-accent bg-accent-soft' : 'border-line bg-paper'
                     }`}>
                       <input
                         type="radio"
@@ -266,19 +266,19 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                         value="TERCERO"
                         checked={tipoEndoso === 'TERCERO'}
                         onChange={() => setTipoEndoso('TERCERO')}
-                        className="accent-emerald-600"
+                        className="accent-accent cursor-pointer"
                       />
-                      <span className="text-sm font-medium text-gray-800">Fue un tercero, no un cliente</span>
+                      <span className="text-sm font-medium text-body">Fue un tercero, no un cliente</span>
                     </label>
                   </div>
                 </div>
 
                 {tipoEndoso === 'CLIENTE' && (
                   <div ref={dropdownRef} className="relative">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Buscar Cliente</label>
+                    <label className="block text-sm font-semibold text-body mb-1">Buscar Cliente</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
+                        <Search className="h-4 w-4 text-faint" />
                       </div>
                       <input
                         type="text"
@@ -292,19 +292,19 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                         }}
                         onFocus={() => setIsDropdownOpen(true)}
                         placeholder="Buscar cliente..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all"
                       />
                     </div>
 
                     {isDropdownOpen && (
-                      <div className="static sm:absolute sm:z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      <div className="static sm:absolute sm:z-10 w-full mt-1 bg-paper border border-line-strong rounded-panel max-h-60 overflow-y-auto">
                         {filteredClientes.length === 0 ? (
-                          <div className="px-4 py-3 text-sm text-gray-500">No se encontraron clientes</div>
+                          <div className="px-4 py-3 text-sm text-muted">No se encontraron clientes</div>
                         ) : (
                           filteredClientes.map(c => (
                             <div
                               key={c.id}
-                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-900 border-b border-gray-50 last:border-0"
+                              className="px-4 py-3 hover:bg-canvas cursor-pointer text-ink border-b border-line last:border-0"
                               onClick={() => {
                                 setEndosadoAClienteId(c.id);
                                 setSearchCliente(c.nombreRazonSocial);
@@ -318,7 +318,7 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                       </div>
                     )}
 
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-muted mt-2">
                       Se le acreditará el monto del cheque como saldo a favor en su cuenta corriente.
                     </p>
                   </div>
@@ -327,13 +327,13 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
             )}
 
             {estadoEdit === 'ENTREGADO' && (
-              <div className="space-y-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+              <div className="space-y-4 p-4 bg-ok-bg border border-ok-line rounded-base">
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Endosar a:</label>
+                  <label className="block text-sm font-semibold text-body mb-2">Endosar a:</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className={`flex items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      tipoEndoso === 'TERCERO' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'
+                    <label className={`flex items-center gap-2 p-4 rounded-base border-2 cursor-pointer transition-colors ${
+                      tipoEndoso === 'TERCERO' ? 'border-accent bg-accent-soft' : 'border-line bg-paper'
                     }`}>
                       <input
                         type="radio"
@@ -341,12 +341,12 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                         value="TERCERO"
                         checked={tipoEndoso === 'TERCERO'}
                         onChange={() => setTipoEndoso('TERCERO')}
-                        className="accent-emerald-600"
+                        className="accent-accent cursor-pointer"
                       />
-                      <span className="text-sm font-medium text-gray-800">Persona / Tercero</span>
+                      <span className="text-sm font-medium text-body">Persona / Tercero</span>
                     </label>
-                    <label className={`flex items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      tipoEndoso === 'CLIENTE' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'
+                    <label className={`flex items-center gap-2 p-4 rounded-base border-2 cursor-pointer transition-colors ${
+                      tipoEndoso === 'CLIENTE' ? 'border-accent bg-accent-soft' : 'border-line bg-paper'
                     }`}>
                       <input
                         type="radio"
@@ -354,30 +354,30 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                         value="CLIENTE"
                         checked={tipoEndoso === 'CLIENTE'}
                         onChange={() => setTipoEndoso('CLIENTE')}
-                        className="accent-emerald-600"
+                        className="accent-accent cursor-pointer"
                       />
-                      <span className="text-sm font-medium text-gray-800">Cliente (con cuenta)</span>
+                      <span className="text-sm font-medium text-body">Cliente (con cuenta)</span>
                     </label>
                   </div>
                 </div>
 
                 {tipoEndoso === 'TERCERO' ? (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre (Proveedor/Tercero)</label>
+                    <label className="block text-sm font-semibold text-body mb-1">Nombre (Proveedor/Tercero)</label>
                     <input
                       type="text"
                       value={entregadoAEdit}
                       onChange={(e) => setEntregadoAEdit(e.target.value)}
                       placeholder="Ej: Macetas Plásticas S.A."
-                      className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                     />
                   </div>
                 ) : (
                   <div ref={dropdownRef} className="relative">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Buscar Cliente</label>
+                    <label className="block text-sm font-semibold text-body mb-1">Buscar Cliente</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
+                        <Search className="h-4 w-4 text-faint" />
                       </div>
                       <input
                         type="text"
@@ -391,7 +391,7 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                         }}
                         onFocus={() => setIsDropdownOpen(true)}
                         placeholder="Buscar cliente..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all"
                       />
                     </div>
 
@@ -399,14 +399,14 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                       /* D5: en mobile la lista se renderiza EN FLUJO (empuja el contenido del
                          cuerpo scrolleable) para no quedar recortada por overflow-y-auto del
                          panel; desde sm: (>=640px) vuelve a flotar como antes. */
-                      <div className="static sm:absolute sm:z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      <div className="static sm:absolute sm:z-10 w-full mt-1 bg-paper border border-line-strong rounded-panel max-h-60 overflow-y-auto">
                         {filteredClientes.length === 0 ? (
-                          <div className="px-4 py-3 text-sm text-gray-500">No se encontraron clientes</div>
+                          <div className="px-4 py-3 text-sm text-muted">No se encontraron clientes</div>
                         ) : (
                           filteredClientes.map(c => (
                             <div
                               key={c.id}
-                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-900 border-b border-gray-50 last:border-0"
+                              className="px-4 py-3 hover:bg-canvas cursor-pointer text-ink border-b border-line last:border-0"
                               onClick={() => {
                                 setEndosadoAClienteId(c.id);
                                 setSearchCliente(c.nombreRazonSocial);
@@ -420,19 +420,19 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
                       </div>
                     )}
 
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-muted mt-2">
                       Al endosar a un cliente, el monto del cheque se sumará a su deuda como si le hubieras realizado un pago a su favor.
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha de Entrega</label>
+                  <label className="block text-sm font-semibold text-body mb-1">Fecha de Entrega</label>
                   <input
                     type="date"
                     value={fechaEntregaEdit}
                     onChange={(e) => setFechaEntregaEdit(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full px-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                   />
                 </div>
               </div>
@@ -441,21 +441,21 @@ export default function ChequeEstadoModal({ isOpen, onClose, cheque }) {
         </div>
 
         {/* Footer fijo */}
-        <div className="flex-none flex gap-3 p-6 border-t border-gray-100 sm:justify-end">
+        <div className="flex-none flex gap-3 p-6 border-t border-line sm:justify-end">
           <button
             onClick={onClose}
-            className="flex-1 sm:flex-none px-5 py-2.5 text-gray-600 hover:bg-gray-50 font-semibold rounded-xl border border-transparent transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none px-5 py-2.5 text-muted hover:bg-canvas font-semibold rounded-base border border-transparent transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             onClick={handleUpdate}
             disabled={updateMutation.isPending}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none px-5 py-2.5 bg-accent hover:brightness-95 text-paper font-bold rounded-base transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {updateMutation.isPending ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-paper/30 border-t-paper rounded-full animate-spin"></div>
                 Guardando...
               </>
             ) : (

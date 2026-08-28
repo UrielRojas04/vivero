@@ -48,7 +48,7 @@ const Finanzas = () => {
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedVendedorId, setSelectedVendedorId] = useState(null);
-  
+
   // Drill-down states
   const [showVentas, setShowVentas] = useState(false);
   const [showGastos, setShowGastos] = useState(false);
@@ -201,12 +201,12 @@ const Finanzas = () => {
   const gastosTotalPages = gastosQuery.data?.totalPages || 0;
   const chequesEnCarteraList = chequesCarteraQuery.data?.content?.filter(c => c.estado === 'EN_CARTERA') || [];
 
-  const filteredCogs = (cogsDetalleQuery.data || []).filter(d => 
-    !searchGastos || 
+  const filteredCogs = (cogsDetalleQuery.data || []).filter(d =>
+    !searchGastos ||
     (d.productoNombre && d.productoNombre.toLowerCase().includes(searchGastos.toLowerCase()))
   );
 
-  const hasGastosToShow = gastos.length > 0 || 
+  const hasGastosToShow = gastos.length > 0 ||
     (unidadNegocioActiva === '2' && gastosPage === 0 && filteredCogs.length > 0) ||
     (unidadNegocioActiva === '1' && gastosPage === 0 && !searchGastos && resumen?.costoMercaderiaVendida > 0);
 
@@ -222,50 +222,70 @@ const Finanzas = () => {
   const margen = resumen?.margen ?? 0;
   const chequesEnCartera = resumen?.chequesEnCartera ?? 0;
 
+  // Ganancia Neta y Margen son semánticos (Decisión 3, P1): dependen de si el resultado del
+  // período es positivo o negativo, no son una medición fija como Total Ventas/Total Costos.
+  const gananciaEsNegativa = gananciaNeta < 0;
+
   const kpis = [
-    { 
-      label: 'Total Ventas', 
-      value: formatMoney(totalVentas), 
-      icon: Wallet, 
-      iconClass: 'bg-emerald-50 text-emerald-600',
+    {
+      label: 'Total Ventas',
+      value: formatMoney(totalVentas),
+      icon: Wallet,
+      iconClass: 'bg-accent-soft text-accent-ink',
       active: showVentas,
       onClick: () => { setShowVentas(!showVentas); setShowGastos(false); setShowCheques(false); }
     },
-    { 
-      label: 'Total Costos', 
-      value: formatMoney(totalCostos), 
-      icon: Coins, 
-      iconClass: 'bg-red-50 text-red-500',
+    {
+      label: 'Total Costos',
+      value: formatMoney(totalCostos),
+      icon: Coins,
+      iconClass: 'bg-thead text-muted',
       active: showGastos,
       onClick: () => { setShowGastos(!showGastos); setShowVentas(false); setShowCheques(false); }
     },
-    { label: 'Ganancia Neta', value: formatMoney(gananciaNeta), icon: HandCoins, iconClass: 'bg-blue-50 text-blue-600' },
-    { label: 'Margen de Ganancia', value: `${margen.toLocaleString('es-AR')} %`, icon: Percent, iconClass: 'bg-violet-50 text-violet-600' },
-    { 
-      label: 'Valores a Depositar (Cheques)', 
-      value: formatMoney(chequesEnCartera), 
-      icon: CreditCard, 
-      iconClass: 'bg-amber-50 text-amber-600',
+    {
+      label: 'Ganancia Neta',
+      value: formatMoney(gananciaNeta),
+      icon: HandCoins,
+      iconClass: gananciaEsNegativa ? 'bg-danger-bg text-danger-ink' : 'bg-ok-bg text-ok-ink',
+    },
+    {
+      label: 'Margen de Ganancia',
+      value: `${margen.toLocaleString('es-AR')} %`,
+      icon: Percent,
+      iconClass: gananciaEsNegativa ? 'bg-danger-bg text-danger-ink' : 'bg-ok-bg text-ok-ink',
+    },
+    {
+      label: 'Valores a Depositar (Cheques)',
+      value: formatMoney(chequesEnCartera),
+      icon: CreditCard,
+      iconClass: 'bg-warn-bg text-warn-ink',
       active: showCheques,
       onClick: () => { setShowCheques(!showCheques); setShowVentas(false); setShowGastos(false); }
     },
   ];
 
   const estadoBadgeClass = (estado) => {
-    if (estado === 'PAGADO') return 'bg-emerald-50 text-emerald-700';
-    if (estado === 'PARCIAL') return 'bg-yellow-50 text-yellow-700';
-    return 'bg-red-50 text-red-700';
+    if (estado === 'PAGADO') return 'bg-ok-bg text-ok-ink';
+    if (estado === 'PARCIAL') return 'bg-warn-bg text-warn-ink';
+    return 'bg-danger-bg text-danger-ink';
   };
 
+  // Hex directos (no className) para el gráfico de torta: recharts pinta con el atributo SVG
+  // `fill`, que no resuelve var() de forma confiable entre navegadores, así que se usan los
+  // valores concretos de --color-ok / --color-danger en vez de la paleta vieja (emerald/red).
   const chartData = [
-    { name: 'Ventas', value: totalVentas, color: '#10b981' },
-    { name: 'Costos/Gastos', value: totalCostos, color: '#ef4444' }
+    { name: 'Ventas', value: totalVentas, color: '#1F7A4C' },
+    { name: 'Costos/Gastos', value: totalCostos, color: '#B3261E' }
   ].filter(d => d.value > 0);
 
   const productos = (productosQuery.data || []).map(p => ({
     ...p,
     stock: liveStocks[p.id] !== undefined ? liveStocks[p.id] : p.stock
   }));
+  // Paleta categórica (no semántica): distingue 5 productos entre sí en el gráfico de barras,
+  // no representa un estado de negocio — queda fuera de la distinción marca/semántica de
+  // design.md (Decisión 3 no cubre paletas cualitativas de gráficos). Sin cambios.
   const topStockData = [...productos]
     .sort((a, b) => (b.stock || 0) - (a.stock || 0))
     .slice(0, 5)
@@ -283,20 +303,20 @@ const Finanzas = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Finanzas</h1>
-          <PieChartIcon className="w-5 h-5 text-emerald-500" />
+          <h1 className="text-2xl font-bold text-ink">Finanzas</h1>
+          <PieChartIcon className="w-5 h-5 text-accent" />
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           {/* Selector de Año */}
-          <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-2.5 shadow-sm">
-            <Calendar className="w-5 h-5 text-gray-400" />
+          <div className="flex flex-wrap items-center gap-3 bg-paper rounded-panel border border-line px-4 py-2.5">
+            <Calendar className="w-5 h-5 text-faint" />
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Año Fiscal</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider">Año Fiscal</label>
             <select
               value={selectedYear}
               onChange={handleYearChange}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer bg-white"
+              className="border border-line rounded-base px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent cursor-pointer bg-paper"
             >
               {availableYears.map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -307,32 +327,32 @@ const Finanzas = () => {
         </div>
       </div>
 
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-800">
+      <div className="bg-accent-soft border border-accent rounded-panel px-4 py-3 text-sm text-accent-ink">
         Haz clic en las tarjetas de <strong>Total Ventas</strong> o <strong>Total Costos</strong> para explorar el detalle.
       </div>
 
       {loadingResumen ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-16 flex flex-col items-center justify-center gap-3 shadow-sm">
-          <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-          <p className="text-sm font-medium text-gray-500">Cargando resumen de finanzas...</p>
+        <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-10 h-10 text-accent animate-spin" />
+          <p className="text-sm font-medium text-muted">Cargando resumen de finanzas...</p>
         </div>
       ) : (
         <>
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {kpis.map((kpi) => (
-              <div 
-                key={kpi.label} 
+              <div
+                key={kpi.label}
                 onClick={kpi.onClick}
-                className={`bg-white rounded-2xl border p-5 shadow-sm transition-all ${kpi.onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-md' : ''} ${kpi.active ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200'}`}
+                className={`bg-paper rounded-panel border p-5 transition-all ${kpi.onClick ? 'cursor-pointer hover:border-line-strong' : ''} ${kpi.active ? 'border-ink ring-1 ring-ink' : 'border-line'}`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-500">{kpi.label}</p>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${kpi.iconClass}`}>
+                  <p className="text-sm font-semibold text-muted">{kpi.label}</p>
+                  <div className={`w-10 h-10 rounded-base flex items-center justify-center ${kpi.iconClass}`}>
                     <kpi.icon className="w-5 h-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-2xl font-bold text-gray-900">{kpi.value}</p>
+                <p className="mt-3 text-2xl font-bold text-ink font-mono tabular-nums">{kpi.value}</p>
               </div>
             ))}
           </div>
@@ -340,8 +360,8 @@ const Finanzas = () => {
           {/* Gráficos Estadísticos */}
           {!showVentas && !showGastos && !showCheques && chartData.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col items-center">
-                <h2 className="text-base font-bold text-gray-900 w-full mb-2">Distribución Financiera</h2>
+              <div className="bg-paper rounded-panel border border-line p-6 flex flex-col items-center">
+                <h2 className="text-base font-bold text-ink w-full mb-2">Distribución Financiera</h2>
                 <div className="w-full h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -365,8 +385,8 @@ const Finanzas = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col items-center">
-                <h2 className="text-base font-bold text-gray-900 w-full mb-2">Top 5 Productos en Stock</h2>
+              <div className="bg-paper rounded-panel border border-line p-6 flex flex-col items-center">
+                <h2 className="text-base font-bold text-ink w-full mb-2">Top 5 Productos en Stock</h2>
                 <div className="w-full h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topStockData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -388,48 +408,48 @@ const Finanzas = () => {
 
           {/* Sección de Gastos (Drill-down) */}
           {showGastos && (
-            <div className="bg-white rounded-2xl border border-gray-900 p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="bg-paper rounded-panel border border-ink p-6 animate-in fade-in slide-in-from-top-4 duration-300">
               <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setShowGastos(false)} 
-                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors"
+                  <button
+                    onClick={() => setShowGastos(false)}
+                    className="p-1.5 hover:bg-canvas rounded-base text-faint hover:text-ink transition-colors cursor-pointer"
                     title="Volver"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
-                  <h2 className="text-base font-bold text-gray-900 flex items-center gap-2 whitespace-nowrap">
-                    <TrendingDown className="w-5 h-5 text-red-500" />
+                  <h2 className="text-base font-bold text-ink flex items-center gap-2 whitespace-nowrap">
+                    <TrendingDown className="w-5 h-5 text-muted" />
                     Costos y Gastos
                   </h2>
                 </div>
-                
+
                 <div className="relative w-full xl:w-80">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder={unidadNegocioActiva === '2' ? "Buscar por concepto o producto..." : "Buscar por concepto o insumo..."}
                     value={searchGastos}
                     onChange={(e) => setSearchGastos(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   />
                 </div>
-                
-                <form onSubmit={handleCrearGasto} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto bg-gray-50/80 p-2 rounded-xl border border-gray-100">
+
+                <form onSubmit={handleCrearGasto} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto bg-canvas/80 p-2 rounded-panel border border-line">
                   <input
                     type="text"
                     placeholder="Nuevo Gasto..."
-                    className="flex-1 w-full sm:w-auto border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                    className="flex-1 w-full sm:w-auto border border-line rounded-base px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-paper"
                     value={nuevoGasto.concepto}
                     onChange={e => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
                     required
                   />
                   <div className="relative w-full sm:w-40">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-base">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium text-base">$</span>
                     <FormattedNumberInput
                       id="monto"
                       placeholder="Monto"
-                      className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      className="w-full border border-line rounded-base pl-7 pr-3 py-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-paper"
                       value={nuevoGasto.monto}
                       onChange={val => setNuevoGasto({ ...nuevoGasto, monto: val })}
                       required
@@ -439,7 +459,7 @@ const Finanzas = () => {
                     type="submit"
                     disabled={createGastoMutation.isPending}
                     title="Registrar Gasto"
-                    className="w-full sm:w-auto flex items-center justify-center bg-gray-900 text-white rounded-lg p-1.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto flex items-center justify-center bg-ink text-paper rounded-base p-1.5 text-sm font-medium hover:brightness-110 disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     {createGastoMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                   </button>
@@ -449,49 +469,49 @@ const Finanzas = () => {
               <div className="min-h-[200px]">
                 {loadingGastos ? (
                   <div className="py-8 flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+                    <Loader2 className="w-6 h-6 text-accent animate-spin" />
                   </div>
                 ) : !hasGastosToShow ? (
-                  <div className="py-8 text-center text-sm text-gray-500">
+                  <div className="py-8 text-center text-sm text-muted">
                     No hay gastos o costos que coincidan con la búsqueda.
                   </div>
                 ) : (
                   <ul className="space-y-3">
                     {/* Costos de Mercadería individuales (en la primera página de gastos) */}
                     {unidadNegocioActiva === '2' && gastosPage === 0 && filteredCogs.map(d => (
-                      <li key={`cogs-${d.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 transition-colors shadow-sm gap-2">
+                      <li key={`cogs-${d.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-panel border border-line bg-thead/30 hover:bg-thead transition-colors gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <p className="text-sm font-semibold text-ink flex items-center gap-2">
                             {d.cantidad}x {d.productoNombre}
-                            <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200">AUTOMÁTICO</span>
+                            <span className="px-2 py-0.5 text-[10px] font-bold bg-thead text-body rounded-full border border-line">AUTOMÁTICO</span>
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Base: {formatMoney(d.costoBaseHistorico)} 
-                            {d.descuentoPorcentajeHistorico > 0 ? ` - Desc: ${d.descuentoPorcentajeHistorico}%` : ''} 
-                            {d.envioPorcentajeHistorico > 0 ? ` + Envío: ${d.envioPorcentajeHistorico}%` : ''} 
+                          <p className="text-xs text-muted mt-1">
+                            Base: {formatMoney(d.costoBaseHistorico)}
+                            {d.descuentoPorcentajeHistorico > 0 ? ` - Desc: ${d.descuentoPorcentajeHistorico}%` : ''}
+                            {d.envioPorcentajeHistorico > 0 ? ` + Envío: ${d.envioPorcentajeHistorico}%` : ''}
                             = {formatMoney(d.costoUnitarioHistorico)} c/u
                           </p>
                         </div>
                         <div className="flex items-center sm:justify-end">
-                          <span className="font-bold text-red-600">{formatMoney(d.costoUnitarioHistorico * d.cantidad)}</span>
+                          <span className="font-bold text-body font-mono tabular-nums">{formatMoney(d.costoUnitarioHistorico * d.cantidad)}</span>
                         </div>
                       </li>
                     ))}
-                    
+
                     {/* Fila sintética para Costo de Producción en Vivero eliminada por redundancia con insumos individuales */}
                     {gastos.map(gasto => (
-                      <li key={gasto.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-sm gap-2">
+                      <li key={gasto.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-panel border border-line bg-paper hover:border-line-strong transition-colors gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 flex items-center">
+                          <p className="text-sm font-semibold text-ink flex items-center">
                             {gasto.concepto}
                             {gasto.tipo === 'INSUMO' && (
-                              <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-600 rounded-full border border-blue-100">INSUMO</span>
+                              <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-thead text-body rounded-full border border-line">INSUMO</span>
                             )}
                           </p>
-                          <p className="text-xs text-gray-500">{new Date(gasto.fecha).toLocaleDateString('es-AR')}</p>
+                          <p className="text-xs text-muted">{new Date(gasto.fecha).toLocaleDateString('es-AR')}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="font-bold text-red-600">{formatMoney(gasto.monto)}</span>
+                          <span className="font-bold text-body font-mono tabular-nums">{formatMoney(gasto.monto)}</span>
                           {gasto.tipo === 'MANUAL' && (
                             <button
                               onClick={() => {
@@ -506,7 +526,7 @@ const Finanzas = () => {
                               }}
                               disabled={deleteGastoMutation.isPending}
                               title="Eliminar"
-                              className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                              className="text-faint hover:text-danger hover:bg-danger-bg p-1.5 rounded-base transition-colors disabled:opacity-50 cursor-pointer"
                             >
                               {deleteGastoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                             </button>
@@ -517,35 +537,35 @@ const Finanzas = () => {
                   </ul>
                 )}
               </div>
-              
+
               {/* Costo de Mercadería Vendida (Info) */}
               {unidadNegocioActiva === '2' && (
-                <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-4">
-                  <p className="text-sm text-blue-800">
+                <div className="mt-8 bg-thead border border-line rounded-base p-4">
+                  <p className="text-sm text-body">
                     <strong>Nota:</strong> En el negocio de Herramientas, el indicador de <strong>Total Costos</strong> incluye el <strong>Costo de Mercadería Vendida</strong> de las ventas realizadas en este período, calculado en base al costo histórico al momento de cada venta.
                   </p>
                 </div>
               )}
-              
+
               {/* Paginación Gastos */}
               {gastosTotalPages > 0 && (
-                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    {fetchingGastos && <Loader2 className="w-3 h-3 text-emerald-600 animate-spin" />}
+                <div className="pt-4 mt-4 border-t border-line flex items-center justify-between">
+                  <span className="text-xs text-muted flex items-center gap-1">
+                    {fetchingGastos && <Loader2 className="w-3 h-3 text-accent animate-spin" />}
                     Página {gastosPage + 1} de {gastosTotalPages}
                   </span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setGastosPage(Math.max(0, gastosPage - 1))}
                       disabled={gastosPage === 0}
-                      className="p-1 rounded-md text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="p-1 rounded-base text-faint hover:text-ink hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setGastosPage(Math.min(gastosTotalPages - 1, gastosPage + 1))}
                       disabled={gastosPage >= gastosTotalPages - 1}
-                      className="p-1 rounded-md text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="p-1 rounded-base text-faint hover:text-ink hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -559,26 +579,26 @@ const Finanzas = () => {
 
       {/* Sección de Ventas (Drill-down) */}
       {!loadingResumen && showVentas && (
-        <div className="bg-white rounded-2xl border border-gray-900 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-paper rounded-panel border border-ink overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="px-6 py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setShowVentas(false)} 
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors"
+              <button
+                onClick={() => setShowVentas(false)}
+                className="p-1.5 hover:bg-canvas rounded-base text-faint hover:text-ink transition-colors cursor-pointer"
                 title="Volver"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h2 className="text-base font-bold text-gray-900">Detalle de Ventas</h2>
-                <span className="text-sm text-gray-500 font-medium">{totalElements} ventas en total</span>
+                <h2 className="text-base font-bold text-ink">Detalle de Ventas</h2>
+                <span className="text-sm text-muted font-medium">{totalElements} ventas en total</span>
               </div>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
               {/* Selector de Vendedor (Solo Herramientas) dentro del detalle */}
               {unidadNegocioActiva === '2' && (
-                <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-1.5 shadow-sm">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:block">Vendedor</label>
+                <div className="flex items-center gap-2 bg-paper rounded-base border border-line px-3 py-1.5">
+                  <label className="text-xs font-semibold text-muted uppercase tracking-wider hidden md:block">Vendedor</label>
                   <select
                     value={selectedVendedorId || ''}
                     onChange={(e) => setSelectedVendedorId(e.target.value ? parseInt(e.target.value) : null)}
@@ -590,22 +610,22 @@ const Finanzas = () => {
                     ))}
                   </select>
                   {selectedVendedorId && (
-                    <div className="flex items-center gap-1.5 ml-2 border-l border-gray-200 pl-2">
-                      <span className="text-xs text-gray-500 hidden md:block">Total:</span>
-                      <span className="text-sm font-bold text-emerald-600">{formatMoney(totalVentas)}</span>
+                    <div className="flex items-center gap-1.5 ml-2 border-l border-line pl-2">
+                      <span className="text-xs text-muted hidden md:block">Total:</span>
+                      <span className="text-sm font-bold text-accent-ink font-mono tabular-nums">{formatMoney(totalVentas)}</span>
                     </div>
                   )}
                 </div>
               )}
 
               <div className="relative w-full sm:w-64 xl:w-72">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Buscar cliente..."
                   value={searchVentas}
                   onChange={(e) => setSearchVentas(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full pl-9 pr-4 py-1.5 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                 />
               </div>
             </div>
@@ -613,38 +633,38 @@ const Finanzas = () => {
 
           {loadingVentas ? (
             <div className="p-16 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-              <p className="text-sm font-medium text-gray-500">Cargando ventas...</p>
+              <Loader2 className="w-10 h-10 text-accent animate-spin" />
+              <p className="text-sm font-medium text-muted">Cargando ventas...</p>
             </div>
           ) : ventas.length === 0 ? (
             <div className="p-16 flex flex-col items-center justify-center text-center">
-              <ReceiptText className="w-10 h-10 text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500">No hay ventas que coincidan con la búsqueda.</p>
+              <ReceiptText className="w-10 h-10 text-faint mb-3" />
+              <p className="text-sm text-muted">No hay ventas que coincidan con la búsqueda.</p>
             </div>
           ) : (
             <>
               {/* Tarjetas mobile */}
               <div className="grid grid-cols-1 gap-3 p-4 md:hidden">
                 {ventas.map((venta) => (
-                  <div key={venta.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                  <div key={venta.id} className="bg-paper border border-line rounded-panel p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold text-gray-500">#{venta.nroVenta ?? venta.id}</p>
-                        <p className="text-xs text-gray-500">{new Date(venta.fecha).toLocaleDateString('es-AR')}</p>
+                        <p className="text-xs font-semibold text-muted">#{venta.nroVenta ?? venta.id}</p>
+                        <p className="text-xs text-muted">{new Date(venta.fecha).toLocaleDateString('es-AR')}</p>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoBadgeClass(venta.estadoDePago)}`}>
                         {venta.estadoDePago}
                       </span>
                     </div>
-                    <p className="mt-2 font-semibold text-gray-900">{venta.clienteNombre}</p>
-                    <p className="mt-3 text-xl font-bold text-emerald-700">{formatMoney(venta.totalFinal)}</p>
+                    <p className="mt-2 font-semibold text-ink">{venta.clienteNombre}</p>
+                    <p className="mt-3 text-xl font-bold text-ink font-mono tabular-nums">{formatMoney(venta.totalFinal)}</p>
                     {unidadNegocioActiva === '2' && (
-                      <p className="text-sm font-semibold text-blue-600">G. Neta: {formatMoney(venta.gananciaNeta)}</p>
+                      <p className="text-sm font-semibold text-body font-mono tabular-nums">G. Neta: {formatMoney(venta.gananciaNeta)}</p>
                     )}
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
+                    <div className="mt-3 pt-3 border-t border-line space-y-1 text-xs text-muted">
                       <p>Método: {venta.metodoPago || '—'}</p>
                       <p
-                        className="cursor-pointer hover:text-emerald-600 transition-colors"
+                        className="cursor-pointer hover:text-accent-ink transition-colors"
                         onClick={() => {
                           if (venta.vendedorId) setSelectedVendedorId(venta.vendedorId);
                         }}
@@ -663,32 +683,32 @@ const Finanzas = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-gray-50/75 border-b border-gray-200">
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">N°</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Productos</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendedor</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
+                      <tr className="bg-thead/75 border-b border-line">
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">N°</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Fecha</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Cliente</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Productos</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Vendedor</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-right">Total</th>
                         {unidadNegocioActiva === '2' && (
-                          <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">G. Neta</th>
+                          <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-right">G. Neta</th>
                         )}
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Estado</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Método</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-center">Estado</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-center">Método</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-line">
                       {ventas.map((venta) => (
-                        <tr key={venta.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-4 py-3 text-gray-900 font-medium">#{venta.nroVenta ?? venta.id}</td>
-                          <td className="px-4 py-3 text-gray-600">
+                        <tr key={venta.id} className="hover:bg-canvas transition-colors">
+                          <td className="px-4 py-3 text-ink font-medium">#{venta.nroVenta ?? venta.id}</td>
+                          <td className="px-4 py-3 text-body">
                             {new Date(venta.fecha).toLocaleDateString('es-AR')}
                           </td>
-                          <td className="px-4 py-3 font-medium text-gray-900">{venta.clienteNombre}</td>
-                          <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={venta.resumenProductos}>
+                          <td className="px-4 py-3 font-medium text-ink">{venta.clienteNombre}</td>
+                          <td className="px-4 py-3 text-xs text-muted max-w-[200px] truncate" title={venta.resumenProductos}>
                             {venta.resumenProductos}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer hover:text-emerald-600 transition-colors"
+                          <td className="px-4 py-3 text-sm text-body cursor-pointer hover:text-accent-ink transition-colors"
                               onClick={() => {
                                 if (venta.vendedorId) setSelectedVendedorId(venta.vendedorId);
                               }}
@@ -696,11 +716,11 @@ const Finanzas = () => {
                           >
                             {venta.vendedorNombre}
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-700">
+                          <td className="px-4 py-3 text-right font-bold text-ink font-mono tabular-nums">
                             {formatMoney(venta.totalFinal)}
                           </td>
                           {unidadNegocioActiva === '2' && (
-                            <td className="px-4 py-3 text-right font-bold text-blue-600">
+                            <td className="px-4 py-3 text-right font-bold text-body font-mono tabular-nums">
                               {formatMoney(venta.gananciaNeta)}
                             </td>
                           )}
@@ -709,7 +729,7 @@ const Finanzas = () => {
                               {venta.estadoDePago}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-center text-xs text-gray-600">
+                          <td className="px-4 py-3 text-center text-xs text-body">
                             {venta.metodoPago || '—'}
                           </td>
                         </tr>
@@ -723,17 +743,17 @@ const Finanzas = () => {
 
           {/* Paginación */}
           {totalPages > 0 && (
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <p className="text-sm text-gray-500 flex items-center gap-2">
-                {fetchingVentas && <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />}
-                Página <span className="font-semibold text-gray-900">{page + 1}</span> de{' '}
-                <span className="font-semibold text-gray-900">{totalPages}</span>
+            <div className="px-6 py-4 border-t border-line flex items-center justify-between bg-thead/50">
+              <p className="text-sm text-muted flex items-center gap-2">
+                {fetchingVentas && <Loader2 className="w-4 h-4 text-accent animate-spin" />}
+                Página <span className="font-semibold text-ink">{page + 1}</span> de{' '}
+                <span className="font-semibold text-ink">{totalPages}</span>
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage(Math.max(0, page - 1))}
                   disabled={page === 0}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-white"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-base border border-line text-muted hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-paper"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Anterior
@@ -741,7 +761,7 @@ const Finanzas = () => {
                 <button
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page >= totalPages - 1}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-white"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-base border border-line text-muted hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-paper"
                 >
                   Siguiente
                   <ChevronRight className="w-4 h-4" />
@@ -754,33 +774,33 @@ const Finanzas = () => {
 
       {/* Detalle de Cheques en Cartera */}
       {!loadingResumen && showCheques && (
-        <div className="bg-white rounded-2xl border border-gray-900 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-paper rounded-panel border border-ink overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="px-6 py-4 border-b border-line flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setShowCheques(false)} 
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors"
+              <button
+                onClick={() => setShowCheques(false)}
+                className="p-1.5 hover:bg-canvas rounded-base text-faint hover:text-ink transition-colors cursor-pointer"
                 title="Volver"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-base font-bold text-ink flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-accent" />
                 Cheques en Cartera
               </h2>
             </div>
           </div>
-            
+
           <div className="p-0">
             {chequesCarteraQuery.isFetching ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-                <p className="text-sm font-medium text-gray-500">Cargando cheques...</p>
+                <Loader2 className="w-10 h-10 text-accent animate-spin" />
+                <p className="text-sm font-medium text-muted">Cargando cheques...</p>
               </div>
             ) : chequesEnCarteraList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <ReceiptText className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm text-gray-500">No hay cheques en cartera.</p>
+                <ReceiptText className="w-12 h-12 text-faint mb-3" />
+                <p className="text-sm text-muted">No hay cheques en cartera.</p>
               </div>
             ) : (
               <>
@@ -790,35 +810,35 @@ const Finanzas = () => {
                     const vencimiento = describirVencimientoCheque(cheque.fechaCobro);
                     const { editable, rechazable } = describirEstadoCheque(cheque);
                     return (
-                      <div key={cheque.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                      <div key={cheque.id} className="bg-paper border border-line rounded-panel p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-2xl font-bold text-emerald-700">{formatMoney(cheque.monto)}</p>
+                            <p className="text-2xl font-bold text-ink font-mono tabular-nums">{formatMoney(cheque.monto)}</p>
                             <p className={`text-xs font-semibold mt-1 ${vencimiento.tono.texto}`}>{vencimiento.etiqueta}</p>
                           </div>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold ${describirOrigenCheque(cheque).tono.chip}`}>
                             {describirOrigenCheque(cheque).etiqueta}
                           </span>
                         </div>
-                        <div className="mt-3 space-y-1 text-xs text-gray-500">
+                        <div className="mt-3 space-y-1 text-xs text-muted">
                           <p>Origen: {cheque.clienteNombre || 'Suelto'}</p>
                           <p>Banco: {cheque.banco || '-'}</p>
                           <p>Recibido: {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}</p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-100">
+                        <div className="mt-4 pt-3 border-t border-line">
                           {editable || rechazable ? (
                             <button
                               onClick={() => {
                                 setSelectedCheque(cheque);
                                 setIsChequeModalOpen(true);
                               }}
-                              className="w-full flex items-center justify-center gap-2 py-2.5 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer font-semibold text-sm"
+                              className="w-full flex items-center justify-center gap-2 py-2.5 text-accent-ink bg-accent-soft rounded-base hover:brightness-95 transition-colors cursor-pointer font-semibold text-sm"
                             >
                               <Edit3 className="w-4 h-4" />
                               Actualizar Estado
                             </button>
                           ) : (
-                            <p className="text-center text-gray-400 text-[10px] uppercase font-bold tracking-wide py-2">Bloqueado</p>
+                            <p className="text-center text-faint text-[10px] uppercase font-bold tracking-wide py-2">Bloqueado</p>
                           )}
                         </div>
                       </div>
@@ -831,28 +851,28 @@ const Finanzas = () => {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-gray-50/75 border-b border-gray-200">
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Recepción</th>
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">F. Cobro</th>
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Banco</th>
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origen</th>
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Monto</th>
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Tipo</th>
-                          <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Acciones</th>
+                        <tr className="bg-thead/75 border-b border-line">
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">F. Recepción</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">F. Cobro</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Banco</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Origen</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Monto</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-center">Tipo</th>
+                          <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-center">Acciones</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-line">
                         {chequesEnCarteraList.map((cheque) => (
-                          <tr key={cheque.id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-6 py-4 text-sm text-gray-600">
+                          <tr key={cheque.id} className="hover:bg-canvas transition-colors">
+                            <td className="px-6 py-4 text-sm text-body">
                               {new Date(cheque.fechaRecepcion).toLocaleDateString('es-AR')}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
+                            <td className="px-6 py-4 text-sm text-body">
                               {new Date(cheque.fechaCobro).toLocaleDateString('es-AR')}
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{cheque.banco}</td>
-                            <td className="px-6 py-4 text-sm text-gray-900">{cheque.clienteNombre || 'Suelto'}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-emerald-700 text-right">
+                            <td className="px-6 py-4 text-sm font-medium text-ink">{cheque.banco}</td>
+                            <td className="px-6 py-4 text-sm text-ink">{cheque.clienteNombre || 'Suelto'}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-ink text-right font-mono tabular-nums">
                               {formatMoney(cheque.monto)}
                             </td>
                             <td className="px-6 py-4 text-center">
@@ -866,7 +886,7 @@ const Finanzas = () => {
                                   setSelectedCheque(cheque);
                                   setIsChequeModalOpen(true);
                                 }}
-                                className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                                className="text-accent-ink hover:brightness-90 p-2 bg-accent-soft rounded-base hover:brightness-95 transition-colors cursor-pointer"
                                 title="Editar estado"
                               >
                                 <Edit3 className="w-4 h-4" />

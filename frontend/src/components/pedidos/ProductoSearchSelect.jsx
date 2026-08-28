@@ -135,22 +135,22 @@ const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoN
           onClick={disabled ? undefined : abrirBusqueda}
           disabled={disabled}
           title={productoNombreNuevo}
-          className={`w-full min-w-0 px-2 py-1.5 rounded-lg border text-sm text-left flex items-center justify-between gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          className={`w-full min-w-0 px-2 py-1.5 rounded-base border text-sm text-left flex items-center justify-between gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-accent ${
             disabled
-              ? 'cursor-not-allowed opacity-60 border-gray-200 bg-white'
+              ? 'cursor-not-allowed opacity-60 border-line bg-paper'
               : hasError
-                ? 'cursor-pointer border-red-300 bg-white'
-                : 'cursor-pointer border-transparent bg-transparent hover:border-emerald-300 hover:bg-white'
+                ? 'cursor-pointer border-danger-line bg-paper'
+                : 'cursor-pointer border-transparent bg-transparent hover:border-accent hover:bg-paper'
           }`}
         >
           <span className="flex items-center gap-1.5 min-w-0">
-            <span className="truncate min-w-0 text-gray-800">{productoNombreNuevo}</span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 rounded-full px-1.5 py-0.5 shrink-0">
+            <span className="truncate min-w-0 text-ink">{productoNombreNuevo}</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-warn-ink bg-warn-bg rounded-full px-1.5 py-0.5 shrink-0">
               <Sparkles className="w-2.5 h-2.5" />
               Nuevo
             </span>
           </span>
-          {!disabled && <span className="text-xs font-medium text-emerald-600 shrink-0">Cambiar</span>}
+          {!disabled && <span className="text-xs font-medium text-accent shrink-0">Cambiar</span>}
         </button>
       );
     }
@@ -160,18 +160,18 @@ const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoN
         onClick={disabled ? undefined : abrirBusqueda}
         disabled={disabled}
         title={productoNombre || undefined}
-        className={`w-full min-w-0 px-2 py-1.5 rounded-lg border text-sm text-left flex items-center justify-between gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`w-full min-w-0 px-2 py-1.5 rounded-base border text-sm text-left flex items-center justify-between gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-accent ${
           disabled
-            ? 'cursor-not-allowed opacity-60 border-gray-200 bg-white'
+            ? 'cursor-not-allowed opacity-60 border-line bg-paper'
             : hasError
-              ? 'cursor-pointer border-red-300 bg-white'
-              : 'cursor-pointer border-transparent bg-transparent hover:border-emerald-300 hover:bg-white'
+              ? 'cursor-pointer border-danger-line bg-paper'
+              : 'cursor-pointer border-transparent bg-transparent hover:border-accent hover:bg-paper'
         }`}
       >
-        <span className="truncate min-w-0 text-gray-800">
+        <span className="truncate min-w-0 text-ink">
           {productoNombre || (disabled ? 'Sin producto elegido' : '')}
         </span>
-        {!disabled && <span className="text-xs font-medium text-emerald-600 shrink-0">Cambiar</span>}
+        {!disabled && <span className="text-xs font-medium text-accent shrink-0">Cambiar</span>}
       </button>
     );
   }
@@ -186,7 +186,7 @@ const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoN
     <div className="relative" ref={anchorRef}>
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-400" />
+          <Search className="h-4 w-4 text-faint" />
         </div>
         <input
           type="text"
@@ -194,15 +194,15 @@ const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoN
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar producto..."
-          className={`w-full pl-8 pr-8 py-2 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${
-            hasError ? 'border-red-300' : 'border-gray-200'
+          className={`w-full pl-8 pr-8 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent text-sm ${
+            hasError ? 'border-danger-line' : 'border-line'
           }`}
         />
         {(productoId || esPendiente) && (
           <button
             type="button"
             onClick={() => setEditando(false)}
-            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-faint hover:text-body cursor-pointer"
             title="Cancelar búsqueda"
           >
             <X className="h-4 w-4" />
@@ -213,7 +213,7 @@ const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoN
       {busqueda && (
         <div
           ref={listaRef}
-          className={`absolute z-20 left-0 right-0 max-h-40 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg divide-y divide-gray-100 ${
+          className={`absolute z-20 left-0 right-0 max-h-40 overflow-y-auto border border-line-strong rounded-panel bg-paper shadow-lg divide-y divide-line ${
             abrirHaciaArriba ? 'bottom-full mb-1' : 'top-full mt-1'
           }`}
         >
@@ -222,18 +222,18 @@ const ProductoSearchSelect = ({ productos, productoId, productoNombre, productoN
               <div
                 key={p.id}
                 onClick={() => handleSeleccionar(p.id)}
-                className="px-3 py-2 text-sm hover:bg-emerald-50 cursor-pointer flex items-center justify-between gap-2"
+                className="px-3 py-2 text-sm hover:bg-accent-soft cursor-pointer flex items-center justify-between gap-2"
               >
                 <span className="truncate min-w-0">{p.nombre}</span>
-                <span className="text-xs text-gray-400 shrink-0">stock: {p.stock}</span>
+                <span className="text-xs text-faint shrink-0">stock: {p.stock}</span>
               </div>
             ))
           ) : (
-            <p className="px-3 py-2 text-xs text-gray-400">No se encontraron productos.</p>
+            <p className="px-3 py-2 text-xs text-faint">No se encontraron productos.</p>
           )}
           <div
             onClick={() => handleSeleccionar('__nuevo__')}
-            className="px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 cursor-pointer"
+            className="px-3 py-2 text-sm font-medium text-accent hover:bg-accent-soft cursor-pointer"
           >
             + Crear producto nuevo…
           </div>

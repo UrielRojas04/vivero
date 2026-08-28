@@ -29,30 +29,30 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
   if (!isOpen || !cliente) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white w-full h-full sm:h-auto max-w-4xl rounded-none sm:rounded-2xl overflow-hidden shadow-xl animate-fade-in-up max-h-screen sm:max-h-[90vh] flex flex-col">
-        <div className="flex-none flex justify-between items-center p-6 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm">
+      <div className="bg-paper border border-line-strong w-full h-full sm:h-auto max-w-4xl rounded-none sm:rounded-panel overflow-hidden animate-fade-in-up max-h-screen sm:max-h-[90vh] flex flex-col">
+        <div className="flex-none flex justify-between items-center p-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+            <div className="p-2 bg-accent-soft text-accent-ink rounded-base">
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Historial de Bandejas</h2>
-              <p className="text-sm text-gray-500">{cliente.nombreRazonSocial}</p>
+              <h2 className="text-xl font-bold text-ink">Historial de Bandejas</h2>
+              <p className="text-sm text-muted">{cliente.nombreRazonSocial}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+          <button onClick={onClose} className="text-faint hover:text-body transition-colors cursor-pointer">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="p-0 overflow-y-auto flex-1 bg-gray-50/50">
+        <div className="p-0 overflow-y-auto flex-1 bg-canvas/50">
           {loading ? (
             <div className="flex justify-center p-12">
-              <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-accent-soft border-t-accent rounded-full animate-spin"></div>
             </div>
           ) : historial.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
+            <div className="p-12 text-center text-muted">
               No hay movimientos registrados para este cliente.
             </div>
           ) : (
@@ -62,17 +62,17 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
                   const tipoInfo = describirTipoMovimiento(mov.tipo);
                   const detalleInfo = describirDetalleMovimiento(mov);
                   return (
-                    <div key={mov.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                    <div key={mov.id} className="bg-paper border border-line rounded-panel p-4">
                       <div className="flex items-start justify-between gap-3">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${tipoInfo.tono.chip}`}>
                           {tipoInfo.etiqueta}
                         </span>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">{mov.cantidad}</p>
-                          <p className="text-xs text-gray-500">bandejas</p>
+                          <p className="text-2xl font-bold text-ink font-mono tabular-nums">{mov.cantidad}</p>
+                          <p className="text-xs text-muted">bandejas</p>
                         </div>
                       </div>
-                      <div className="mt-3 space-y-1 text-xs text-gray-500">
+                      <div className="mt-3 space-y-1 text-xs text-muted">
                         <p>
                           {new Date(mov.fecha).toLocaleString('es-AR', {
                             day: '2-digit',
@@ -93,7 +93,7 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
               <div className="hidden md:block">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wider sticky top-0">
+                    <tr className="bg-thead border-b border-line text-xs text-muted uppercase tracking-wider sticky top-0">
                       <th className="p-4 font-semibold">Fecha</th>
                       <th className="p-4 font-semibold">Tipo</th>
                       <th className="p-4 font-semibold text-right">Cantidad</th>
@@ -101,10 +101,10 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
                       <th className="p-4 font-semibold text-right">Usuario</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white">
+                  <tbody className="divide-y divide-line bg-paper">
                     {historial.map((mov) => (
-                      <tr key={mov.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="p-4 text-sm text-gray-600 whitespace-nowrap">
+                      <tr key={mov.id} className="hover:bg-canvas transition-colors">
+                        <td className="p-4 text-sm text-body whitespace-nowrap">
                           {new Date(mov.fecha).toLocaleString('es-AR')}
                         </td>
                         <td className="p-4">
@@ -112,13 +112,13 @@ const HistorialBandejasModal = ({ isOpen, onClose, cliente }) => {
                             {describirTipoMovimiento(mov.tipo).etiqueta}
                           </span>
                         </td>
-                        <td className="p-4 text-right font-bold text-gray-900">
+                        <td className="p-4 text-right font-bold text-ink font-mono tabular-nums">
                           {mov.cantidad}
                         </td>
-                        <td className="p-4 text-center text-sm text-gray-500 whitespace-nowrap">
+                        <td className="p-4 text-center text-sm text-muted whitespace-nowrap">
                           {describirDetalleMovimiento(mov).etiqueta}
                         </td>
-                        <td className="p-4 text-right text-sm text-gray-500 whitespace-nowrap">
+                        <td className="p-4 text-right text-sm text-muted whitespace-nowrap">
                           {mov.usuarioNombre}
                         </td>
                       </tr>

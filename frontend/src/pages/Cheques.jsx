@@ -13,7 +13,7 @@ export default function Cheques() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const size = 10;
-  
+
   // Modal state
   const [selectedCheque, setSelectedCheque] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,24 +42,24 @@ export default function Cheques() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-          <CreditCard className="w-8 h-8 text-emerald-600" />
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-ink flex items-center gap-3">
+          <CreditCard className="w-8 h-8 text-accent" />
           Cartera de Cheques
         </h1>
         <button
           onClick={() => setIsNuevoModalOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-accent text-paper rounded-base font-medium hover:brightness-95 transition-colors cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           Nuevo Cheque
         </button>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-paper p-6 rounded-panel border border-line">
         {isLoading ? (
           <div className="text-center py-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-            <p className="text-gray-500 font-medium">Cargando cartera de cheques...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+            <p className="text-muted font-medium">Cargando cartera de cheques...</p>
           </div>
         ) : (
           <>
@@ -69,16 +69,16 @@ export default function Cheques() {
                 const { etiqueta, tono, editable, rechazable } = describirEstadoCheque(cheque);
                 const vencimiento = cheque.estado === 'EN_CARTERA' ? describirVencimientoCheque(cheque.fechaCobro) : null;
                 return (
-                  <div key={cheque.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                  <div key={cheque.id} className="bg-paper border border-line rounded-panel p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-2xl font-bold text-emerald-600">
+                        <p className="text-2xl font-bold text-ink font-mono tabular-nums">
                           {cheque.monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                         </p>
                         {vencimiento ? (
                           <p className={`text-xs font-semibold mt-1 ${vencimiento.tono.texto}`}>{vencimiento.etiqueta}</p>
                         ) : (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-muted mt-1">
                             {cheque.fechaCobro ? new Date(cheque.fechaCobro).toLocaleDateString() : '-'}
                           </p>
                         )}
@@ -88,9 +88,9 @@ export default function Cheques() {
                       </span>
                     </div>
 
-                    <div className="mt-3 space-y-1 text-xs text-gray-500">
+                    <div className="mt-3 space-y-1 text-xs text-muted">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-700">{cheque.clienteNombre || 'Suelto'}</span>
+                        <span className="font-medium text-body">{cheque.clienteNombre || 'Suelto'}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold ${describirOrigenCheque(cheque).tono.chip}`}>
                           {describirOrigenCheque(cheque).etiqueta}
                         </span>
@@ -103,24 +103,24 @@ export default function Cheques() {
                       )}
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-gray-100">
+                    <div className="mt-4 pt-3 border-t border-line">
                       {editable || rechazable ? (
                         <button
                           onClick={() => openModal(cheque)}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer font-semibold text-sm"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 text-accent-ink bg-accent-soft rounded-base hover:brightness-95 transition-colors cursor-pointer font-semibold text-sm"
                         >
                           <Edit3 className="w-4 h-4" />
                           Actualizar Estado
                         </button>
                       ) : (
-                        <p className="text-center text-gray-400 text-[10px] uppercase font-bold tracking-wide py-2">Bloqueado</p>
+                        <p className="text-center text-faint text-[10px] uppercase font-bold tracking-wide py-2">Bloqueado</p>
                       )}
                     </div>
                   </div>
                 );
               })}
               {data?.content?.length === 0 && (
-                <div className="px-6 py-10 text-center text-gray-500 bg-white border border-gray-200 rounded-2xl">
+                <div className="px-6 py-10 text-center text-muted bg-paper border border-line rounded-panel">
                   No se encontraron cheques.
                 </div>
               )}
@@ -129,39 +129,39 @@ export default function Cheques() {
             {/* Tabla desktop */}
             <div className="hidden md:block">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-line">
+                  <thead className="bg-thead">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha / Cliente</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Banco / N° Serie</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cobro</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Fecha / Cliente</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Banco / N° Serie</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Cobro</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Monto</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-muted uppercase tracking-wider">Estado</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-muted uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-paper divide-y divide-line">
                     {data?.content?.map((cheque) => {
                       const { etiqueta, tono, editable, rechazable } = describirEstadoCheque(cheque);
                       return (
-                        <tr key={cheque.id} className="hover:bg-gray-50">
+                        <tr key={cheque.id} className="hover:bg-canvas">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900 font-semibold flex items-center gap-2">
+                            <div className="text-sm text-ink font-semibold flex items-center gap-2">
                               {cheque.clienteNombre || 'Suelto'}
                               <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold ${describirOrigenCheque(cheque).tono.chip}`}>
                                 {describirOrigenCheque(cheque).etiqueta}
                               </span>
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">{new Date(cheque.fechaRecepcion).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted mt-1">{new Date(cheque.fechaRecepcion).toLocaleDateString()}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{cheque.banco || '-'}</div>
-                            <div className="text-xs text-gray-500">{cheque.numeroSerie ? `N° ${cheque.numeroSerie}` : '-'}</div>
+                            <div className="text-sm font-medium text-ink">{cheque.banco || '-'}</div>
+                            <div className="text-xs text-muted">{cheque.numeroSerie ? `N° ${cheque.numeroSerie}` : '-'}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-body">
                             {cheque.fechaCobro ? new Date(cheque.fechaCobro).toLocaleDateString() : '-'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600 text-right">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-ink text-right font-mono tabular-nums">
                             {cheque.monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -169,7 +169,7 @@ export default function Cheques() {
                               {etiqueta}
                             </span>
                             {cheque.estado === 'ENTREGADO' && cheque.entregadoA && (
-                              <div className="text-[10px] text-gray-500 mt-1 uppercase truncate max-w-[150px] mx-auto font-medium" title={cheque.entregadoA}>
+                              <div className="text-[10px] text-muted mt-1 uppercase truncate max-w-[150px] mx-auto font-medium" title={cheque.entregadoA}>
                                 a: {cheque.entregadoA}
                               </div>
                             )}
@@ -178,13 +178,13 @@ export default function Cheques() {
                             {editable || rechazable ? (
                               <button
                                 onClick={() => openModal(cheque)}
-                                className="text-emerald-600 hover:text-emerald-900 p-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                                className="text-accent-ink hover:brightness-90 p-2 bg-accent-soft rounded-base hover:brightness-95 transition-colors cursor-pointer"
                                 title="Editar estado"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                             ) : (
-                              <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wide">Bloqueado</span>
+                              <span className="text-faint text-[10px] uppercase font-bold tracking-wide">Bloqueado</span>
                             )}
                           </td>
                         </tr>
@@ -192,7 +192,7 @@ export default function Cheques() {
                     })}
                     {data?.content?.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
+                        <td colSpan="6" className="px-6 py-10 text-center text-muted">
                           No se encontraron cheques.
                         </td>
                       </tr>
@@ -204,22 +204,22 @@ export default function Cheques() {
 
             {/* Paginación */}
             {data?.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 bg-white border-t border-gray-100 pt-4">
-                <p className="text-sm text-gray-500">
-                  Mostrando página <span className="font-bold text-gray-900">{data.number + 1}</span> de <span className="font-bold text-gray-900">{data.totalPages}</span>
+              <div className="flex items-center justify-between mt-6 bg-paper border-t border-line pt-4">
+                <p className="text-sm text-muted">
+                  Mostrando página <span className="font-bold text-ink">{data.number + 1}</span> de <span className="font-bold text-ink">{data.totalPages}</span>
                 </p>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}
                     disabled={data.first}
-                    className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    className="px-3 py-1 border border-line-strong rounded-base bg-paper text-body hover:bg-canvas disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setPage(p => p + 1)}
                     disabled={data.last}
-                    className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    className="px-3 py-1 border border-line-strong rounded-base bg-paper text-body hover:bg-canvas disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
