@@ -5,6 +5,7 @@ import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
+import ThemeToggle from '../components/ThemeToggle';
 import { siembrasApi } from '../api/siembras.api';
 import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList } from 'lucide-react';
 import logoVivero from '../assets/logo-vivero.png';
@@ -283,18 +284,23 @@ const DashboardLayout = () => {
             <Menu className="w-6 h-6" />
           </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setIsAlertsOpen(!isAlertsOpen)}
-              className="relative p-2 text-muted hover:text-accent hover:bg-accent-soft rounded-full transition-colors outline-none focus:ring-2 focus:ring-accent cursor-pointer"
-            >
-              <Bell className="w-5 h-5" />
-              {alertas.length > 0 && (
-                <span className="absolute top-1 right-1.5 w-2 h-2 bg-danger rounded-full ring-2 ring-paper animate-pulse"></span>
-              )}
-            </button>
+          {/* Contenedor derecho: agrupa el control de tema y las alertas, en ese orden
+              (switch-tema-claro-oscuro, tarea 5.5 — ThemeToggle inmediatamente a la
+              izquierda de la campana). */}
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <div className="relative">
+              <button
+                onClick={() => setIsAlertsOpen(!isAlertsOpen)}
+                className="relative p-2 text-muted hover:text-accent hover:bg-accent-soft rounded-full transition-colors outline-none focus:ring-2 focus:ring-accent cursor-pointer"
+              >
+                <Bell className="w-5 h-5" />
+                {alertas.length > 0 && (
+                  <span className="absolute top-1 right-1.5 w-2 h-2 bg-danger rounded-full ring-2 ring-paper animate-pulse"></span>
+                )}
+              </button>
 
-            {isAlertsOpen && (
+              {isAlertsOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsAlertsOpen(false)} />
                 <div className="absolute right-0 mt-2 w-80 bg-paper rounded-panel border border-line-strong overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
@@ -349,6 +355,7 @@ const DashboardLayout = () => {
                 </div>
               </>
             )}
+            </div>
           </div>
         </header>
 

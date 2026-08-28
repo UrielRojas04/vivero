@@ -60,12 +60,23 @@
   --accent-hi: #8CBF3F;
   --accent-label: #5B7A4E;
 
-  /* Le dice al navegador que la página soporta ambos esquemas y cuál usar según el sistema
-     (en sincronía con el @media (prefers-color-scheme: dark) de abajo), para que los controles
-     nativos (el popup de opciones de <select>, scrollbars) los pinte a juego en vez de asumir
-     un default propio — ver el fix de contraste de <option> más abajo. */
+  /* Red de seguridad para el instante previo a que el script anti-parpadeo de index.html fije
+     data-theme en <html> (antes del primer pintado, pero técnicamente después de que el motor
+     de CSS ya resolvió :root): le dice al navegador que la página soporta ambos esquemas mientras
+     ese atributo todavía no existe. Una vez que data-theme está presente, lo pisan las reglas
+     [data-theme="light"|"dark"] de abajo (Decisión 7 de
+     openspec/changes/switch-tema-claro-oscuro/design.md) — ver también el fix de contraste de
+     <option> más abajo. */
   color-scheme: light dark;
 }
+
+/* color-scheme sigue al tema elegido dentro de la app, no al del sistema operativo: así el popup
+   nativo de <option> y las scrollbars se pintan a juego con el data-theme explícito en vez de con
+   la preferencia del SO (Decisión 7 de design.md). Nota (revisión post-implementación): "tema
+   elegido" ya no implica persistencia — es la elección en memoria de la sesión, o el arranque por
+   matchMedia si el usuario no tocó el toggle. */
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
 
 /* Acento por unidad de negocio (Decisión 1 de design.md): un solo interruptor —
    document.documentElement.dataset.unidad, seteado desde DashboardLayout — retiñe todo el
@@ -92,37 +103,46 @@
   --accent-plate: #123238; /* placa oscura: el logo Serhan es arte blanco */
 }
 
-/* Modo oscuro (neutral cálido invertido, copiado tal cual de design/vivero-tokens.css) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-paper: #211D19;
-    --color-paper-alt: #1B1815;
-    --color-canvas: #171412;
-    --color-line: #3A332D;
-    --color-line-strong: #4A423B;
-    --color-thead: #2A2521;
-    --color-faint: #8A8177;
-    --color-muted: #A79E94;
-    --color-body: #DCD5CD;
-    --color-ink: #F2EDE7;
+/* Modo oscuro (neutral cálido invertido, copiado tal cual de design/vivero-tokens.css).
+   Activado por atributo (`[data-theme="dark"]`), no por media query: el elemento raíz lleva
+   siempre un valor concreto de data-theme ("light" o "dark"), escrito por
+   `frontend/src/hooks/useTheme.js` a partir del toggle de dos estados de
+   `frontend/src/store/useThemeStore.js` (Decisión 1 de
+   openspec/changes/switch-tema-claro-oscuro/design.md; ver también "Revisión
+   post-implementación" en ese mismo design.md — ya no hay un tercer estado "sistema" ni
+   persistencia, sólo un toggle en memoria inicializado por matchMedia). Esto deja los valores
+   oscuros declarados UNA SOLA VEZ en todo el archivo, en vez de una copia por cada @media que
+   los redefiniera. */
+[data-theme="dark"] {
+  --color-paper: #211D19;
+  --color-paper-alt: #1B1815;
+  --color-canvas: #171412;
+  --color-line: #3A332D;
+  --color-line-strong: #4A423B;
+  --color-thead: #2A2521;
+  --color-faint: #8A8177;
+  --color-muted: #A79E94;
+  --color-body: #DCD5CD;
+  --color-ink: #F2EDE7;
 
-    --color-ok: #7FCB9B;  --color-ok-ink: #7FCB9B;  --color-ok-bg: #1E2B22;  --color-ok-line: #35543F;
-    --color-warn: #E0A44F; --color-warn-ink: #E0A44F; --color-warn-bg: #2C231A; --color-warn-line: #55432B;
-    --color-danger: #E5827A; --color-danger-ink: #E5827A; --color-danger-bg: #2E1F1D; --color-danger-line: #55332F;
-  }
-  /* accent-ink = accent en modo oscuro, igual que ok-ink/warn-ink/danger-ink más arriba: en dark
-     mode los fondos con los que se empareja (--accent-soft, --color-paper) son oscuros, así que el
-     "ink" tiene que ser el tono claro/brillante, no uno oscuro (bug real reportado por el usuario:
-     con --accent-ink oscuro quedaba texto casi negro sobre fondo casi negro en cualquier botón o
-     chip que usara `text-accent-ink` sobre `bg-paper` o `bg-accent-soft`). */
-  [data-unidad="vivero"] { --accent: #A6D65B; --accent-ink: #A6D65B; --accent-soft: #232B1B; --accent-label: #A6D65B; }
-  [data-unidad="herramientas"] { --accent: #5FB3BC; --accent-ink: #5FB3BC; --accent-soft: #1A2A2C; --accent-label: #5FB3BC; }
+  --color-ok: #7FCB9B;  --color-ok-ink: #7FCB9B;  --color-ok-bg: #1E2B22;  --color-ok-line: #35543F;
+  --color-warn: #E0A44F; --color-warn-ink: #E0A44F; --color-warn-bg: #2C231A; --color-warn-line: #55432B;
+  --color-danger: #E5827A; --color-danger-ink: #E5827A; --color-danger-bg: #2E1F1D; --color-danger-line: #55332F;
 }
+/* accent-ink = accent en modo oscuro, igual que ok-ink/warn-ink/danger-ink más arriba: en dark
+   mode los fondos con los que se empareja (--accent-soft, --color-paper) son oscuros, así que el
+   "ink" tiene que ser el tono claro/brillante, no uno oscuro (bug real reportado por el usuario:
+   con --accent-ink oscuro quedaba texto casi negro sobre fondo casi negro en cualquier botón o
+   chip que usara `text-accent-ink` sobre `bg-paper` o `bg-accent-soft`).
+   [data-unidad="vivero"|"herramientas"] y [data-theme="dark"] matchean el mismo <html>, así que
+   acá se combinan en un solo selector compuesto — no se anidan como si fueran descendientes. */
+[data-theme="dark"][data-unidad="vivero"] { --accent: #A6D65B; --accent-ink: #A6D65B; --accent-soft: #232B1B; --accent-label: #A6D65B; }
+[data-theme="dark"][data-unidad="herramientas"] { --accent: #5FB3BC; --accent-ink: #5FB3BC; --accent-soft: #1A2A2C; --accent-label: #5FB3BC; }
 
 /* Exportación de factura a imagen (bug reportado: "marco blanco" en celulares con el sistema en
    modo oscuro): el fondo del PNG que genera `toPng()` en FacturaCliente.jsx queda hardcodeado en
    claro (`#f9fafb`, ver capturarNodoComoImagen), pero antes de este fix la tarjeta capturada
-   heredaba los tokens de `@media (prefers-color-scheme: dark)` si el celular del usuario estaba en
+   heredaba los tokens del bloque de modo oscuro si el celular del usuario estaba en modo
    oscuro — tarjeta oscura dentro de un marco claro que no combinaba. Un documento exportado/impreso
    no debería depender del tema del dispositivo que lo genera, así que se fuerza esta clase (agregada
    vía className, no toca `capturarNodoComoImagen`) a los valores claros siempre, sin importar el
@@ -130,6 +150,8 @@
    mismo selector `[data-unidad="..."]` ya usado arriba, para conservar el color correcto de la
    unidad activa incluso en modo oscuro. */
 .force-light-export {
+  color-scheme: light;
+
   --color-paper: #FFFFFF;       --color-paper-alt: #FBFAF8;
   --color-canvas: #F5F3F0;      --color-line: #DED9D2;
   --color-line-strong: #C6BFB6; --color-thead: #EFEBE6;

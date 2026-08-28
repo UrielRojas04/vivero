@@ -23,8 +23,14 @@ import Facturas from './pages/Facturas';
 import FacturaCliente from './pages/FacturaCliente';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
+import { useTheme } from './hooks/useTheme';
 
 function App() {
+  // Se monta acá y no en DashboardLayout: App.jsx es la raíz común de /login y del
+  // dashboard autenticado, y el login vive fuera del layout autenticado (Decisión 4
+  // de openspec/changes/switch-tema-claro-oscuro/design.md).
+  useTheme();
+
   return (
     <BrowserRouter>
       <Routes>

@@ -2,6 +2,30 @@
 <html lang="es" data-unidad="vivero">
   <head>
     <meta charset="UTF-8" />
+    <!-- Script anti-parpadeo (switch-tema-claro-oscuro): fija data-theme en <html> ANTES del
+         primer pintado, inline y SIN defer a propósito (un script externo se descarga en
+         paralelo al render y no garantiza llegar a tiempo). Sin esto, <html> arranca sin
+         data-theme, [data-theme="dark"] no matchea en frontend/src/index.css, y el navegador
+         pinta un primer frame claro que desaparece recién cuando React monta y
+         frontend/src/hooks/useTheme.js corre — un flash visible, sobre todo con el sistema
+         operativo en oscuro.
+
+         Revisión post-implementación: ya no hay preferencia persistida que leer de localStorage
+         (el usuario pidió que el tema viva sólo en memoria durante la sesión de la pestaña, sin
+         guardarse). El script se redujo a consultar matchMedia directamente, sin ningún contrato
+         de clave con frontend/src/store/useThemeStore.js — ese store hace exactamente la misma
+         consulta al inicializarse, así que ambos arrancan de acuerdo por construcción, no por
+         sincronización manual. -->
+    <script>
+      (function () {
+        try {
+          document.documentElement.dataset.theme =
+            window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>

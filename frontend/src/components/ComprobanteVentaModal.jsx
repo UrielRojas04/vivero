@@ -413,9 +413,15 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
         </div>
 
         <div className="overflow-y-auto flex-1 bg-canvas p-6">
+          {/* force-light-export (switch-tema-claro-oscuro, fix de regresión): mismo bug que ya se
+              corrigió en FacturaCliente.jsx — el fondo del PNG en generarPngDePreview() ya es
+              blanco (#ffffff), pero el contenido clonado heredaba los tokens de [data-theme="dark"]
+              cuando la app estaba en oscuro, dejando texto claro sobre fondo blanco (ilegible).
+              cloneNode(true) copia el className tal cual, así que esta clase viaja con el clon sin
+              tocar generarPngDePreview. */}
           <div
             ref={previewRef}
-            className="bg-paper rounded-panel border border-line p-6 mx-auto max-w-lg"
+            className="force-light-export bg-paper rounded-panel border border-line p-6 mx-auto max-w-lg"
           >
             <div className="flex justify-between items-start border-b-2 border-accent pb-4">
               <div>
