@@ -68,6 +68,18 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     enabled: isOpen && unidadNegocioActiva === '2',
   });
 
+  const { data: categoriasAbono = [] } = useQuery({
+    queryKey: ['categorias-abono'],
+    queryFn: async () => {
+      const { getAllCategoriasAbono } = await import('../api/categoriaAbono.api');
+      const res = await getAllCategoriasAbono();
+      return res.data;
+    },
+    enabled: isOpen && unidadNegocioActiva === '3',
+  });
+
+  const [categoriaAbonoId, setCategoriaAbonoId] = useState('');
+
   useEffect(() => {
     if (producto) {
       setNombre(producto.nombre || '');
@@ -90,6 +102,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       // efectivamente vinculado, sin disparar la copia de valores (eso sólo pasa vía
       // handleProveedorChange, ante una elección explícita del usuario — tarea 8.3).
       setProveedorSeleccionadoId(producto.proveedorId ? producto.proveedorId.toString() : '');
+      setCategoriaAbonoId(producto.categoriaAbonoId ? producto.categoriaAbonoId.toString() : '');
       // Snapshot del precio "de antes" para la confirmación del submit — nunca se vuelve a
       // recalcular durante la edición, sólo se lee al comparar en handleSubmit.
       setPrecioOriginal(producto.precio !== null && producto.precio !== undefined ? Number(producto.precio) : null);
@@ -112,6 +125,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setDueno('');
       setMonedaCosto('ARS');
       setProveedorSeleccionadoId('');
+      setCategoriaAbonoId('');
       setPrecioOriginal(null);
     }
     setErrors({});
@@ -269,12 +283,18 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
   const costoFinalCalc = desglose.costoFinal;
   const gananciaMonto = pVenta - costoFinalCalc;
 
-  const isVivero = unidadNegocioActiva !== '2';
+  const isVivero = unidadNegocioActiva === '1';
+  const isAbono = unidadNegocioActiva === '3';
+  
   const tituloModal = producto
-    ? (isVivero ? 'Editar Producto (Planta)' : 'Editar Producto')
-    : (isVivero ? 'Nuevo Producto (Planta)' : 'Nuevo Producto');
-  const labelNombre = isVivero ? 'Nombre de la Planta' : 'Nombre del Producto';
-  const placeholderNombre = isVivero ? 'Ej: Lechuga morada, Repollo, Acelga' : 'Ej: Pala ancha, Maceta, Fertilizante';
+    ? (isVivero ? 'Editar Producto (Planta)' : (isAbono ? 'Editar Producto (Abono)' : 'Editar Producto'))
+    : (isVivero ? 'Nuevo Producto (Planta)' : (isAbono ? 'Nuevo Producto (Abono)' : 'Nuevo Producto'));
+    
+  const labelNombre = isVivero ? 'Nombre de la Planta' : (isAbono ? 'Nombre del Abono' : 'Nombre del Producto');
+  
+  const placeholderNombre = isVivero 
+    ? 'Ej: Lechuga morada, Repollo, Acelga' 
+    : (isAbono ? 'Ej: Tierra Fértil 50L, Humus de Lombriz' : 'Ej: Pala ancha, Maceta, Fertilizante');
 
   const validate = () => {
     const newErrors = {};
@@ -284,10 +304,12 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     } else if (parseFloat(precio) <= 0) {
       newErrors.precio = 'El precio debe ser mayor a 0';
     }
-    if (stock === '' || stock === null) {
-      newErrors.stock = 'El stock es requerido';
-    } else if (parseInt(stock, 10) < 0) {
-      newErrors.stock = 'El stock no puede ser negativo';
+    if (!isAbono) {
+      if (stock === '' || stock === null) {
+        newErrors.stock = 'El stock es requerido';
+      } else if (parseInt(stock, 10) < 0) {
+        newErrors.stock = 'El stock no puede ser negativo';
+      }
     }
     // Validación de la lista de descuentos (tarea 9.7): nombre no vacío, porcentaje no negativo.
     // No se manda la petición si alguna fila es inválida.
@@ -321,7 +343,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       // negocio" (Decisión 5), mismo patrón que ya usa este componente para costoProducto.
       ivaPorcentaje: ivaPropio !== '' ? parseFloat(ivaPropio) : null,
       costoEnvioPorcentaje: envioPropio !== '' ? parseFloat(envioPropio) : null,
-      stock: parseInt(stock, 10),
+      stock: isAbono ? 0 : parseInt(stock, 10),
       lote: lote.trim() || null,
       dueno: dueno.trim() || null,
       // Vínculo de catálogo real (grupo 9): reemplaza a marcaId, que este formulario ya no
@@ -331,6 +353,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       // Moneda de costeo del producto (grupo 5/8): siempre viaja informada (nunca null), igual
       // criterio que el resto de los campos de costeo de este formulario.
       monedaCosto,
+      categoriaAbonoId: categoriaAbonoId ? parseInt(categoriaAbonoId, 10) : null,
     });
   };
 
@@ -427,6 +450,31 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
             )}
           </div>
 
+          {unidadNegocioActiva === '3' && (
+            <div>
+              <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+                Categoría
+              </label>
+              <div className="relative">
+                <select
+                  value={categoriaAbonoId}
+                  onChange={(e) => setCategoriaAbonoId(e.target.value)}
+                  className="w-full px-4 py-2.5 pr-10 rounded-base border border-line bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">Seleccione una categoría...</option>
+                  {categoriasAbono.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label htmlFor="descripcion" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
               Descripción
@@ -462,23 +510,25 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               </div>
             )}
 
-            <div className={unidadNegocioActiva === '2' ? 'col-span-1' : 'col-span-2'}>
-              <label htmlFor="stock" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
-                Stock (Unidades)
-              </label>
-              <FormattedNumberInput
-                id="stock"
-                value={stock}
-                onChange={(val) => setStock(val)}
-                className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
-                  errors.stock ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
-                }`}
-                placeholder="0"
-              />
-              {errors.stock && (
-                <p className="mt-1 text-xs text-danger font-medium">{errors.stock}</p>
-              )}
-            </div>
+            {unidadNegocioActiva !== '3' && (
+              <div className={unidadNegocioActiva === '2' ? 'col-span-1' : 'col-span-2'}>
+                <label htmlFor="stock" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+                  Stock (Unidades)
+                </label>
+                <FormattedNumberInput
+                  id="stock"
+                  value={stock}
+                  onChange={(val) => setStock(val)}
+                  className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
+                    errors.stock ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
+                  }`}
+                  placeholder="0"
+                />
+                {errors.stock && (
+                  <p className="mt-1 text-xs text-danger font-medium">{errors.stock}</p>
+                )}
+              </div>
+            )}
 
             {unidadNegocioActiva === '2' && (
               <div className="col-span-1">
@@ -696,7 +746,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
             )}
           </div>
 
-          {unidadNegocioActiva !== '2' && (
+          {unidadNegocioActiva === '1' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="lote" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">

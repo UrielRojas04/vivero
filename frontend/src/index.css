@@ -94,6 +94,14 @@
      conserva su `--accent-plate` (placa oscura), confirmada explícitamente sin cambios. */
 }
 
+[data-unidad="abono"] {
+  --accent: #5C4033; /* Dark brown */
+  --accent-ink: #4A332A;
+  --accent-soft: #F5EFEB;
+  --accent-hi: #8B664B;
+  --accent-label: #704F3E;
+}
+
 [data-unidad="herramientas"] {
   --accent: #14666F;
   --accent-ink: #0E4A51;
@@ -137,6 +145,7 @@
    [data-unidad="vivero"|"herramientas"] y [data-theme="dark"] matchean el mismo <html>, así que
    acá se combinan en un solo selector compuesto — no se anidan como si fueran descendientes. */
 [data-theme="dark"][data-unidad="vivero"] { --accent: #A6D65B; --accent-ink: #A6D65B; --accent-soft: #232B1B; --accent-label: #A6D65B; }
+[data-theme="dark"][data-unidad="abono"] { --accent: #D4A373; --accent-ink: #D4A373; --accent-soft: #2E251F; --accent-label: #D4A373; }
 [data-theme="dark"][data-unidad="herramientas"] { --accent: #5FB3BC; --accent-ink: #5FB3BC; --accent-soft: #1A2A2C; --accent-label: #5FB3BC; }
 
 /* Exportación de factura a imagen (bug reportado: "marco blanco" en celulares con el sistema en
@@ -168,6 +177,10 @@
 [data-unidad="vivero"] .force-light-export {
   --accent: #35682F; --accent-ink: #2A5325; --accent-soft: #EEF3E4;
   --accent-hi: #8CBF3F; --accent-label: #5B7A4E;
+}
+[data-unidad="abono"] .force-light-export {
+  --accent: #5C4033; --accent-ink: #4A332A; --accent-soft: #F5EFEB;
+  --accent-hi: #8B664B; --accent-label: #704F3E;
 }
 [data-unidad="herramientas"] .force-light-export {
   --accent: #14666F; --accent-ink: #0E4A51; --accent-soft: #E5EFF0;

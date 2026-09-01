@@ -94,6 +94,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOriginPatterns(Arrays.asList("*")); // Update in prod
+        // X-Cuenta-Abono ya no existe: la cuenta activa se deriva del usuario autenticado
+        // (CuentaAbonoFilter), no de un header (ver design.md, "Revisión post-implementación").
         config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Unidad-Negocio"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "OPTIONS", "DELETE", "PATCH"));
         

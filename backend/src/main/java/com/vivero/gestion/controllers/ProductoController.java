@@ -29,14 +29,14 @@ public class ProductoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('LEER_STOCK')")
+    @PreAuthorize("hasAnyAuthority('LEER_STOCK', 'ESCRIBIR_PRODUCCION')")
     public ResponseEntity<ProductoDTO> obtenerProductoPorId(@PathVariable Long id) {
         ProductoDTO dto = productoService.obtenerProductoPorId(id);
         return ResponseEntity.ok(dto);
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('LEER_STOCK')")
+    @PreAuthorize("hasAnyAuthority('LEER_STOCK', 'ESCRIBIR_PRODUCCION')")
     public ResponseEntity<List<ProductoDTO>> obtenerTodosLosProductos() {
         List<ProductoDTO> dtos = productoService.obtenerTodosLosProductos();
         return ResponseEntity.ok(dtos);

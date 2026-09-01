@@ -7,45 +7,73 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import ThemeToggle from '../components/ThemeToggle';
 import { siembrasApi } from '../api/siembras.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory } from 'lucide-react';
 import logoVivero from '../assets/logo-vivero.png';
 import logoHerramientas from '../assets/logo-herramientas.png';
+
+const identities = {
+  vivero: {
+    slug: 'vivero',
+    logo: logoVivero,
+    plateClass: null,
+    logoClass: 'h-[100px] max-w-full object-contain transition-transform duration-300 hover:scale-105 -mx-2'
+  },
+  herramientas: {
+    slug: 'herramientas',
+    logo: logoHerramientas,
+    plateClass: 'bg-[var(--accent-plate)] h-[82px] w-full flex items-center justify-center px-2.5',
+    logoClass: 'h-full object-contain transition-transform duration-300 hover:scale-105'
+  },
+  abono: {
+    slug: 'abono',
+    logo: logoVivero,
+    plateClass: null,
+    logoClass: 'h-[100px] max-w-full object-contain transition-transform duration-300 hover:scale-105 -mx-2 opacity-80 sepia-[.3] hue-rotate-[-30deg]' // A visual distinction for Abono if we don't have a logo yet
+  }
+};
 
 const navGroups = [
   {
     title: 'Principal',
     items: [
-      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, unidades: ['vivero', 'herramientas', 'abono'], onlyJefe: true },
     ]
   },
   {
     title: 'Ventas',
     items: [
-      { to: '/ventas/nueva', label: 'Ventas', icon: ShoppingCart, permission: 'ESCRIBIR_VENTAS' },
-      { to: '/facturas', label: 'Facturación', icon: ListChecks, permission: 'LEER_FACTURACION' },
+      { to: '/ventas/nueva', label: 'Ventas', icon: ShoppingCart, permission: 'ESCRIBIR_VENTAS', unidades: ['vivero', 'herramientas', 'abono'] },
+      { to: '/facturas', label: 'Facturación', icon: ListChecks, permission: 'LEER_FACTURACION', unidades: ['vivero', 'herramientas', 'abono'] },
     ]
   },
   {
     title: 'Catálogo',
     items: [
-      { to: '/productos', label: 'Productos (Plantas)', icon: Package, permission: 'LEER_STOCK' },
-      { to: '/insumos', label: 'Insumos', icon: Wrench, permission: 'LEER_INSUMOS' },
-      { to: '/siembras', label: 'Siembras', icon: Sprout, permission: 'LEER_STOCK' },
+      { to: '/productos', label: 'Productos (Plantas)', icon: Package, permission: 'LEER_STOCK', unidades: ['vivero'] },
+      { to: '/productos', label: 'Productos', icon: Package, permission: 'LEER_STOCK', unidades: ['herramientas'] },
+      { to: '/productos', label: 'Productos', icon: Package, permission: 'LEER_STOCK', unidades: ['abono'] },
+      { to: '/insumos', label: 'Insumos', icon: Wrench, permission: 'LEER_INSUMOS', unidades: ['vivero', 'abono'] },
+      { to: '/siembras', label: 'Siembras', icon: Sprout, permission: 'LEER_SIEMBRAS', unidades: ['vivero'] },
+    ]
+  },
+  {
+    title: 'Abono',
+    items: [
+      { to: '/abono/produccion', label: 'Producción', icon: Factory, permission: 'ESCRIBIR_PRODUCCION', unidades: ['abono'] },
+      { to: '/abono/traslados', label: 'Traslados', icon: Truck, permission: 'ESCRIBIR_STOCK', unidades: ['abono'] },
+      { to: '/abono/rendiciones', label: 'Rendiciones', icon: HandCoins, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
+      { to: '/abono/liquidacion', label: 'Liquidación', icon: TrendingUp, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
     ]
   },
   {
     title: 'Gestión',
     items: [
-      { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES' },
-      { to: '/bandejas', label: 'Devolución de Bandejas', icon: PackageMinus, permission: ['LEER_CLIENTES', 'LEER_BANDEJAS'] },
-      { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS' },
-      { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS' },
-      { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB' },
-      // Exclusivo del negocio Herramientas — el filtro más abajo lo oculta cuando isHerramientas
-      // es false (ver Decisión 9 / Sección "Pedidos" de design.md). "Proveedores" ya NO tiene
-      // ítem de menú propio (pedido puntual 2026-08-21): quedaría redundante con la sección
-      // "Proveedores" ya embebida en Configuración — accesible sólo desde ahí ahora.
-      { to: '/pedidos', label: 'Pedidos', icon: ClipboardList, permission: 'LEER_PEDIDOS' },
+      { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES', unidades: ['vivero', 'herramientas', 'abono'] },
+      { to: '/bandejas', label: 'Devolución de Bandejas', icon: PackageMinus, permission: ['LEER_CLIENTES', 'LEER_BANDEJAS'], unidades: ['vivero'] },
+      { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas'] },
+      { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas', 'abono'] },
+      { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB', unidades: ['vivero', 'herramientas', 'abono'] },
+      { to: '/pedidos', label: 'Pedidos', icon: ClipboardList, permission: 'LEER_PEDIDOS', unidades: ['herramientas'] },
     ]
   }
 ];
@@ -61,14 +89,16 @@ const DashboardLayout = () => {
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
   const activeBusinessId = parseInt(unidadNegocioActiva);
-  const isHerramientas = activeBusinessId === 2;
+  const unidadSlug = negociosDisponibles.find(n => n.id === activeBusinessId)?.nombre?.toLowerCase() || 'vivero';
+  const currentIdentity = identities[unidadSlug] || identities.vivero;
+  const isAbono = unidadSlug === 'abono';
 
   // Proyecta la unidad activa al DOM para que el acento (--accent y derivadas, resueltas por
   // [data-unidad="vivero"|"herramientas"] en index.css) retiña todo el árbol sin componentes
   // duplicados ni props de tema (Decisión 1 de design.md).
   React.useEffect(() => {
-    document.documentElement.dataset.unidad = isHerramientas ? 'herramientas' : 'vivero';
-  }, [isHerramientas]);
+    document.documentElement.dataset.unidad = currentIdentity.slug;
+  }, [currentIdentity.slug]);
 
   React.useEffect(() => {
     if (user) {
@@ -111,19 +141,19 @@ const DashboardLayout = () => {
               agrandar el logo, en vez de enmarcarlo. Herramientas SÍ mantiene su placa oscura
               (`--accent-plate`) sin cambios — el usuario confirmó explícitamente que esa quedó
               bien, no se toca. */}
-          {isHerramientas ? (
-            <div className="bg-[var(--accent-plate)] h-[82px] w-full flex items-center justify-center px-2.5">
+          {currentIdentity.plateClass ? (
+            <div className={currentIdentity.plateClass}>
               <img
-                src={logoHerramientas}
-                alt="Logo Herramientas"
-                className="h-full object-contain transition-transform duration-300 hover:scale-105"
+                src={currentIdentity.logo}
+                alt={`Logo ${currentIdentity.slug}`}
+                className={currentIdentity.logoClass}
               />
             </div>
           ) : (
             <img
-              src={logoVivero}
-              alt="Logo Vivero"
-              className="h-[100px] max-w-full object-contain transition-transform duration-300 hover:scale-105 -mx-2"
+              src={currentIdentity.logo}
+              alt={`Logo ${currentIdentity.slug}`}
+              className={currentIdentity.logoClass}
             />
           )}
           <button
@@ -155,33 +185,26 @@ const DashboardLayout = () => {
           </div>
         )}
 
+        {/* Placa de cuenta activa (Abono) REMOVED */}
+
+
         <nav className="flex-1 p-4 overflow-y-auto space-y-6">
           {navGroups.map((group, idx) => {
             // Filtrar los items del grupo según permisos
 
             const visibleItems = group.items.filter((item) => {
-              // item.permission acepta un string o un arreglo "cualquiera de estos" (ej. bandejas,
-              // alcanzable por LEER_CLIENTES o por el permiso acotado LEER_BANDEJAS).
+              if (item.onlyJefe && user?.username !== 'jefe@vivero.com') return false;
+
               if (item.permission) {
                 const permisos = Array.isArray(item.permission) ? item.permission : [item.permission];
                 if (!permisos.some(hasPermission)) return false;
               }
-              if (isHerramientas && (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Productos (Plantas)' || item.label === 'Devolución de Bandejas')) {
-                // Rename Productos to just Productos for Herramientas, or hide Siembras/Insumos/Bandejas
-                if (item.label === 'Siembras' || item.label === 'Insumos' || item.label === 'Devolución de Bandejas') return false;
-              }
-              // Condición inversa a la de arriba: Pedidos es exclusivo de Herramientas, así que se
-              // oculta cuando el negocio activo NO es Herramientas (tarea 10.3 de tasks.md) — no
-              // toca la lógica existente de Siembras/Insumos/Bandejas.
-              if (!isHerramientas && item.label === 'Pedidos') {
+              
+              if (item.unidades && !item.unidades.includes(unidadSlug)) {
                 return false;
               }
+
               return true;
-            }).map(item => {
-              if (isHerramientas && item.label === 'Productos (Plantas)') {
-                return { ...item, label: 'Productos' };
-              }
-              return item;
             });
 
             // Si ningún item del grupo es visible, no mostramos el grupo

@@ -39,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ProveedorRepository proveedorRepository;
     private final com.vivero.gestion.repositories.FacturaClienteRepository facturaClienteRepository;
     private final com.vivero.gestion.repositories.VentaRepository ventaRepository;
+    private final com.vivero.gestion.repositories.InsumoRepository insumoRepository;
 
     @Autowired
     public DataInitializer(UsuarioRepository usuarioRepository,
@@ -50,7 +51,8 @@ public class DataInitializer implements CommandLineRunner {
                            PasswordEncoder passwordEncoder,
                            ProveedorRepository proveedorRepository,
                            com.vivero.gestion.repositories.FacturaClienteRepository facturaClienteRepository,
-                           com.vivero.gestion.repositories.VentaRepository ventaRepository) {
+                           com.vivero.gestion.repositories.VentaRepository ventaRepository,
+                           com.vivero.gestion.repositories.InsumoRepository insumoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
@@ -61,6 +63,7 @@ public class DataInitializer implements CommandLineRunner {
         this.proveedorRepository = proveedorRepository;
         this.facturaClienteRepository = facturaClienteRepository;
         this.ventaRepository = ventaRepository;
+        this.insumoRepository = insumoRepository;
     }
 
     @Override
@@ -72,10 +75,16 @@ public class DataInitializer implements CommandLineRunner {
             // 7mo parámetro = costeoPorCapasHabilitado (costeo-fifo-herramientas, Decisión 7):
             // false para las dos, explícito. Nadie activa el costeo por capas en el seed — se
             // activa recién en la migración real (grupo 7, PUERTA 3), fuera de este apply.
-            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false));
-            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false));
+            // 8vo y 9no parámetro = modeloCosto y porcentajeRepartoColega (negocio-abono)
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS, java.math.BigDecimal.ZERO));
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, com.vivero.gestion.models.ModeloCostoUnidad.MERCADERIA_VENDIDA, java.math.BigDecimal.ZERO));
         }
 
+        // Migración retroactiva: asegurar que Herramientas tenga MERCADERIA_VENDIDA si ya existía
+        migrarModeloCostoUnidadesExistentes();
+
+        // Seed Unidad Abono
+        seedUnidadAbono();
         // 1. Permisos ahora viven como PermisoEnum — no requieren tabla ni seeding.
 
         // 2. Crear Roles y asignar permisos
@@ -85,6 +94,12 @@ public class DataInitializer implements CommandLineRunner {
         // Asegurar que el jefe siempre tenga todos los permisos, incluso si el rol ya existía
         rolJefe.setPermisos(permisosJefe);
         rolRepository.save(rolJefe);
+
+        Set<PermisoEnum> permisosColega = EnumSet.allOf(PermisoEnum.class);
+        permisosColega.remove(PermisoEnum.ADMIN_DB);
+        Rol rolColega = crearRol("COLEGA", permisosColega);
+        rolColega.setPermisos(permisosColega);
+        rolRepository.save(rolColega);
 
         // 3. Crear o actualizar Usuario Jefe
         Usuario jefe = usuarioRepository.findByUsername("jefe@vivero.com").orElse(new Usuario());
@@ -114,6 +129,33 @@ public class DataInitializer implements CommandLineRunner {
         
         usuarioRepository.save(jefe);    
         
+        // Crear o actualizar Usuario Colega
+        Usuario colega = usuarioRepository.findByUsername("colega@vivero.com").orElse(new Usuario());
+        if (colega.getId() == null) {
+            colega.setUsername("colega@vivero.com");
+            String initialColegaPassword = System.getenv("INITIAL_COLEGA_PASSWORD");
+            if (initialColegaPassword == null || initialColegaPassword.isBlank()) {
+                // Fallback a la password del jefe si no hay variable para el colega
+                initialColegaPassword = System.getenv("INITIAL_JEFE_PASSWORD");
+            }
+            if (initialColegaPassword != null && !initialColegaPassword.isBlank()) {
+                colega.setPassword(passwordEncoder.encode(initialColegaPassword));
+            } else {
+                throw new IllegalStateException("Falta password inicial para crear el usuario colega.");
+            }
+
+            Set<Rol> rolesColega = new HashSet<>();
+            rolesColega.add(rolColega);
+            colega.setRoles(rolesColega);
+        }
+        
+        UnidadNegocio unidadAbono = unidadNegocioRepository.findByNombre("Abono")
+                .orElseThrow(() -> new IllegalStateException("Falta unidad Abono"));
+        Set<UnidadNegocio> negociosColega = new HashSet<>();
+        negociosColega.add(unidadAbono);
+        colega.setUnidadesNegocio(negociosColega);
+        usuarioRepository.save(colega);
+
         // 4. Inicializar Movimientos de Stock para productos existentes
         if (movimientoStockRepository.count() == 0) {
             java.util.List<Producto> productos = productoRepository.findAll();
@@ -144,6 +186,9 @@ public class DataInitializer implements CommandLineRunner {
 
         // 7. Migrar ventas históricas de Vivero a una primera Factura CERRADA (ciclos-facturacion-cliente)
         // migrarVentasAPrimeraFactura();
+
+        // 8. Retrofit Insumos: todo insumo sin unidad de negocio pasa a pertenecer a Vivero
+        retrofitInsumosVivero();
 
         System.out.println("Base de datos inicializada con roles y usuario jefe.");
     }
@@ -263,4 +308,55 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Migración de Facturas: " + migradas + " venta(s) histórica(s) asignadas a facturas CERRADAS.");
         }
     }
+
+    private void migrarModeloCostoUnidadesExistentes() {
+        java.util.List<UnidadNegocio> unidades = unidadNegocioRepository.findAll();
+        boolean modificado = false;
+        for (UnidadNegocio u : unidades) {
+            if ("Herramientas".equals(u.getNombre()) && u.getModeloCosto() != com.vivero.gestion.models.ModeloCostoUnidad.MERCADERIA_VENDIDA) {
+                u.setModeloCosto(com.vivero.gestion.models.ModeloCostoUnidad.MERCADERIA_VENDIDA);
+                unidadNegocioRepository.save(u);
+                modificado = true;
+            } else if ("Vivero".equals(u.getNombre()) && u.getModeloCosto() != com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS) {
+                u.setModeloCosto(com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS);
+                unidadNegocioRepository.save(u);
+                modificado = true;
+            }
+        }
+        if (modificado) {
+            System.out.println("Migración: Modelos de costo actualizados en unidades de negocio existentes.");
+        }
+    }
+
+    private void retrofitInsumosVivero() {
+        java.util.List<com.vivero.gestion.models.Insumo> insumos = insumoRepository.findAll();
+        int migrados = 0;
+        UnidadNegocio vivero = null;
+        for (com.vivero.gestion.models.Insumo insumo : insumos) {
+            if (insumo.getUnidadNegocio() == null) {
+                if (vivero == null) {
+                    vivero = unidadNegocioRepository.findByNombre("Vivero").orElse(null);
+                    if (vivero == null) break; // Si Vivero no existe, no migrar
+                }
+                insumo.setUnidadNegocio(vivero);
+                insumoRepository.save(insumo);
+                migrados++;
+            }
+        }
+        if (migrados > 0) {
+            System.out.println("Retrofit Insumos: " + migrados + " insumo(s) histórico(s) asignado(s) a Vivero.");
+        }
+    }
+
+    private void seedUnidadAbono() {
+        if (unidadNegocioRepository.findByNombre("Abono").isEmpty()) {
+            UnidadNegocio abono = new UnidadNegocio(null, "Abono", "Unidad de abono", 
+                java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, 
+                com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS, java.math.BigDecimal.ZERO);
+            unidadNegocioRepository.save(abono);
+            System.out.println("Unidad de Negocio 'Abono' creada.");
+        }
+    }
+
+
 }

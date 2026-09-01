@@ -18,6 +18,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     List<Venta> findAllByOrderByFechaDesc();
     List<Venta> findAllByUnidadNegocioIdOrderByFechaDesc(Long unidadNegocioId);
+    List<Venta> findAllByUnidadNegocioIdAndCuentaAbonoOrderByFechaDesc(Long unidadNegocioId, com.vivero.gestion.models.CuentaAbono cuentaAbono);
 
     @Query("SELECT COALESCE(SUM(v.totalFinal), 0) FROM Venta v LEFT JOIN v.usuario u WHERE v.fecha BETWEEN :desde AND :hasta AND v.unidadNegocio.id = :unidadId AND (:usuarioId IS NULL OR u.id = :usuarioId)")
     BigDecimal sumarTotalVentas(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta, @Param("unidadId") Long unidadId, @Param("usuarioId") Long usuarioId);
@@ -82,4 +83,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
      */
     @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.pagos WHERE v IN :ventas")
     List<Venta> completarPagos(@Param("ventas") List<Venta> ventas);
+
+    @Query("SELECT COALESCE(SUM(v.totalFinal), 0) FROM Venta v WHERE v.cuentaAbono = :cuenta AND v.fecha BETWEEN :desde AND :hasta")
+    BigDecimal sumarTotalVentasPorCuentaYPeriodo(@Param("cuenta") com.vivero.gestion.models.CuentaAbono cuenta, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 }

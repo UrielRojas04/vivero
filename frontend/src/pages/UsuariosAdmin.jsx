@@ -34,6 +34,7 @@ export default function UsuariosAdmin() {
     const [selectedSections, setSelectedSections] = useState([]);
     const { unidadNegocioActiva } = useAuthStore();
     const isHerramientas = parseInt(unidadNegocioActiva) === 2;
+    const isAbono = parseInt(unidadNegocioActiva) === 3;
 
     const SECTIONS = [
         { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES', 'LEER_STOCK'] },
@@ -41,6 +42,7 @@ export default function UsuariosAdmin() {
         { id: 'productos', name: isHerramientas ? 'Productos' : 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
         ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_SIEMBRAS', 'ESCRIBIR_SIEMBRAS', 'ADMIN_SIEMBRAS'] }] : []),
         ...(!isHerramientas ? [{ id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] }] : []),
+        ...(isAbono ? [{ id: 'produccion', name: 'Producción', permNames: ['ESCRIBIR_PRODUCCION'] }] : []),
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
         { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'] },
         ...(isHerramientas ? [{ id: 'pedidos', name: 'Pedidos', permNames: ['LEER_PEDIDOS', 'ESCRIBIR_PEDIDOS'] }] : []),

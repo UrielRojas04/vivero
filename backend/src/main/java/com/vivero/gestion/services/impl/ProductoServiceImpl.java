@@ -15,6 +15,8 @@ import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.repositories.ProveedorRepository;
 import com.vivero.gestion.models.UnidadNegocio;
 import com.vivero.gestion.models.Proveedor;
+import com.vivero.gestion.models.CategoriaAbono;
+import com.vivero.gestion.repositories.CategoriaAbonoRepository;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,7 @@ public class ProductoServiceImpl implements ProductoService {
     // MarcaRepository ya no se inyecta acá (tarea 9.10): ninguna ruta de alta/edición de producto
     // vuelve a llamar setMarca(), Marca.java/MarcaRepository quedan intactos como red de rollback.
     private final ProveedorRepository proveedorRepository;
+    private final CategoriaAbonoRepository categoriaAbonoRepository;
 
     @Autowired
     public ProductoServiceImpl(ProductoRepository productoRepository,
@@ -60,13 +63,15 @@ public class ProductoServiceImpl implements ProductoService {
                                SseService sseService,
                                MovimientoStockService movimientoStockService,
                                UsuarioRepository usuarioRepository,
-                               ProveedorRepository proveedorRepository) {
+                               ProveedorRepository proveedorRepository,
+                               CategoriaAbonoRepository categoriaAbonoRepository) {
         this.productoRepository = productoRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
         this.sseService = sseService;
         this.movimientoStockService = movimientoStockService;
         this.usuarioRepository = usuarioRepository;
         this.proveedorRepository = proveedorRepository;
+        this.categoriaAbonoRepository = categoriaAbonoRepository;
     }
 
     @Override
@@ -108,6 +113,13 @@ public class ProductoServiceImpl implements ProductoService {
         if (unidadId != null) {
             UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
             producto.setUnidadNegocio(unidad);
+        }
+
+        if (dto.getCategoriaAbonoId() != null) {
+            CategoriaAbono categoria = categoriaAbonoRepository.findById(dto.getCategoriaAbonoId()).orElse(null);
+            producto.setCategoriaAbono(categoria);
+        } else {
+            producto.setCategoriaAbono(null);
         }
 
         reemplazarDescuentos(producto, dto.getDescuentos());
@@ -189,6 +201,13 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setIvaPorcentaje(dto.getIvaPorcentaje());
         producto.setCostoEnvioPorcentaje(dto.getCostoEnvioPorcentaje());
         if (dto.getMonedaCosto() != null) producto.setMonedaCosto(dto.getMonedaCosto());
+
+        if (dto.getCategoriaAbonoId() != null) {
+            CategoriaAbono categoria = categoriaAbonoRepository.findById(dto.getCategoriaAbonoId()).orElse(null);
+            producto.setCategoriaAbono(categoria);
+        } else {
+            producto.setCategoriaAbono(null);
+        }
 
         reemplazarDescuentos(producto, dto.getDescuentos());
 
@@ -382,6 +401,10 @@ public class ProductoServiceImpl implements ProductoService {
         if (producto.getProveedor() != null) {
             dto.setProveedorId(producto.getProveedor().getId());
             dto.setProveedorNombre(producto.getProveedor().getNombre());
+        }
+        if (producto.getCategoriaAbono() != null) {
+            dto.setCategoriaAbonoId(producto.getCategoriaAbono().getId());
+            dto.setCategoriaAbonoNombre(producto.getCategoriaAbono().getNombre());
         }
         dto.setCostoProducto(producto.getCostoProducto());
         dto.setDescuentoProveedor(producto.getDescuentoProveedor());

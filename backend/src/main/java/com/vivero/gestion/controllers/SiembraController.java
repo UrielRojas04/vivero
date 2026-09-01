@@ -21,9 +21,12 @@ import com.vivero.gestion.services.SiembraService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @RestController
 @RequestMapping("/api/siembras")
 @RequiredArgsConstructor
+@PreAuthorize("hasAuthority('LEER_SIEMBRAS')")
 public class SiembraController {
 
     private final SiembraService siembraService;

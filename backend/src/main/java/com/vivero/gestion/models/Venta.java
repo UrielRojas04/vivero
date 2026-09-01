@@ -37,6 +37,11 @@ public class Venta {
     @JoinColumn(name = "unidad_negocio_id")
     private UnidadNegocio unidadNegocio;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cuenta_abono")
+    // Nullable. NULL significa "no aplica cuenta" (Vivero, Herramientas, histórico).
+    private com.vivero.gestion.models.CuentaAbono cuentaAbono;
+
     private BigDecimal subtotal;
     private BigDecimal porcentajeDescuento;
     private BigDecimal descuento;
@@ -73,6 +78,8 @@ public class Venta {
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
     public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
+    public com.vivero.gestion.models.CuentaAbono getCuentaAbono() { return cuentaAbono; }
+    public void setCuentaAbono(com.vivero.gestion.models.CuentaAbono cuentaAbono) { this.cuentaAbono = cuentaAbono; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
     public BigDecimal getPorcentajeDescuento() { return porcentajeDescuento; }

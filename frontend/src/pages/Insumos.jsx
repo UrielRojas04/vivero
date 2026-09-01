@@ -2,15 +2,19 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import InsumoForm from '../components/InsumoForm';
 import { useUIStore } from '../store/useUIStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Wrench, PackageSearch } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const Insumos = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
+  const { unidadNegocioActiva } = useAuthStore();
   const [insumos, setInsumos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const queryClient = useQueryClient();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInsumo, setSelectedInsumo] = useState(null);
@@ -47,6 +51,7 @@ const Insumos = () => {
       setIsFormOpen(false);
       setSelectedInsumo(null);
       fetchInsumos();
+      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion'] });
       pushToast('success', 'Insumo guardado correctamente.');
     } catch (err) {
       console.error(err);
@@ -62,6 +67,7 @@ const Insumos = () => {
     try {
       await api.delete(`/insumos/${id}`);
       fetchInsumos();
+      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion'] });
       pushToast('success', 'Insumo eliminado.');
     } catch (err) {
       console.error(err);
@@ -87,7 +93,9 @@ const Insumos = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-ink">Catálogo de Insumos</h1>
             <Wrench className="w-5 h-5 text-accent animate-pulse hidden sm:block" />
           </div>
-          <p className="mt-1 text-sm text-muted">Gestión de sustratos, herramientas y macetas.</p>
+          {unidadNegocioActiva !== '3' && (
+            <p className="mt-1 text-sm text-muted">Gestión de sustratos, herramientas y macetas.</p>
+          )}
         </div>
 
         <button

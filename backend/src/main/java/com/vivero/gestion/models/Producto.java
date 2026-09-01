@@ -96,9 +96,13 @@ public class Producto {
     @Column(name = "costo_envio_porcentaje", precision = 5, scale = 2)
     private BigDecimal costoEnvioPorcentaje;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unidad_negocio_id")
     private UnidadNegocio unidadNegocio;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_abono_id")
+    private CategoriaAbono categoriaAbono;
 
     // Costo de referencia (Decisión 5 de design.md de costeo-fifo-herramientas, grupo 8): el
     // MÁXIMO costo_unitario entre las capas ACTIVAS (cantidad_restante > 0) del producto — no un
@@ -192,4 +196,7 @@ public class Producto {
 
     public MonedaCosto getMonedaCosto() { return monedaCosto; }
     public void setMonedaCosto(MonedaCosto monedaCosto) { this.monedaCosto = monedaCosto; }
+    
+    public CategoriaAbono getCategoriaAbono() { return categoriaAbono; }
+    public void setCategoriaAbono(CategoriaAbono categoriaAbono) { this.categoriaAbono = categoriaAbono; }
 }

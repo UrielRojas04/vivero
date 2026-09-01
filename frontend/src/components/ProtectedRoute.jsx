@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import DefaultRedirect from './DefaultRedirect';
 
 const ProtectedRoute = ({ requiredPermission }) => {
   const { token, hasPermission } = useAuthStore();
@@ -14,7 +15,7 @@ const ProtectedRoute = ({ requiredPermission }) => {
   if (requiredPermission) {
     const permisos = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission];
     if (!permisos.some(hasPermission)) {
-      return <Navigate to="/dashboard" replace />;
+      return <DefaultRedirect />;
     }
   }
 

@@ -16,4 +16,6 @@ public class UnidadNegocioDTO {
     // simétrico a costoEnvioPorcentaje — mismo patrón de persistencia en el service (tarea 8.2).
     private java.math.BigDecimal ivaPorcentaje;
     private boolean activo;
+    private com.vivero.gestion.models.ModeloCostoUnidad modeloCosto;
+    private java.math.BigDecimal porcentajeRepartoColega;
 }

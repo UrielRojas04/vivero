@@ -182,7 +182,7 @@ const Clientes = () => {
                 <span className={`text-2xl font-bold font-mono tabular-nums ${saldo.tono.texto}`}>
                   $ {saldo.monto}
                 </span>
-                {unidadNegocioActiva !== '2' && (
+                {unidadNegocioActiva === '1' && (
                   <span className={`mt-1 px-2 py-0.5 rounded-full text-xs font-medium font-mono tabular-nums ${
                     cliente.balanceBandejas > 0 ? 'bg-warn-bg text-warn-ink' : 'bg-thead text-body'
                   }`}>
@@ -241,7 +241,7 @@ const Clientes = () => {
               <th className="p-4 font-semibold">Nombre / Razón Social</th>
               <th className="p-4 font-semibold">Teléfono</th>
               <th className="p-4 font-semibold text-right">Saldo Dinero</th>
-              {unidadNegocioActiva !== '2' && <th className="p-4 font-semibold text-right">Saldo Bandejas</th>}
+              {unidadNegocioActiva === '1' && <th className="p-4 font-semibold text-right">Saldo Bandejas</th>}
               <th className="p-4 font-semibold text-right">Acciones</th>
             </tr>
           </thead>
@@ -267,7 +267,7 @@ const Clientes = () => {
                     $ {saldo.monto} · {saldo.etiqueta}
                   </span>
                 </td>
-                {unidadNegocioActiva !== '2' && (
+                {unidadNegocioActiva === '1' && (
                   <td className="p-4 text-right">
                     <span className={`px-2.5 py-1 rounded-full text-sm font-medium font-mono tabular-nums ${
                       cliente.balanceBandejas > 0 ? 'bg-warn-bg text-warn-ink' : 'bg-thead text-body'

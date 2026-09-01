@@ -4,6 +4,8 @@ import com.vivero.gestion.dto.InsumoDTO;
 import com.vivero.gestion.models.Insumo;
 import com.vivero.gestion.repositories.InsumoRepository;
 import com.vivero.gestion.services.InsumoService;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,14 +19,22 @@ import java.util.stream.Collectors;
 public class InsumoServiceImpl implements InsumoService {
 
     private final InsumoRepository insumoRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
+
     @Autowired
-    public InsumoServiceImpl(InsumoRepository insumoRepository) {
+    public InsumoServiceImpl(InsumoRepository insumoRepository, UnidadNegocioRepository unidadNegocioRepository) {
         this.insumoRepository = insumoRepository;
+        this.unidadNegocioRepository = unidadNegocioRepository;
     }
 
     @Override
     @Transactional
     public InsumoDTO crearInsumo(InsumoDTO dto) {
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId == null) {
+            throw new RuntimeException("No se puede crear un insumo sin contexto de unidad de negocio activa.");
+        }
+
         Insumo insumo = new Insumo();
         insumo.setNombre(dto.getNombre());
         insumo.setDescripcion(dto.getDescripcion());
@@ -33,6 +43,8 @@ public class InsumoServiceImpl implements InsumoService {
                 ? dto.getFechaCompra()
                 : LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
         insumo.setStock(dto.getStock() != null ? dto.getStock() : 0);
+        
+        insumo.setUnidadNegocio(unidadNegocioRepository.findById(unidadId).orElseThrow(() -> new RuntimeException("Unidad de negocio no encontrada")));
 
         Insumo guardado = insumoRepository.save(insumo);
         return mapToDTO(guardado);
@@ -49,7 +61,14 @@ public class InsumoServiceImpl implements InsumoService {
     @Override
     @Transactional(readOnly = true)
     public List<InsumoDTO> obtenerTodosLosInsumos() {
-        return insumoRepository.findAll().stream()
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        List<Insumo> insumos;
+        if (unidadId != null) {
+            insumos = insumoRepository.findAllByUnidadNegocioId(unidadId);
+        } else {
+            insumos = insumoRepository.findAll();
+        }
+        return insumos.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -86,7 +105,8 @@ public class InsumoServiceImpl implements InsumoService {
                 insumo.getDescripcion(),
                 insumo.getPrecio(),
                 insumo.getFechaCompra(),
-                insumo.getStock()
+                insumo.getStock(),
+                insumo.getUnidadNegocio() != null ? insumo.getUnidadNegocio().getId() : null
         );
     }
 }

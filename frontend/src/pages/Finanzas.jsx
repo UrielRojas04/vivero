@@ -43,7 +43,11 @@ const formatMoney = (value) =>
 
 const Finanzas = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
-  const { unidadNegocioActiva } = useAuthStore();
+  const { unidadNegocioActiva, negociosDisponibles } = useAuthStore();
+  
+  const unidadActivaData = negociosDisponibles?.find(n => n.id.toString() === unidadNegocioActiva?.toString());
+  const isModeloPlantas = unidadActivaData?.modeloCosto === 'PLANTAS';
+  const isModeloInsumos = unidadActivaData?.modeloCosto === 'INSUMOS';
   const liveStocks = useStockStore(state => state.liveStocks);
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -113,7 +117,7 @@ const Finanzas = () => {
   const cogsDetalleQuery = useQuery({
     queryKey: ['finanzas', 'cogs', { desde, hasta }],
     queryFn: () => finanzasApi.fetchCogsDetalle(desde, hasta),
-    enabled: showGastos && unidadNegocioActiva === '2',
+    enabled: showGastos && isModeloInsumos,
   });
 
   const productosQuery = useQuery({
@@ -207,8 +211,8 @@ const Finanzas = () => {
   );
 
   const hasGastosToShow = gastos.length > 0 ||
-    (unidadNegocioActiva === '2' && gastosPage === 0 && filteredCogs.length > 0) ||
-    (unidadNegocioActiva === '1' && gastosPage === 0 && !searchGastos && resumen?.costoMercaderiaVendida > 0);
+    (isModeloInsumos && gastosPage === 0 && filteredCogs.length > 0) ||
+    (isModeloPlantas && gastosPage === 0 && !searchGastos && resumen?.costoMercaderiaVendida > 0);
 
   const loadingResumen = resumenQuery.isPending;
   const loadingVentas = ventasQuery.isFetching;
@@ -428,7 +432,7 @@ const Finanzas = () => {
                   <Search className="w-4 h-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder={unidadNegocioActiva === '2' ? "Buscar por concepto o producto..." : "Buscar por concepto o insumo..."}
+                    placeholder={isModeloInsumos ? "Buscar por concepto o producto..." : "Buscar por concepto o insumo..."}
                     value={searchGastos}
                     onChange={(e) => setSearchGastos(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
@@ -478,7 +482,7 @@ const Finanzas = () => {
                 ) : (
                   <ul className="space-y-3">
                     {/* Costos de Mercadería individuales (en la primera página de gastos) */}
-                    {unidadNegocioActiva === '2' && gastosPage === 0 && filteredCogs.map(d => (
+                    {isModeloInsumos && gastosPage === 0 && filteredCogs.map(d => (
                       <li key={`cogs-${d.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-panel border border-line bg-thead/30 hover:bg-thead transition-colors gap-2">
                         <div>
                           <p className="text-sm font-semibold text-ink flex items-center gap-2">
@@ -539,7 +543,7 @@ const Finanzas = () => {
               </div>
 
               {/* Costo de Mercadería Vendida (Info) */}
-              {unidadNegocioActiva === '2' && (
+              {isModeloInsumos && (
                 <div className="mt-8 bg-thead border border-line rounded-base p-4">
                   <p className="text-sm text-body">
                     <strong>Nota:</strong> En el negocio de Herramientas, el indicador de <strong>Total Costos</strong> incluye el <strong>Costo de Mercadería Vendida</strong> de las ventas realizadas en este período, calculado en base al costo histórico al momento de cada venta.
@@ -596,7 +600,7 @@ const Finanzas = () => {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
               {/* Selector de Vendedor (Solo Herramientas) dentro del detalle */}
-              {unidadNegocioActiva === '2' && (
+              {isModeloInsumos && (
                 <div className="flex items-center gap-2 bg-paper rounded-base border border-line px-3 py-1.5">
                   <label className="text-xs font-semibold text-muted uppercase tracking-wider hidden md:block">Vendedor</label>
                   <select
@@ -658,7 +662,7 @@ const Finanzas = () => {
                     </div>
                     <p className="mt-2 font-semibold text-ink">{venta.clienteNombre}</p>
                     <p className="mt-3 text-xl font-bold text-ink font-mono tabular-nums">{formatMoney(venta.totalFinal)}</p>
-                    {unidadNegocioActiva === '2' && (
+                    {isModeloInsumos && (
                       <p className="text-sm font-semibold text-body font-mono tabular-nums">G. Neta: {formatMoney(venta.gananciaNeta)}</p>
                     )}
                     <div className="mt-3 pt-3 border-t border-line space-y-1 text-xs text-muted">
@@ -690,7 +694,7 @@ const Finanzas = () => {
                         <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Productos</th>
                         <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Vendedor</th>
                         <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-right">Total</th>
-                        {unidadNegocioActiva === '2' && (
+                        {isModeloInsumos && (
                           <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-right">G. Neta</th>
                         )}
                         <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider text-center">Estado</th>
@@ -719,7 +723,7 @@ const Finanzas = () => {
                           <td className="px-4 py-3 text-right font-bold text-ink font-mono tabular-nums">
                             {formatMoney(venta.totalFinal)}
                           </td>
-                          {unidadNegocioActiva === '2' && (
+                          {isModeloInsumos && (
                             <td className="px-4 py-3 text-right font-bold text-body font-mono tabular-nums">
                               {formatMoney(venta.gananciaNeta)}
                             </td>

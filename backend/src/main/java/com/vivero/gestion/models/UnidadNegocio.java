@@ -47,4 +47,16 @@ public class UnidadNegocio {
     // comporta exactamente igual que antes de este change (Vivero queda intacto por construcción).
     @Column(name = "costeo_por_capas_habilitado", nullable = false, columnDefinition = "boolean default false")
     private boolean costeoPorCapasHabilitado = false;
+
+    // Modelo de costeo (Decisión negocio-abono). Siguiendo el precedente de costeoPorCapasHabilitado,
+    // las lógicas de Finanzas y Dashboard NUNCA deben usar hardcodes de IDs (ej. id == 1L), sino
+    // que deben leer la capacidad declarada de la unidad de negocio a través de este campo.
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "modelo_costo", nullable = false, columnDefinition = "varchar(255) default 'INSUMOS'")
+    private ModeloCostoUnidad modeloCosto = ModeloCostoUnidad.INSUMOS;
+
+    // Porcentaje de rendición a colegas (Decisión negocio-abono). Define si las operaciones
+    // de esta unidad requieren calcular una deuda hacia el socio.
+    @Column(name = "porcentaje_reparto_colega", precision = 5, scale = 2)
+    private java.math.BigDecimal porcentajeRepartoColega = java.math.BigDecimal.ZERO;
 }

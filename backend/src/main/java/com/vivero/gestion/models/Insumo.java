@@ -42,6 +42,10 @@ public class Insumo {
     private boolean deleted = false;
 
 
+    @jakarta.persistence.ManyToOne(fetch = FetchType.LAZY)
+    @jakarta.persistence.JoinColumn(name = "unidad_negocio_id", nullable = true) // Nullable for retrofit
+    private UnidadNegocio unidadNegocio;
+
     public Insumo() {}
 
     public Insumo(String nombre, String descripcion, BigDecimal precio, Integer stock) {
@@ -69,5 +73,6 @@ public class Insumo {
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
 
-
+    public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
 }

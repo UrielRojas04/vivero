@@ -108,7 +108,7 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                 className={`w-full px-4 py-3 sm:py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all text-base ${
                   errors.nombre ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                 }`}
-                placeholder="Ej: Sustrato universal 50L, Maceta N12"
+                placeholder="Ej: Compost, Tierra Fértil, Perlita, Fertilizante 10L"
               />
               {errors.nombre && (
                 <p className="mt-1 text-xs text-danger font-medium">{errors.nombre}</p>

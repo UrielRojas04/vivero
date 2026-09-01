@@ -38,7 +38,15 @@ export default function NuevaVenta() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { unidadNegocioActiva } = useAuthStore();
+  const isVivero = String(unidadNegocioActiva) === '1';
   const isHerramientas = String(unidadNegocioActiva) === '2';
+  const isAbono = String(unidadNegocioActiva) === '3';
+  
+  const getProductoPlaceholder = () => {
+    if (isAbono) return "Escribí el nombre de la tierra, compost, fertilizante...";
+    if (isHerramientas) return "Escribí el nombre de la herramienta, pala, maceta...";
+    return "Escribí el nombre de la planta, maceta o sustrato...";
+  };
 
   const [isClienteExpress, setIsClienteExpress] = useState(false);
   const [clienteExpressData, setClienteExpressData] = useState({ nombre: '', telefono: '', casual: true });
@@ -61,6 +69,9 @@ export default function NuevaVenta() {
   // Sincronizar stock en vivo con el estado local
   useEffect(() => {
     if (Object.keys(liveStocks).length === 0) return;
+    // Si estamos en Abono, el stock provisto por SSE es global y pisaría el stock consolidado
+    if (unidadNegocioActiva === '3') return;
+
     setProductos(prev => prev.map(p =>
       liveStocks[p.id] !== undefined ? { ...p, stock: liveStocks[p.id] } : p
     ));
@@ -73,7 +84,7 @@ export default function NuevaVenta() {
       }
       return d;
     }));
-  }, [liveStocks, setDetalles]);
+  }, [liveStocks, setDetalles, unidadNegocioActiva]);
 
   // Auto-calcular bandejas según la cantidad de productos en el carrito
   useEffect(() => {
@@ -102,8 +113,33 @@ export default function NuevaVenta() {
           clientesApi.getAll(),
           productosApi.getAll()
         ]);
+        
+        let finalProductos = productosData;
+        
+        if (useAuthStore.getState().unidadNegocioActiva === '3') {
+          try {
+            const { abonoApi } = await import('../api/abono.api');
+            const consolidado = await abonoApi.getStockConsolidado();
+            const stockMap = {};
+            consolidado.data.forEach(item => {
+              stockMap[item.productoId] = { invernadero: item.stockInvernadero, colega: item.stockColega };
+            });
+            const user = useAuthStore.getState().user;
+            const isJefe = user?.username?.includes('jefe');
+            finalProductos = finalProductos.map(p => ({
+              ...p,
+              stockInvernadero: stockMap[p.id]?.invernadero || 0,
+              stockColega: stockMap[p.id]?.colega || 0,
+              // Sobrescribimos el stock global por el stock del rol para la UI
+              stock: isJefe ? (stockMap[p.id]?.invernadero || 0) : (stockMap[p.id]?.colega || 0)
+            }));
+          } catch (err) {
+            console.error("Error fetching abono consolidado", err);
+          }
+        }
+        
         setClientes(clientesData);
-        setProductos(productosData);
+        setProductos(finalProductos);
       } catch (error) {
         if (error.response && error.response.status === 403) {
           pushToast('error', 'Permisos insuficientes. Necesitás poder leer clientes y stock para vender.');
@@ -453,7 +489,7 @@ export default function NuevaVenta() {
               </div>
               <input
                 type="text"
-                placeholder="Escribí el nombre de la planta, maceta o sustrato..."
+                placeholder={getProductoPlaceholder()}
                 value={busquedaProducto}
                 onChange={(e) => setBusquedaProducto(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none mb-4"

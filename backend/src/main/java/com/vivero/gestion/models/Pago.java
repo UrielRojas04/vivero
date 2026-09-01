@@ -22,6 +22,11 @@ public class Pago {
     @JoinColumn(name = "factura_id")
     private FacturaCliente factura;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cuenta_abono")
+    // Nullable. NULL significa "no aplica cuenta" (Vivero, Herramientas, histórico).
+    private com.vivero.gestion.models.CuentaAbono cuentaAbono;
+
     private BigDecimal monto;
     
     private String metodoPago; // EFECTIVO, CHEQUE, TRANSFERENCIA

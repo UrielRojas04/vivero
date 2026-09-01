@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import ProductoForm from '../components/ProductoForm';
+import AjusteStockAbonoModal from '../components/AjusteStockAbonoModal';
+import HistorialAjustesAbono from '../components/HistorialAjustesAbono';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { getIconoUnidad } from '../utils/unidadIconos';
 
 // Aviso de margen (pedido del usuario 2026-08-25): el costo dinámico de las capas (`costoUnitarioHistorico`)
 // puede superar al precio de venta fijo sin que nadie lo note, porque el precio nunca se actualiza solo
@@ -22,7 +25,9 @@ const estadoMargen = (producto) => {
 
 const Productos = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
-  const { unidadNegocioActiva } = useAuthStore();
+  const { unidadNegocioActiva, user } = useAuthStore();
+  const isColega = user?.username === 'colega@vivero.com';
+  const IconoUnidad = getIconoUnidad(unidadNegocioActiva);
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,6 +37,7 @@ const Productos = () => {
   const [selectedProveedor, setSelectedProveedor] = useState('Todos');
   const [searchMode, setSearchMode] = useState('TODO');
   const [expandedMobileId, setExpandedMobileId] = useState(null);
+  const [viewTab, setViewTab] = useState('CATALOGO'); // CATALOGO | HISTORIAL
   
   const liveStocks = useStockStore(state => state.liveStocks);
 
@@ -46,13 +52,36 @@ const Productos = () => {
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedProducto, setSelectedProducto] = useState(null);
+  const [isAjusteModalOpen, setIsAjusteModalOpen] = useState(false);
+  const [productoParaAjuste, setProductoParaAjuste] = useState(null);
 
   const fetchProductos = async () => {
     setLoading(true);
     setError('');
     try {
       const response = await api.get('/productos');
-      setProductos(response.data || []);
+      let data = response.data || [];
+      
+      // Merge Abono specific stock if needed
+      if (useAuthStore.getState().unidadNegocioActiva === '3') {
+        try {
+          const { abonoApi } = await import('../api/abono.api');
+          const consolidado = await abonoApi.getStockConsolidado();
+          const stockMap = {};
+          consolidado.data.forEach(item => {
+            stockMap[item.productoId] = { invernadero: item.stockInvernadero, colega: item.stockColega };
+          });
+          data = data.map(p => ({
+            ...p,
+            stockInvernadero: stockMap[p.id]?.invernadero || 0,
+            stockColega: stockMap[p.id]?.colega || 0
+          }));
+        } catch (err) {
+          console.error("Error fetching abono consolidado", err);
+        }
+      }
+      
+      setProductos(data);
     } catch (err) {
       console.error(err);
       if (err.response && err.response.status === 403) {
@@ -135,28 +164,57 @@ const Productos = () => {
   return (
     <div className="space-y-6">
       {/* Header Area */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 mb-2 relative z-10">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-ink">Catálogo de Productos</h1>
-            <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-          </div>
-          <p className="mt-1 text-sm text-muted">Gestión de plantas, inventario y precios de venta.</p>
+          <h1 className="text-2xl font-bold text-ink">Catálogo de Productos</h1>
+          <p className="mt-1 text-sm text-muted">Gestión de {unidadNegocioActiva === '2' ? 'herramientas' : (unidadNegocioActiva === '3' ? 'abono y fertilizantes' : 'plantas')}, inventario y precios de venta.</p>
         </div>
 
-        <button
-          onClick={() => {
-            setSelectedProducto(null);
-            setIsFormOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 bg-accent hover:brightness-95 text-paper font-semibold px-5 py-2.5 rounded-base transition-all cursor-pointer"
-        >
-          <Plus className="w-5 h-5" />
-          Nuevo Producto
-        </button>
+        {!isColega && viewTab === 'CATALOGO' && (
+          <button
+            onClick={() => {
+              setSelectedProducto(null);
+              setIsFormOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 bg-accent hover:brightness-95 text-paper font-semibold px-5 py-2.5 rounded-base transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Nuevo Producto</span>
+          </button>
+        )}
       </div>
 
-      {/* Search and Feedback Area */}
+      {/* Tab Selector (Abono only) — always just above content */}
+      {unidadNegocioActiva === '3' && (
+        <div className="flex bg-canvas rounded-full p-1 border border-line w-fit">
+          <button
+            onClick={() => setViewTab('CATALOGO')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+              viewTab === 'CATALOGO'
+                ? 'bg-paper text-ink shadow-sm'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            Catálogo
+          </button>
+          <button
+            onClick={() => setViewTab('HISTORIAL')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+              viewTab === 'HISTORIAL'
+                ? 'bg-paper text-ink shadow-sm'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            Historial de Ajustes
+          </button>
+        </div>
+      )}
+
+      {viewTab === 'HISTORIAL' ? (
+        <HistorialAjustesAbono />
+      ) : (
+        <>
+          {/* Search and Feedback Area */}
       <div className="bg-paper rounded-panel border border-line p-4 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
         <div className="relative w-full md:max-w-md">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -164,7 +222,11 @@ const Productos = () => {
           </span>
           <input
             type="text"
-            placeholder={searchMode === 'NUMERO_SIEMBRA' ? 'Buscar sólo por número de siembra...' : 'Buscar por nombre, lote o Nº de siembra...'}
+            placeholder={
+              unidadNegocioActiva === '1' 
+                ? (searchMode === 'NUMERO_SIEMBRA' ? 'Buscar sólo por número de siembra...' : 'Buscar por nombre, lote o Nº de siembra...')
+                : 'Buscar por nombre...'
+            }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-line rounded-base focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-canvas/50 transition-all"
@@ -195,7 +257,7 @@ const Productos = () => {
         )}
 
         <div className="text-sm text-muted font-medium whitespace-nowrap self-end md:self-auto">
-          Total: <span className="text-ink font-semibold font-mono tabular-nums">{filteredProductos.length}</span> {unidadNegocioActiva === '2' ? 'herramientas' : 'plantas'}
+          Total: <span className="text-ink font-semibold font-mono tabular-nums">{filteredProductos.length}</span> {unidadNegocioActiva === '2' ? 'herramientas' : (unidadNegocioActiva === '3' ? 'productos' : 'plantas')}
         </div>
       </div>
 
@@ -242,7 +304,7 @@ const Productos = () => {
       {loading ? (
         <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-10 h-10 text-accent animate-spin" />
-          <p className="text-sm font-medium text-muted">Cargando inventario de plantas...</p>
+          <p className="text-sm font-medium text-muted">Cargando inventario de {unidadNegocioActiva === '2' ? 'herramientas' : (unidadNegocioActiva === '3' ? 'abono' : 'plantas')}...</p>
         </div>
       ) : filteredProductos.length === 0 ? (
         <div className="bg-paper rounded-panel border border-line p-16 flex flex-col items-center justify-center text-center">
@@ -255,9 +317,11 @@ const Productos = () => {
           <p className="mt-2 text-sm text-muted max-w-sm">
             {searchTerm
               ? 'Prueba modificando los términos de búsqueda o borrando el filtro.'
-              : 'Comienza agregando tu primer producto al vivero presionando el botón "Nuevo Producto".'}
+              : (!isColega 
+                  ? 'Comienza agregando tu primer producto presionando el botón "Nuevo Producto".' 
+                  : 'Aún no hay productos registrados en el catálogo.')}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !isColega && (
             <button
               onClick={() => {
                 setSelectedProducto(null);
@@ -265,7 +329,7 @@ const Productos = () => {
               }}
               className="mt-6 px-4 py-2 bg-accent-soft hover:brightness-95 text-accent-ink font-semibold rounded-base text-sm transition-colors cursor-pointer"
             >
-              Crear primer planta
+              {unidadNegocioActiva === '2' ? 'Crear primer herramienta' : (unidadNegocioActiva === '3' ? 'Crear primer producto' : 'Crear primer planta')}
             </button>
           )}
         </div>
@@ -282,7 +346,7 @@ const Productos = () => {
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center font-semibold shrink-0">
-                      <Leaf className="w-5 h-5" />
+                      <IconoUnidad className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-ink text-base leading-tight">
@@ -298,13 +362,13 @@ const Productos = () => {
                           ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                         </p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-base text-[10px] font-bold ${
-                          producto.stock === 0
+                          (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
                             ? 'bg-danger-bg text-danger-ink border border-danger-line'
-                            : producto.stock <= 5
+                            : (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) <= 5
                               ? 'bg-warn-bg text-warn-ink border border-warn-line'
                               : 'bg-ok-bg text-ok-ink border border-ok-line'
                         }`}>
-                          Stock: {producto.stock}
+                          Stock: {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock}
                         </span>
                         {unidadNegocioActiva === '2' && (() => {
                           const margen = estadoMargen(producto);
@@ -348,7 +412,7 @@ const Productos = () => {
                         <span>•</span>
                         <span className="font-semibold text-ink">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
                       </div>
-                    ) : (
+                    ) : unidadNegocioActiva === '1' ? (
                       <div className="flex flex-col gap-1 text-xs text-body bg-canvas p-2.5 rounded-base border border-line">
                         <div className="flex justify-between items-center">
                           <span className="font-medium text-muted">Siembra</span>
@@ -363,34 +427,60 @@ const Productos = () => {
                           <span className="font-semibold text-ink">{producto.dueno || 'Manual'}</span>
                         </div>
                       </div>
-                    )}
+                    ) : unidadNegocioActiva === '3' ? (
+                      <div className="flex flex-col gap-1 text-xs text-body bg-canvas p-2.5 rounded-base border border-line">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-muted">Categoría</span>
+                          <span className="font-semibold text-ink">{producto.categoriaAbonoNombre || '-'}</span>
+                        </div>
+                      </div>
+                    ) : null}
 
-                    <div className="flex items-center justify-end gap-2 pt-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProducto(producto);
-                          setIsFormOpen(true);
-                        }}
-                        className="flex-1 py-2 bg-canvas hover:bg-thead text-body font-semibold rounded-base text-sm transition-colors flex items-center justify-center gap-2 border border-line"
-                      >
-                        <Edit2 className="w-4 h-4" /> Editar
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          askConfirm({
-                            title: '¿Confirmar Eliminación?',
-                            message: 'Esta acción no se puede deshacer. Se removerá la planta de forma permanente.',
-                            variant: 'danger',
-                            confirmLabel: 'Eliminar Planta',
-                            onConfirm: () => handleDelete(producto.id),
-                          });
-                        }}
-                        className="flex-1 py-2 bg-danger-bg hover:brightness-95 text-danger-ink font-semibold rounded-base text-sm transition-colors flex items-center justify-center gap-2 border border-danger-line"
-                      >
-                        <Trash2 className="w-4 h-4" /> Eliminar
-                      </button>
+                    <div className="flex flex-wrap gap-2">
+                      {unidadNegocioActiva === '3' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProductoParaAjuste(producto);
+                            setIsAjusteModalOpen(true);
+                          }}
+                          className="flex-1 min-w-[30%] py-2 px-3 flex items-center justify-center gap-2 bg-canvas hover:bg-line border border-line rounded-base text-body font-semibold transition-colors cursor-pointer"
+                        >
+                          <Settings2 className="w-4 h-4" />
+                          Ajustar
+                        </button>
+                      )}
+                      {!isColega && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedProducto(producto);
+                              setIsFormOpen(true);
+                            }}
+                            className="flex-1 py-2 px-3 flex items-center justify-center gap-2 bg-canvas hover:bg-line border border-line rounded-base text-body font-semibold transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Editar
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              askConfirm({
+                                title: '¿Confirmar Eliminación?',
+                                message: 'Esta acción no se puede deshacer. Se removerá el producto permanentemente.',
+                                variant: 'danger',
+                                confirmLabel: 'Eliminar Producto',
+                                onConfirm: () => handleDelete(producto.id),
+                              });
+                            }}
+                            className="flex-1 py-2 px-3 flex items-center justify-center gap-2 bg-danger-bg hover:brightness-95 border border-danger-line rounded-base text-danger-ink font-semibold transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Eliminar
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -404,18 +494,22 @@ const Productos = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-thead border-b border-line">
-                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Planta</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">{unidadNegocioActiva === '1' ? 'Planta' : 'Producto'}</th>
                   <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Descripción</th>
-                  {unidadNegocioActiva === '2' ? (
+                  {unidadNegocioActiva === '2' && (
                     <>
                       <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Costo</th>
                       <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">% Gan.</th>
                     </>
-                  ) : (
+                  )}
+                  {unidadNegocioActiva === '1' && (
                     <>
                       <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Siembra</th>
                       <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Lote / Dueño</th>
                     </>
+                  )}
+                  {unidadNegocioActiva === '3' && (
+                    <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Categoría</th>
                   )}
                   <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Precio</th>
                   <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Stock</th>
@@ -428,7 +522,7 @@ const Productos = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center font-semibold">
-                          <Leaf className="w-5 h-5" />
+                          <IconoUnidad className="w-5 h-5" />
                         </div>
                         <span className="font-semibold text-ink text-sm">{producto.nombre}</span>
                         {unidadNegocioActiva === '2' && producto.proveedorNombre && (
@@ -443,7 +537,7 @@ const Productos = () => {
                         {producto.descripcion || <span className="text-faint italic">Sin descripción</span>}
                       </p>
                     </td>
-                    {unidadNegocioActiva === '2' ? (
+                    {unidadNegocioActiva === '2' && (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-ink font-mono tabular-nums">
@@ -473,7 +567,8 @@ const Productos = () => {
                           </span>
                         </td>
                       </>
-                    ) : (
+                    )}
+                    {unidadNegocioActiva === '1' && (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-ink">
@@ -492,6 +587,13 @@ const Productos = () => {
                         </td>
                       </>
                     )}
+                    {unidadNegocioActiva === '3' && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-ink">
+                          {producto.categoriaAbonoNombre ? producto.categoriaAbonoNombre : '-'}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-ink font-mono tabular-nums">
                         ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
@@ -499,42 +601,58 @@ const Productos = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold font-mono tabular-nums ${
-                        producto.stock === 0
+                        (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
                           ? 'bg-danger-bg text-danger-ink'
-                          : producto.stock <= 5
+                          : (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) <= 5
                             ? 'bg-warn-bg text-warn-ink'
                             : 'bg-ok-bg text-ok-ink'
                       }`}>
-                        {producto.stock} unidades
+                        {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock} unidades
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            setSelectedProducto(producto);
-                            setIsFormOpen(true);
-                          }}
-                          className="p-1.5 hover:bg-canvas text-body hover:text-accent-ink rounded-base transition-colors cursor-pointer"
-                          title="Editar"
-                        >
-                          <Edit2 className="w-4.5 h-4.5" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            askConfirm({
-                              title: '¿Confirmar Eliminación?',
-                              message: 'Esta acción no se puede deshacer. Se removerá la planta de forma permanente del catálogo y del control de inventario.',
-                              variant: 'danger',
-                              confirmLabel: 'Eliminar Planta',
-                              onConfirm: () => handleDelete(producto.id),
-                            })
-                          }
-                          className="p-1.5 hover:bg-danger-bg text-body hover:text-danger rounded-base transition-colors cursor-pointer"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4.5 h-4.5" />
-                        </button>
+                        {unidadNegocioActiva === '3' && (
+                          <button
+                            onClick={() => {
+                              setProductoParaAjuste(producto);
+                              setIsAjusteModalOpen(true);
+                            }}
+                            className="p-1.5 hover:bg-canvas text-body hover:text-accent-ink rounded-base transition-colors cursor-pointer"
+                            title="Ajustar Stock"
+                          >
+                            <Settings2 className="w-4.5 h-4.5" />
+                          </button>
+                        )}
+                        {!isColega && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setSelectedProducto(producto);
+                                setIsFormOpen(true);
+                              }}
+                              className="p-1.5 hover:bg-canvas text-body hover:text-accent-ink rounded-base transition-colors cursor-pointer"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-4.5 h-4.5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                askConfirm({
+                                  title: '¿Confirmar Eliminación?',
+                                  message: 'Esta acción no se puede deshacer. Se removerá el producto de forma permanente del catálogo y del control de inventario.',
+                                  variant: 'danger',
+                                  confirmLabel: 'Eliminar Producto',
+                                  onConfirm: () => handleDelete(producto.id),
+                                })
+                              }
+                              className="p-1.5 hover:bg-danger-bg text-danger-ink rounded-base transition-colors cursor-pointer"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4.5 h-4.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -545,7 +663,8 @@ const Productos = () => {
         </div>
         </>
       )}
-
+        </>
+      )}
       {/* Reuse Form Modal Component */}
       <ProductoForm
         isOpen={isFormOpen}
@@ -556,6 +675,18 @@ const Productos = () => {
           setSelectedProducto(null);
         }}
       />
+
+      {isAjusteModalOpen && productoParaAjuste && (
+        <AjusteStockAbonoModal
+          isOpen={isAjusteModalOpen}
+          onClose={() => {
+            setIsAjusteModalOpen(false);
+            setProductoParaAjuste(null);
+            fetchProductos();
+          }}
+          producto={productoParaAjuste}
+        />
+      )}
     </div>
   );
 };

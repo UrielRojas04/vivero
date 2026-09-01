@@ -1,4 +1,7 @@
-## ADDED Requirements
+## Purpose
+Esta especificación define el contexto de unidad de negocio activa y su propagación a través del sistema.
+
+## Requirements
 
 ### Requirement: Propagación de Unidad de Negocio Activa
 El sistema SHALL permitir que el frontend seleccione una unidad de negocio activa y envíe este contexto al backend en cada petición relevante (ej. mediante un header HTTP `X-Unidad-Negocio`).

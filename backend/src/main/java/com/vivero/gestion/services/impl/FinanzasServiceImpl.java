@@ -9,6 +9,7 @@ import com.vivero.gestion.repositories.VentaDetalleRepository;
 import com.vivero.gestion.repositories.VentaRepository;
 import com.vivero.gestion.repositories.ChequeRepository;
 import com.vivero.gestion.repositories.ProductoRepository;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
 import com.vivero.gestion.models.Gasto;
 import com.vivero.gestion.services.FinanzasService;
@@ -36,6 +37,7 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final GastoRepository gastoRepository;
     private final ChequeRepository chequeRepository;
     private final ProductoRepository productoRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
 
     public FinanzasServiceImpl(VentaRepository ventaRepository,
                                VentaDetalleRepository ventaDetalleRepository,
@@ -43,7 +45,8 @@ public class FinanzasServiceImpl implements FinanzasService {
                                PagoRepository pagoRepository,
                                GastoRepository gastoRepository,
                                ChequeRepository chequeRepository,
-                               ProductoRepository productoRepository) {
+                               ProductoRepository productoRepository,
+                               UnidadNegocioRepository unidadNegocioRepository) {
         this.ventaRepository = ventaRepository;
         this.ventaDetalleRepository = ventaDetalleRepository;
         this.insumoRepository = insumoRepository;
@@ -51,21 +54,30 @@ public class FinanzasServiceImpl implements FinanzasService {
         this.gastoRepository = gastoRepository;
         this.chequeRepository = chequeRepository;
         this.productoRepository = productoRepository;
+        this.unidadNegocioRepository = unidadNegocioRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public DashboardResumenDTO resumen(LocalDateTime desde, LocalDateTime hasta, Long usuarioId) {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        
+        com.vivero.gestion.models.ModeloCostoUnidad modeloCosto = null;
+        if (unidadId != null) {
+            modeloCosto = unidadNegocioRepository.findById(unidadId)
+                    .map(com.vivero.gestion.models.UnidadNegocio::getModeloCosto)
+                    .orElse(null);
+        }
+        
         BigDecimal totalVentas = ventaRepository.sumarTotalVentas(desde, hasta, unidadId, usuarioId);
         
         BigDecimal gastosInsumos = BigDecimal.ZERO;
-        if (unidadId == null || unidadId == 1L) {
-            BigDecimal sum = insumoRepository.sumarGastosInsumos(desde, hasta);
+        if (unidadId == null || modeloCosto == com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS) {
+            BigDecimal sum = insumoRepository.sumarGastosInsumos(desde, hasta, unidadId);
             if (sum != null) gastosInsumos = sum;
         }
 
-        if (unidadId != null && unidadId == 2L) {
+        if (unidadId != null && modeloCosto == com.vivero.gestion.models.ModeloCostoUnidad.MERCADERIA_VENDIDA) {
             BigDecimal cogs = ventaDetalleRepository.sumarCostoMercaderiaVendida(desde, hasta, unidadId, usuarioId);
             if (cogs != null) gastosInsumos = gastosInsumos.add(cogs);
         }

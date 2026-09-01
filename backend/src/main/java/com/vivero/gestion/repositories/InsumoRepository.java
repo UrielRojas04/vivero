@@ -16,6 +16,9 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
             SELECT COALESCE(SUM(i.precio * i.stock), 0)
             FROM Insumo i
             WHERE i.fechaCompra BETWEEN :desde AND :hasta
+              AND (:unidadId IS NULL OR i.unidadNegocio.id = :unidadId)
             """)
-    BigDecimal sumarGastosInsumos(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+    BigDecimal sumarGastosInsumos(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta, @Param("unidadId") Long unidadId);
+
+    java.util.List<Insumo> findAllByUnidadNegocioId(Long unidadId);
 }

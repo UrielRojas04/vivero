@@ -5,7 +5,9 @@ import VariedadesPlantas from './VariedadesPlantas';
 import VariedadesBandejas from './VariedadesBandejas';
 import Proveedores from './Proveedores';
 import ConfiguracionHerramientas from '../components/ConfiguracionHerramientas';
-import { Truck } from 'lucide-react';
+import ConfiguracionAbono from '../components/ConfiguracionAbono';
+import ConfiguracionAbonoCategorias from './ConfiguracionAbonoCategorias';
+import { Truck, Percent } from 'lucide-react';
 // ConfiguracionMarcas ya no se renderiza acá (OQ10, grupo 10 de config-costeo-por-proveedor,
 // tarea 10.7): la pestaña "Marcas" se esconde, pero el componente, MarcaController,
 // MarcaService(Impl), MarcaRepository, MarcaDTO y los endpoints /api/marcas quedan intactos
@@ -13,8 +15,12 @@ import { Truck } from 'lucide-react';
 // chore posterior. No reimportar este componente sin volver a leer esa decisión.
 
 export default function Configuracion() {
-  const { hasPermission, unidadNegocioActiva } = useAuthStore();
+  const { hasPermission, unidadNegocioActiva, negociosDisponibles } = useAuthStore();
   const [activeSection, setActiveSection] = useState(null);
+
+  const activeBusinessId = parseInt(unidadNegocioActiva);
+  const unidadSlug = negociosDisponibles.find(n => n.id === activeBusinessId)?.nombre?.toLowerCase() || 'vivero';
+  const isAbono = unidadSlug === 'abono';
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fadeIn">
@@ -29,7 +35,7 @@ export default function Configuracion() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Vivero Configs require ADMIN_DB */}
-        {hasPermission('ADMIN_DB') && unidadNegocioActiva !== '2' && (
+        {hasPermission('ADMIN_DB') && unidadSlug === 'vivero' && (
           <>
             <button
               onClick={() => setActiveSection('plantas')}
@@ -143,6 +149,62 @@ export default function Configuracion() {
             </div>
           </button>
         )}
+
+        {/* Abono Configs require ADMIN_DB */}
+        {hasPermission('ADMIN_DB') && isAbono && (
+          <button
+            onClick={() => setActiveSection('abono')}
+            className={`bg-paper p-6 rounded-panel border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+              activeSection === 'abono'
+                ? 'border-accent ring-2 ring-accent/20'
+                : 'border-line hover:border-accent'
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-base flex items-center justify-center shrink-0 transition-colors ${
+              activeSection === 'abono' ? 'bg-accent text-paper' : 'bg-accent-soft text-accent-ink'
+            }`}>
+              <Percent className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                activeSection === 'abono' ? 'text-accent-ink' : 'text-ink group-hover:text-accent-ink'
+              }`}>
+                Reparto de Abono
+              </h2>
+              <p className="text-sm text-muted">
+                Porcentajes de compensación entre Jefe y Colega
+              </p>
+            </div>
+          </button>
+        )}
+
+        {/* Abono Categorias require ADMIN_DB */}
+        {hasPermission('ADMIN_DB') && isAbono && (
+          <button
+            onClick={() => setActiveSection('categorias-abono')}
+            className={`bg-paper p-6 rounded-panel border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
+              activeSection === 'categorias-abono'
+                ? 'border-accent ring-2 ring-accent/20'
+                : 'border-line hover:border-accent'
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-base flex items-center justify-center shrink-0 transition-colors ${
+              activeSection === 'categorias-abono' ? 'bg-accent text-paper' : 'bg-accent-soft text-accent-ink'
+            }`}>
+              <Leaf className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-bold transition-colors mb-1 ${
+                activeSection === 'categorias-abono' ? 'text-accent-ink' : 'text-ink group-hover:text-accent-ink'
+              }`}>
+                Categorías de Abono
+              </h2>
+              <p className="text-sm text-muted">
+                Tipos de abono para producir y vender
+              </p>
+            </div>
+          </button>
+        )}
       </div>
 
       {activeSection && (
@@ -151,6 +213,8 @@ export default function Configuracion() {
           {activeSection === 'bandejas' && <VariedadesBandejas />}
           {activeSection === 'herramientas' && <ConfiguracionHerramientas />}
           {activeSection === 'proveedores' && <Proveedores />}
+          {activeSection === 'abono' && <ConfiguracionAbono unidadId={activeBusinessId} />}
+          {activeSection === 'categorias-abono' && <ConfiguracionAbonoCategorias />}
         </div>
       )}
     </div>

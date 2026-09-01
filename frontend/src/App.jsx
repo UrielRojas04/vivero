@@ -21,7 +21,15 @@ import Pedidos from './pages/Pedidos';
 import PedidoNuevo from './pages/PedidoNuevo';
 import Facturas from './pages/Facturas';
 import FacturaCliente from './pages/FacturaCliente';
+
+import ProduccionAbono from './pages/ProduccionAbono';
+import TrasladosAbonoLayout from './pages/TrasladosAbonoLayout';
+import RegistrarTrasladoAbono from './pages/RegistrarTrasladoAbono';
+import StockUbicacionAbono from './pages/StockUbicacionAbono';
+import RendicionColega from './pages/RendicionColega';
+import LiquidacionAbono from './pages/LiquidacionAbono';
 import ProtectedRoute from './components/ProtectedRoute';
+import DefaultRedirect from './components/DefaultRedirect';
 import DashboardLayout from './layouts/DashboardLayout';
 import { useTheme } from './hooks/useTheme';
 
@@ -40,10 +48,15 @@ function App() {
         {/* Rutas protegidas con layout compartido */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route element={<ProtectedRoute requiredPermission={['LEER_STOCK', 'ADMIN_DB']} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
             
             <Route element={<ProtectedRoute requiredPermission="LEER_STOCK" />}>
               <Route path="/productos" element={<Productos />} />
+            </Route>
+
+            <Route element={<ProtectedRoute requiredPermission="LEER_SIEMBRAS" />}>
               <Route path="/siembras" element={<Siembras />} />
             </Route>
 
@@ -111,11 +124,29 @@ function App() {
 
             {/* Configuración es accesible, pero dentro valida los permisos por sección */}
             <Route path="/configuracion" element={<Configuracion />} />
+
+            {/* Abono Routes */}
+            <Route element={<ProtectedRoute requiredPermission="ESCRIBIR_PRODUCCION" />}>
+              <Route path="/abono/produccion" element={<ProduccionAbono />} />
+            </Route>
+            <Route path="/abono/traslados" element={<ProtectedRoute requiredPermission="ESCRIBIR_STOCK" />}>
+              <Route element={<TrasladosAbonoLayout />}>
+                <Route path="registrar" element={<RegistrarTrasladoAbono />} />
+                <Route path="stock" element={<StockUbicacionAbono />} />
+                {/* Redirección por defecto */}
+                <Route index element={<Navigate to="registrar" replace />} />
+              </Route>
+            </Route>
+            <Route element={<ProtectedRoute requiredPermission="ESCRIBIR_VENTAS" />}>
+              <Route path="/abono/rendiciones" element={<RendicionColega />} />
+              <Route path="/abono/liquidacion" element={<LiquidacionAbono />} />
+            </Route>
           </Route>
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<DefaultRedirect />} />
+        <Route path="*" element={<DefaultRedirect />} />
       </Routes>
     </BrowserRouter>
   );

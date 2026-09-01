@@ -13,7 +13,9 @@ import com.vivero.gestion.services.BandejasService;
 import com.vivero.gestion.services.SseService;
 import com.vivero.gestion.services.VentaService;
 import com.vivero.gestion.services.MovimientoStockService;
+import com.vivero.gestion.services.StockAbonoService;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
+import com.vivero.gestion.security.CuentaAbonoContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ public class VentaServiceImpl implements VentaService {
     private final ChequeRepository chequeRepository;
     private final UnidadNegocioRepository unidadNegocioRepository;
     private final FacturaClienteRepository facturaClienteRepository;
+    private final StockAbonoService stockAbonoService;
 
     public VentaServiceImpl(VentaRepository ventaRepository,
                             ClienteRepository clienteRepository,
@@ -50,7 +53,8 @@ public class VentaServiceImpl implements VentaService {
                             SseService sseService,
                             ChequeRepository chequeRepository,
                             UnidadNegocioRepository unidadNegocioRepository,
-                            FacturaClienteRepository facturaClienteRepository) {
+                            FacturaClienteRepository facturaClienteRepository,
+                            StockAbonoService stockAbonoService) {
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
@@ -62,6 +66,7 @@ public class VentaServiceImpl implements VentaService {
         this.chequeRepository = chequeRepository;
         this.unidadNegocioRepository = unidadNegocioRepository;
         this.facturaClienteRepository = facturaClienteRepository;
+        this.stockAbonoService = stockAbonoService;
     }
 
     @Override
@@ -116,7 +121,15 @@ public class VentaServiceImpl implements VentaService {
             UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
             venta.setUnidadNegocio(unidad);
 
-            if (unidadId == 1L && unidad != null && finalCliente != null) {
+            if (unidad != null && "Abono".equals(unidad.getNombre())) {
+                CuentaAbono cuenta = CuentaAbonoContextHolder.getCuentaAbono();
+                if (cuenta == null) {
+                    throw new IllegalArgumentException("La venta de Abono requiere una cuenta activa (Jefe o Colega)");
+                }
+                venta.setCuentaAbono(cuenta);
+            }
+
+            if (unidad != null && finalCliente != null) {
                 FacturaCliente factura = facturaClienteRepository
                     .findByClienteIdAndEstadoAndUnidadNegocioId(finalCliente.getId(), "ABIERTA", unidadId)
                     .orElseGet(() -> {
@@ -137,36 +150,59 @@ public class VentaServiceImpl implements VentaService {
             Producto producto = productoRepository.findById(detReq.getProductoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detReq.getProductoId()));
 
-            // 1. Validar y descontar stock
-            if (detReq.getCantidad() <= 0) {
-                throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
-            }
-            int stockActual = producto.getStock() == null ? 0 : producto.getStock();
-            if (detReq.getCantidad() > stockActual) {
-                throw new IllegalArgumentException("No hay stock suficiente para el producto: " + producto.getNombre());
-            }
-            producto.setStock(stockActual - detReq.getCantidad());
-            productoRepository.save(producto); // actualiza stock
-            sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(producto.getId(), producto.getStock()));
+            boolean esAbono = venta.getUnidadNegocio() != null && "Abono".equals(venta.getUnidadNegocio().getNombre());
 
-            // 2. Crear movimiento de stock para la traza (con costo congelado)
-            MovimientoStock mov = movimientoStockService.registrarMovimiento(producto, detReq.getCantidad(), TipoMovimientoStock.VENTA, usuario);
+            if (esAbono) {
+                // Bifurcación para Abono: descontar de StockAbono
+                stockAbonoService.registrarVenta(producto.getId(), detReq.getCantidad(), venta.getCuentaAbono(), null);
+                
+                VentaDetalle detalle = new VentaDetalle();
+                detalle.setProducto(producto);
+                detalle.setCantidad(detReq.getCantidad());
+                BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
+                detalle.setPrecioUnitarioHistorico(precioHist);
+                detalle.setCostoUnitarioHistorico(BigDecimal.ZERO);
+                detalle.setCostoBaseHistorico(BigDecimal.ZERO);
+                detalle.setDescuentoPorcentajeHistorico(BigDecimal.ZERO);
+                detalle.setEnvioPorcentajeHistorico(BigDecimal.ZERO);
+                BigDecimal subtotalLine = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
+                detalle.setSubtotal(subtotalLine);
+                
+                venta.addDetalle(detalle);
+                subtotal = subtotal.add(subtotalLine);
+            } else {
+                // Ruta original para Vivero y Herramientas
+                // 1. Validar y descontar stock global
+                if (detReq.getCantidad() <= 0) {
+                    throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
+                }
+                int stockActual = producto.getStock() == null ? 0 : producto.getStock();
+                if (detReq.getCantidad() > stockActual) {
+                    throw new IllegalArgumentException("No hay stock suficiente para el producto: " + producto.getNombre());
+                }
+                producto.setStock(stockActual - detReq.getCantidad());
+                productoRepository.save(producto); // actualiza stock
+                sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(producto.getId(), producto.getStock()));
 
-            // 3. Crear detalle de venta (precio y costo histórico copiados)
-            VentaDetalle detalle = new VentaDetalle();
-            detalle.setProducto(producto);
-            detalle.setCantidad(detReq.getCantidad());
-            BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
-            detalle.setPrecioUnitarioHistorico(precioHist);
-            detalle.setCostoUnitarioHistorico(mov.getCostoUnitario());
-            detalle.setCostoBaseHistorico(mov.getCostoBase());
-            detalle.setDescuentoPorcentajeHistorico(mov.getDescuentoPorcentaje());
-            detalle.setEnvioPorcentajeHistorico(mov.getEnvioPorcentaje());
-            BigDecimal subtotalLine = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
-            detalle.setSubtotal(subtotalLine);
-            
-            venta.addDetalle(detalle);
-            subtotal = subtotal.add(subtotalLine);
+                // 2. Crear movimiento de stock para la traza (con costo congelado)
+                MovimientoStock mov = movimientoStockService.registrarMovimiento(producto, detReq.getCantidad(), TipoMovimientoStock.VENTA, usuario);
+
+                // 3. Crear detalle de venta (precio y costo histórico copiados)
+                VentaDetalle detalle = new VentaDetalle();
+                detalle.setProducto(producto);
+                detalle.setCantidad(detReq.getCantidad());
+                BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
+                detalle.setPrecioUnitarioHistorico(precioHist);
+                detalle.setCostoUnitarioHistorico(mov.getCostoUnitario());
+                detalle.setCostoBaseHistorico(mov.getCostoBase());
+                detalle.setDescuentoPorcentajeHistorico(mov.getDescuentoPorcentaje());
+                detalle.setEnvioPorcentajeHistorico(mov.getEnvioPorcentaje());
+                BigDecimal subtotalLine = precioHist.multiply(BigDecimal.valueOf(detReq.getCantidad()));
+                detalle.setSubtotal(subtotalLine);
+                
+                venta.addDetalle(detalle);
+                subtotal = subtotal.add(subtotalLine);
+            }
         }
 
         venta.setSubtotal(subtotal);
@@ -186,6 +222,7 @@ public class VentaServiceImpl implements VentaService {
                 pago.setMonto(pReq.getMonto());
                 pago.setMetodoPago(pReq.getMetodoPago());
                 pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+                pago.setCuentaAbono(venta.getCuentaAbono());
                 if (venta.getFactura() != null) {
                     pago.setFactura(venta.getFactura());
                 }
@@ -265,9 +302,29 @@ public class VentaServiceImpl implements VentaService {
     @Transactional(readOnly = true)
     public List<VentaResponseDTO> listarVentas() {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
-        List<Venta> ventas = (unidadId != null) 
-            ? ventaRepository.findAllByUnidadNegocioIdOrderByFechaDesc(unidadId) 
-            : ventaRepository.findAllByOrderByFechaDesc();
+        List<Venta> ventas;
+        if (unidadId != null) {
+            com.vivero.gestion.models.CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
+            // Antes: `unidadId == 3L` (literal frágil, mismo anti-patrón que FinanzasServiceImpl
+            // ya eliminó vía ModeloCostoUnidad). CuentaAbonoContextHolder se completa para
+            // CUALQUIER usuario autenticado (jefe/colega), sin importar la unidad que esté
+            // consultando, así que `cuentaAbono != null` por sí solo NO alcanza para distinguir
+            // "estoy mirando Abono": filtrar Vivero/Herramientas por cuentaAbono rompería su
+            // listado (esas ventas tienen `cuenta_abono` NULL en la base, así que el filtro
+            // devolvería vacío). Se reemplaza por una resolución por nombre de unidad, igual al
+            // patrón ya usado en RendicionColegaServiceImpl (`findByNombre("Abono")`), en vez de
+            // asumir que el id de la unidad Abono es 3.
+            boolean esUnidadAbono = unidadNegocioRepository.findById(unidadId)
+                    .map(u -> "Abono".equals(u.getNombre()))
+                    .orElse(false);
+            if (esUnidadAbono && cuentaAbono != null) {
+                ventas = ventaRepository.findAllByUnidadNegocioIdAndCuentaAbonoOrderByFechaDesc(unidadId, cuentaAbono);
+            } else {
+                ventas = ventaRepository.findAllByUnidadNegocioIdOrderByFechaDesc(unidadId);
+            }
+        } else {
+            ventas = ventaRepository.findAllByOrderByFechaDesc();
+        }
 
         return ventas.stream()
                 .map(this::mapearAVentaResponseDTO)
@@ -323,6 +380,7 @@ public class VentaServiceImpl implements VentaService {
         pago.setMonto(request.getMonto());
         pago.setMetodoPago(metodo);
         pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        pago.setCuentaAbono(venta.getCuentaAbono());
         if (venta.getFactura() != null) {
             pago.setFactura(venta.getFactura());
         }

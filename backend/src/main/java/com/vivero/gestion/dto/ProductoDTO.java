@@ -38,6 +38,13 @@ public class ProductoDTO {
     // config-costeo-por-proveedor, Decisión 5). Default ARS cuando no viene informado —
     // ver ProductoServiceImpl.
     private MonedaCosto monedaCosto;
+    
+    private Long categoriaAbonoId;
+    private String categoriaAbonoNombre;
+    
+    // Para unidad Abono
+    private Integer stockInvernadero;
+    private Integer stockColega;
 
     public ProductoDTO() {}
 
@@ -105,4 +112,16 @@ public class ProductoDTO {
 
     public MonedaCosto getMonedaCosto() { return monedaCosto; }
     public void setMonedaCosto(MonedaCosto monedaCosto) { this.monedaCosto = monedaCosto; }
+
+    public Long getCategoriaAbonoId() { return categoriaAbonoId; }
+    public void setCategoriaAbonoId(Long categoriaAbonoId) { this.categoriaAbonoId = categoriaAbonoId; }
+
+    public String getCategoriaAbonoNombre() { return categoriaAbonoNombre; }
+    public void setCategoriaAbonoNombre(String categoriaAbonoNombre) { this.categoriaAbonoNombre = categoriaAbonoNombre; }
+
+    public Integer getStockInvernadero() { return stockInvernadero; }
+    public void setStockInvernadero(Integer stockInvernadero) { this.stockInvernadero = stockInvernadero; }
+
+    public Integer getStockColega() { return stockColega; }
+    public void setStockColega(Integer stockColega) { this.stockColega = stockColega; }
 }

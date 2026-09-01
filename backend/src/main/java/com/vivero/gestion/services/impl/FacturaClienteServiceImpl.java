@@ -22,6 +22,7 @@ import com.vivero.gestion.repositories.FacturaConceptoRepository;
 import com.vivero.gestion.repositories.ClienteRepository;
 import com.vivero.gestion.dto.PagoRequestDTO;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
+import com.vivero.gestion.security.CuentaAbonoContextHolder;
 import com.vivero.gestion.services.FacturaClienteService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,10 +151,11 @@ public class FacturaClienteServiceImpl implements FacturaClienteService {
         }
 
         Pago pago = new Pago();
-        pago.setFactura(factura);
         pago.setMonto(request.getMonto());
         pago.setMetodoPago(request.getMetodoPago() != null ? request.getMetodoPago() : "EFECTIVO");
         pago.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
+        pago.setFactura(factura);
+        pago.setCuentaAbono(CuentaAbonoContextHolder.getCuentaAbono());
         pago = pagoRepository.save(pago);
 
         if ("CHEQUE".equalsIgnoreCase(request.getMetodoPago())) {

@@ -13,7 +13,8 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    const unidadNegocioActiva = useAuthStore.getState().unidadNegocioActiva;
+    const state = useAuthStore.getState();
+    const unidadNegocioActiva = state.unidadNegocioActiva;
     if (unidadNegocioActiva) {
       config.headers['X-Unidad-Negocio'] = unidadNegocioActiva;
     }

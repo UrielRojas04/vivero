@@ -32,6 +32,8 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         model.setCostoEnvioPorcentaje(dto.getCostoEnvioPorcentaje());
         model.setIvaPorcentaje(dto.getIvaPorcentaje());
         model.setActivo(dto.isActivo());
+        if (dto.getModeloCosto() != null) model.setModeloCosto(dto.getModeloCosto());
+        if (dto.getPorcentajeRepartoColega() != null) model.setPorcentajeRepartoColega(dto.getPorcentajeRepartoColega());
         return mapToDTO(repository.save(model));
     }
 
@@ -47,6 +49,8 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         // concreto, arranca en ZERO) — no confundir con Producto.ivaPorcentaje, que sí puede
         // quedar en null a propósito para "heredar" este default (Decisión 5).
         if (dto.getIvaPorcentaje() != null) model.setIvaPorcentaje(dto.getIvaPorcentaje());
+        if (dto.getModeloCosto() != null) model.setModeloCosto(dto.getModeloCosto());
+        if (dto.getPorcentajeRepartoColega() != null) model.setPorcentajeRepartoColega(dto.getPorcentajeRepartoColega());
         model.setActivo(dto.isActivo());
         return mapToDTO(repository.save(model));
     }
@@ -59,6 +63,8 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         dto.setCostoEnvioPorcentaje(model.getCostoEnvioPorcentaje());
         dto.setIvaPorcentaje(model.getIvaPorcentaje());
         dto.setActivo(model.isActivo());
+        dto.setModeloCosto(model.getModeloCosto());
+        dto.setPorcentajeRepartoColega(model.getPorcentajeRepartoColega());
         return dto;
     }
 }

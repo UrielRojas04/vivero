@@ -11,16 +11,18 @@ public class InsumoDTO {
     private BigDecimal precio;
     private LocalDateTime fechaCompra;
     private Integer stock;
+    private Long unidadNegocioId;
 
     public InsumoDTO() {}
 
-    public InsumoDTO(Long id, String nombre, String descripcion, BigDecimal precio, LocalDateTime fechaCompra, Integer stock) {
+    public InsumoDTO(Long id, String nombre, String descripcion, BigDecimal precio, LocalDateTime fechaCompra, Integer stock, Long unidadNegocioId) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
         this.fechaCompra = fechaCompra;
         this.stock = stock;
+        this.unidadNegocioId = unidadNegocioId;
     }
 
     public Long getId() { return id; }
@@ -41,5 +43,6 @@ public class InsumoDTO {
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
 
-
+    public Long getUnidadNegocioId() { return unidadNegocioId; }
+    public void setUnidadNegocioId(Long unidadNegocioId) { this.unidadNegocioId = unidadNegocioId; }
 }
