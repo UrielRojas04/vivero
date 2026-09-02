@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, PackageCheck, AlertTriangle } from 'lucide-react';
+import { X, PackageCheck, AlertTriangle, ScanBarcode, BadgeCheck } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
+import EscanerCodigoBarra from './EscanerCodigoBarra';
+import CodigoBarraDuplicadoModal from './CodigoBarraDuplicadoModal';
 import { pedidosApi } from '../api/pedidos.api';
+import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
+import { useRecepcionDraftStore } from '../store/useRecepcionDraftStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import { verificarCodigoBarraDuplicado } from '../utils/verificarCodigoBarraDuplicado';
 
 // Un solo modal para dos casos (tarea 9.5 y 9.8 de tasks.md):
 //  - Pedido PENDIENTE: formulario de confirmación de recepción, con la cantidad recibida
@@ -13,21 +18,58 @@ import { getErrorMessage } from '../utils/errorMessage';
 //    (tarea 9.9): el pedido es terminal.
 const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
   const { pushToast, askConfirm } = useUIStore();
+  const { obtenerDraft, guardarDraft, limpiarDraft } = useRecepcionDraftStore();
   const [cantidades, setCantidades] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Grupo 12 de tasks.md de codigo-barras-herramientas (extensión post-cierre): código
+  // escaneado/tipeado por línea durante ESTA confirmación, mapa detalleId → string, análogo a
+  // `cantidades`. No dispara ningún guardado individual — viaja junto con la confirmación
+  // general (enviarConfirmacion). `escanerDetalleId` es la línea cuyo EscanerCodigoBarra está
+  // abierto ahora mismo (un único modal reutilizado, no uno por línea).
+  const [codigosBarra, setCodigosBarra] = useState({});
+  const [escanerDetalleId, setEscanerDetalleId] = useState(null);
+  // Grupo 13 (aviso de código duplicado al escanear, extensión post-cierre): { codigo, producto,
+  // detalleId } del conflicto detectado apenas se escanea — null cuando no hay ninguno abierto.
+  const [conflictoCodigoBarra, setConflictoCodigoBarra] = useState(null);
+  // Bug real reportado por el usuario (mismo que en ProductoForm.jsx): liberar de inmediato al
+  // elegir "Quedarme con este código" dejaba el código sin dueño si la recepción se cerraba sin
+  // confirmar. Ahora sólo se acumulan acá los códigos a liberar (puede haber más de uno, una por
+  // línea); el DELETE real de cada uno recién se dispara en enviarConfirmacion(), justo antes de
+  // confirmar la recepción de verdad.
+  const [codigosALiberarAlConfirmar, setCodigosALiberarAlConfirmar] = useState([]);
 
   const esPendiente = pedido?.estado === 'PENDIENTE';
 
   useEffect(() => {
     if (isOpen && pedido) {
-      // Precarga: cantidad recibida = cantidad pedida, editable por el usuario.
+      // Precarga: cantidad recibida = cantidad pedida, editable por el usuario — salvo que haya
+      // un borrador guardado de una vez anterior que se cerró sin confirmar (pedido del usuario:
+      // "al volver a entrar se queden precargados"), en cuyo caso gana el borrador.
+      const draft = esPendiente ? obtenerDraft(pedido.id) : null;
       const inicial = {};
       (pedido.detalles || []).forEach((d) => {
         inicial[d.id] = esPendiente ? String(d.cantidadPedida) : String(d.cantidadRecibida ?? '');
       });
-      setCantidades(inicial);
+      setCantidades(draft?.cantidades ?? inicial);
+      setCodigosBarra(draft?.codigosBarra ?? {});
+      // Los códigos pendientes de liberar viajan en el mismo borrador — si no se persistieran acá
+      // también, reabrir el modal restauraría codigosBarra con un código "robado" pero sin la
+      // intención de liberarlo, y confirmar chocaría con el producto que todavía lo tiene.
+      setCodigosALiberarAlConfirmar(draft?.codigosALiberarAlConfirmar ?? []);
+      setEscanerDetalleId(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, pedido, esPendiente]);
+
+  // Cada cambio de cantidad o de código escaneado se guarda como borrador de ESTE pedido (mismo
+  // patrón que useCartStore) — así sobrevive a cerrar el modal sin querer, a un refresh de la
+  // página, o a salir y volver más tarde a terminar de confirmar la recepción.
+  useEffect(() => {
+    if (isOpen && pedido && esPendiente) {
+      guardarDraft(pedido.id, { cantidades, codigosBarra, codigosALiberarAlConfirmar });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cantidades, codigosBarra, codigosALiberarAlConfirmar]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -41,6 +83,49 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
 
   const handleCantidadChange = (detalleId, valor) => {
     setCantidades((prev) => ({ ...prev, [detalleId]: valor }));
+  };
+
+  // Grupo 12: al detectar (o tipear a mano, EscanerCodigoBarra ofrece ambos) un código para la
+  // línea que tiene el escáner abierto, lo guarda en codigosBarra y cierra el modal — no dispara
+  // ningún guardado, el código viaja junto con la confirmación general (tarea 12.8).
+  //
+  // Grupo 13 (aviso de código duplicado al escanear): antes de guardarlo en codigosBarra, chequea
+  // si el código ya está asignado a OTRO producto. Líneas "pendiente de crear" (d.productoId
+  // null) no tienen "soy el mismo producto" posible — cualquier resultado encontrado ahí es
+  // conflicto por definición. En líneas existentes, se compara contra d.productoId.
+  const handleCodigoDetectado = async (codigo) => {
+    const detalleId = escanerDetalleId;
+    setEscanerDetalleId(null);
+    if (detalleId == null) return;
+
+    const detalle = (pedido.detalles || []).find((d) => d.id === detalleId);
+
+    try {
+      const encontrado = await verificarCodigoBarraDuplicado(codigo);
+      const esElMismoProducto = detalle?.productoId != null && encontrado && encontrado.id === detalle.productoId;
+      if (encontrado && !esElMismoProducto) {
+        setConflictoCodigoBarra({ codigo, producto: encontrado, detalleId });
+        return;
+      }
+      setCodigosBarra((prev) => ({ ...prev, [detalleId]: codigo }));
+    } catch (err) {
+      pushToast('error', getErrorMessage(err, 'Ocurrió un error al verificar el código de barras.'));
+    }
+  };
+
+  // "Descartar código nuevo": cierra el aviso, no toca codigosBarra de esa línea.
+  const handleDescartarCodigoDuplicado = () => {
+    setConflictoCodigoBarra(null);
+  };
+
+  // "Quedarme con este código": NO libera nada todavía (bug corregido, ver
+  // codigosALiberarAlConfirmar) — sólo escribe el código en la línea y lo agrega a la lista de
+  // códigos a liberar cuando se confirme la recepción de verdad.
+  const handleQuedarmeConCodigoDuplicado = () => {
+    if (!conflictoCodigoBarra) return;
+    setCodigosBarra((prev) => ({ ...prev, [conflictoCodigoBarra.detalleId]: conflictoCodigoBarra.codigo }));
+    setCodigosALiberarAlConfirmar((prev) => [...prev, conflictoCodigoBarra.codigo]);
+    setConflictoCodigoBarra(null);
   };
 
   const remanente = (detalle) => {
@@ -63,6 +148,9 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
     const items = (pedido.detalles || []).map((d) => ({
       detalleId: d.id,
       cantidadRecibida: parseInt(cantidades[d.id], 10),
+      // Grupo 12 (tarea 12.9): sólo viaja cuando el usuario cargó un código para esta línea en
+      // ESTA confirmación — codigosBarra[d.id] || undefined, nunca un string vacío.
+      codigoBarra: codigosBarra[d.id] || undefined,
     }));
 
     if (items.some((it) => isNaN(it.cantidadRecibida) || it.cantidadRecibida < 0)) {
@@ -72,7 +160,13 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
 
     try {
       setIsSubmitting(true);
+      // Recién acá se liberan de verdad los códigos elegidos con "Quedarme con este código" —
+      // justo antes de confirmar, nunca antes. Si falla alguno, se corta sin confirmar nada.
+      for (const codigo of codigosALiberarAlConfirmar) {
+        await productosApi.liberarCodigoBarra(codigo);
+      }
       await pedidosApi.confirmarRecepcion(pedido.id, { items });
+      limpiarDraft(pedido.id);
       pushToast('success', 'Recepción confirmada. El stock ya se actualizó.');
       onConfirmed?.();
       onClose();
@@ -139,14 +233,50 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
           <div className="space-y-3">
             {(pedido.detalles || []).map((d) => (
               <div key={d.id} className="bg-canvas border border-line rounded-panel p-3">
-                <p className="font-medium text-ink mb-2 flex items-center gap-2">
-                  {nombreLinea(d)}
-                  {esLineaPendiente(d) && (
-                    <span className="text-[10px] font-semibold text-warn-ink bg-warn-bg border border-warn-line rounded-full px-1.5 py-0.5">
-                      Nuevo — se crea al confirmar
-                    </span>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="font-medium text-ink flex items-center gap-2 flex-wrap">
+                    {nombreLinea(d)}
+                    {esLineaPendiente(d) && (
+                      <span className="text-[10px] font-semibold text-warn-ink bg-warn-bg border border-warn-line rounded-full px-1.5 py-0.5">
+                        Nuevo — se crea al confirmar
+                      </span>
+                    )}
+                  </p>
+                  {/* Grupo 12 (tarea 12.7, reubicado a pedido del usuario): el ícono de escaneo va
+                      en la esquina superior derecha de la tarjeta, no al lado del input de
+                      cantidad. Con código ya guardado: ícono de sólo lectura (sin el número, sólo
+                      en el tooltip). Sin código: botón de escaneo; al escanear en esta sesión, el
+                      número leído aparece como texto al lado del ícono. */}
+                  {esPendiente && (
+                    d.codigoBarra ? (
+                      <span
+                        className="shrink-0 p-1.5 rounded-base border border-ok-line bg-ok-bg text-ok-ink flex items-center justify-center"
+                        title={`Código de barras guardado: ${d.codigoBarra}`}
+                      >
+                        <BadgeCheck className="w-4 h-4" />
+                      </span>
+                    ) : (
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {codigosBarra[d.id] && (
+                          <span
+                            className="max-w-[110px] truncate text-[10px] font-mono text-ok-ink bg-ok-bg border border-ok-line rounded-full px-1.5 py-0.5"
+                            title={codigosBarra[d.id]}
+                          >
+                            {codigosBarra[d.id]}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setEscanerDetalleId(d.id)}
+                          className="p-1.5 rounded-base border border-line text-accent hover:bg-paper transition-colors cursor-pointer"
+                          title="Escanear código de barras"
+                        >
+                          <ScanBarcode className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )
                   )}
-                </p>
+                </div>
                 {esPendiente ? (
                   <div className="grid grid-cols-3 gap-3 items-end">
                     <div>
@@ -220,6 +350,24 @@ const RecepcionPedidoModal = ({ pedido, isOpen, onClose, onConfirmed }) => {
           )}
         </div>
       </div>
+
+      {/* Grupo 12: un único EscanerCodigoBarra reutilizado para todas las líneas — la línea
+          "activa" es escanerDetalleId, seteada por el botón de cada fila. */}
+      <EscanerCodigoBarra
+        isOpen={escanerDetalleId != null}
+        onClose={() => setEscanerDetalleId(null)}
+        onDetectado={handleCodigoDetectado}
+      />
+
+      {/* Grupo 13: aviso de código duplicado apenas se escanea (no recién al confirmar). */}
+      <CodigoBarraDuplicadoModal
+        isOpen={!!conflictoCodigoBarra}
+        onClose={handleDescartarCodigoDuplicado}
+        codigo={conflictoCodigoBarra?.codigo}
+        productoEnConflicto={conflictoCodigoBarra?.producto}
+        onDescartar={handleDescartarCodigoDuplicado}
+        onQuedarme={handleQuedarmeConCodigoDuplicado}
+      />
     </div>
   );
 };

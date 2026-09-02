@@ -46,6 +46,10 @@ public class ProductoDTO {
     private Integer stockInvernadero;
     private Integer stockColega;
 
+    // Código de barras de fábrica — sólo Herramientas (codigo-barras-herramientas). Null en el
+    // resto de las unidades.
+    private String codigoBarra;
+
     public ProductoDTO() {}
 
     public ProductoDTO(Long id, String nombre, String descripcion, BigDecimal precio, BigDecimal costoProducto, Integer stock, String lote, String dueno) {
@@ -124,4 +128,7 @@ public class ProductoDTO {
 
     public Integer getStockColega() { return stockColega; }
     public void setStockColega(Integer stockColega) { this.stockColega = stockColega; }
+
+    public String getCodigoBarra() { return codigoBarra; }
+    public void setCodigoBarra(String codigoBarra) { this.codigoBarra = codigoBarra; }
 }

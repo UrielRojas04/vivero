@@ -122,6 +122,15 @@ public class ProductoServiceImpl implements ProductoService {
             producto.setCategoriaAbono(null);
         }
 
+        // Código de barras de fábrica (codigo-barras-herramientas): normalizado (trim, sin
+        // toUpperCase — Decisión 3 de design.md) y validado como único DENTRO de la unidad de
+        // negocio, sobre los no borrados (idActual null: todavía no existe fila propia contra la
+        // cual excluirse). No es componente del costo — no participa de ningún cambio que dispare
+        // un MovimientoStock (tarea 4.5).
+        String codigoBarraNormalizado = normalizarCodigoBarra(dto.getCodigoBarra());
+        validarCodigoBarraUnico(codigoBarraNormalizado, unidadId, null);
+        producto.setCodigoBarra(codigoBarraNormalizado);
+
         reemplazarDescuentos(producto, dto.getDescuentos());
 
         calcularPrecioSiAplica(producto);
@@ -209,6 +218,16 @@ public class ProductoServiceImpl implements ProductoService {
             producto.setCategoriaAbono(null);
         }
 
+        // Código de barras: misma normalización/validación que crearProducto, excluyendo la
+        // propia fila (idActual = id) para permitir re-guardar sin cambiar el código (tarea 4.4,
+        // Decisión 3). Deliberadamente NO entra en ninguno de los booleans de arriba
+        // (stockChanged/costChanged/...): no es un componente del costo y no debe generar un
+        // MovimientoStock (tarea 4.5).
+        Long unidadIdProducto = producto.getUnidadNegocio() != null ? producto.getUnidadNegocio().getId() : null;
+        String codigoBarraNormalizado = normalizarCodigoBarra(dto.getCodigoBarra());
+        validarCodigoBarraUnico(codigoBarraNormalizado, unidadIdProducto, id);
+        producto.setCodigoBarra(codigoBarraNormalizado);
+
         reemplazarDescuentos(producto, dto.getDescuentos());
 
         int oldStock = producto.getStock() == null ? 0 : producto.getStock();
@@ -247,6 +266,62 @@ public class ProductoServiceImpl implements ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         productoRepository.delete(producto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductoDTO buscarPorCodigoBarra(String codigo) {
+        // Acotado a la unidad de negocio ACTIVA (tarea 4.7), no a la del producto — es una
+        // búsqueda, el filtro de unidad viene del contexto del request, igual que
+        // obtenerTodosLosProductos(). Un código válido en otra unidad no debe aparecer acá
+        // (tarea 6.9: 404 con código de otra unidad).
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        String normalizado = normalizarCodigoBarra(codigo);
+        if (normalizado == null) {
+            throw new com.vivero.gestion.exceptions.ResourceNotFoundException(
+                    "No se encontró ningún producto con ese código de barras.");
+        }
+        Producto producto = productoRepository
+                .findByCodigoBarraAndUnidadNegocioIdAndDeletedFalse(normalizado, unidadId)
+                .orElseThrow(() -> new com.vivero.gestion.exceptions.ResourceNotFoundException(
+                        "No se encontró ningún producto con el código \"" + normalizado + "\"."));
+        return mapToDTO(producto);
+    }
+
+    @Override
+    @Transactional
+    public void asignarCodigoBarra(Long productoId, String codigoBarra) {
+        // Grupo 12 de codigo-barras-herramientas (extensión post-cierre): reutiliza la misma
+        // normalización/validación que crearProducto/actualizarProducto — no se duplica esa
+        // lógica. La unidad se toma del PROPIO producto (mismo criterio que actualizarProducto,
+        // tarea 4.4), no del contexto del hilo: quien llama (PedidoServiceImpl.confirmarRecepcion)
+        // puede correr en un request cuya unidad activa no tiene por qué coincidir.
+        Producto producto = productoRepository.findById(productoId)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        Long unidadId = producto.getUnidadNegocio() != null ? producto.getUnidadNegocio().getId() : null;
+        String normalizado = normalizarCodigoBarra(codigoBarra);
+        validarCodigoBarraUnico(normalizado, unidadId, productoId);
+        producto.setCodigoBarra(normalizado);
+        productoRepository.save(producto);
+    }
+
+    @Override
+    @Transactional
+    public void liberarCodigoBarra(String codigoBarra) {
+        // Grupo 13 (aviso de código duplicado al escanear): mismo alcance que
+        // buscarPorCodigoBarra — unidad de negocio ACTIVA del contexto del hilo, no la de un
+        // producto puntual (acá no hay "el producto" todavía, sólo un código a liberar).
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        String normalizado = normalizarCodigoBarra(codigoBarra);
+        if (normalizado == null) {
+            return;
+        }
+        productoRepository.findByCodigoBarraAndUnidadNegocioIdAndDeletedFalse(normalizado, unidadId)
+                .ifPresent(existente -> {
+                    existente.setCodigoBarra(null);
+                    productoRepository.save(existente);
+                });
+        // Nadie lo tiene: idempotente, no es un error (tarea 13.1).
     }
 
     @Override
@@ -425,7 +500,42 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setIvaPorcentaje(producto.getIvaPorcentaje());
         dto.setCostoEnvioPorcentaje(producto.getCostoEnvioPorcentaje());
         dto.setMonedaCosto(producto.getMonedaCosto() != null ? producto.getMonedaCosto() : com.vivero.gestion.models.MonedaCosto.ARS);
+        dto.setCodigoBarra(producto.getCodigoBarra());
         return dto;
+    }
+
+    /**
+     * Normaliza el código de barras (tarea 4.1, Decisión 3 de design.md): {@code trim()} y
+     * {@code null}/vacío/sólo-espacios colapsan a {@code null}. Deliberadamente SIN
+     * {@code toUpperCase()} — EAN/UPC son numéricos y Code128 es case-sensitive, forzar
+     * mayúsculas rompería un código Code128 real.
+     */
+    private String normalizarCodigoBarra(String codigo) {
+        if (codigo == null) {
+            return null;
+        }
+        String recortado = codigo.trim();
+        return recortado.isEmpty() ? null : recortado;
+    }
+
+    /**
+     * Valida que el código de barras normalizado sea único DENTRO de la unidad de negocio, sobre
+     * los productos no borrados (tarea 4.2, Decisión 3 de design.md). {@code null}/vacío no se
+     * valida: casi todos los productos de Vivero y Abono lo tienen así, y debe poder repetirse
+     * libremente. El filtro por {@code idActual} es lo que permite re-guardar un producto sin
+     * cambiarle el código — sin él, editar cualquier otro campo de un producto que ya tiene
+     * código fallaría contra sí mismo.
+     */
+    private void validarCodigoBarraUnico(String codigo, Long unidadId, Long idActual) {
+        if (codigo == null || codigo.isBlank()) {
+            return;
+        }
+        productoRepository.findByCodigoBarraAndUnidadNegocioIdAndDeletedFalse(codigo, unidadId)
+                .filter(existente -> !existente.getId().equals(idActual))
+                .ifPresent(existente -> {
+                    throw new IllegalArgumentException(
+                            "El código de barras ya está asignado al producto \"" + existente.getNombre() + "\".");
+                });
     }
 
     private void calcularPrecioSiAplica(Producto producto) {

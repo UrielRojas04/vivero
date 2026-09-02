@@ -13,7 +13,15 @@ import java.util.List;
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findAllByUnidadNegocioId(Long unidadNegocioId);
     java.util.Optional<Producto> findByNombreAndUnidadNegocioIdAndDeletedFalse(String nombre, Long unidadNegocioId);
-    
+
+    // Búsqueda por código de barras de fábrica (codigo-barras-herramientas), acotada a la unidad
+    // de negocio y a los no borrados (Decisión 3 de design.md: un producto soft-deleted conserva
+    // su código, así que no debe aparecer en la búsqueda por escaneo). Respaldada en base por el
+    // índice NO único `idx_productos_codigo_barra` (Decisión 3 — unicidad se valida en el
+    // service, no con un `UNIQUE` de columna, precisamente para no romper la recarga de un
+    // producto soft-deleted que conserva su código).
+    java.util.Optional<Producto> findByCodigoBarraAndUnidadNegocioIdAndDeletedFalse(String codigoBarra, Long unidadNegocioId);
+
     boolean existsByMarcaId(Long marcaId);
 
     @Query(value = "SELECT COALESCE(SUM(p.stock * COALESCE((SELECT m.costo_unitario FROM movimientos_stock m WHERE m.producto_id = p.id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1), 0)), 0) FROM productos p WHERE p.unidad_negocio_id = :unidadId AND p.deleted = false", nativeQuery = true)

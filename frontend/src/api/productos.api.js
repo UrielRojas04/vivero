@@ -10,5 +10,11 @@ export const productosApi = {
   create: async (payload) => {
     const { data } = await api.post('/productos', payload);
     return data;
+  },
+  // Grupo 13 de codigo-barras-herramientas (extensión post-cierre): libera un código de barras
+  // de quien lo tenga hoy, sin asignárselo a nadie — usado por "Quedarme con este código" en
+  // ProductoForm.jsx y RecepcionPedidoModal.jsx tras el aviso de duplicado al escanear.
+  liberarCodigoBarra: async (codigo) => {
+    await api.delete(`/productos/codigo-barra/${encodeURIComponent(codigo)}`);
   }
 };

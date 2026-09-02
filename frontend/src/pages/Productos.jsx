@@ -3,10 +3,12 @@ import api from '../api/axios';
 import ProductoForm from '../components/ProductoForm';
 import AjusteStockAbonoModal from '../components/AjusteStockAbonoModal';
 import HistorialAjustesAbono from '../components/HistorialAjustesAbono';
+import EscanerCodigoBarra from '../components/EscanerCodigoBarra';
+import ProductoEncontradoModal from '../components/ProductoEncontradoModal';
 import { useUIStore } from '../store/useUIStore';
 import { useStockStore } from '../store/useStockStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Sparkles, Inbox, ChevronDown, ChevronUp, Settings2, ScanBarcode } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { getIconoUnidad } from '../utils/unidadIconos';
 
@@ -54,6 +56,13 @@ const Productos = () => {
   const [selectedProducto, setSelectedProducto] = useState(null);
   const [isAjusteModalOpen, setIsAjusteModalOpen] = useState(false);
   const [productoParaAjuste, setProductoParaAjuste] = useState(null);
+
+  // Búsqueda por escaneo de código de barras (sólo Herramientas, codigo-barras-herramientas).
+  const [escanerBusquedaAbierto, setEscanerBusquedaAbierto] = useState(false);
+  const [resultadoBusqueda, setResultadoBusqueda] = useState(null); // { producto: dto|null, codigoBuscado }
+  // Código precargado para el alta disparada desde "no encontrado" (tarea 8.6/9.5) — se limpia
+  // al cerrar el formulario para no dejarlo pegado en la próxima alta manual.
+  const [codigoBarraParaAlta, setCodigoBarraParaAlta] = useState('');
 
   const fetchProductos = async () => {
     setLoading(true);
@@ -109,6 +118,7 @@ const Productos = () => {
       }
       setIsFormOpen(false);
       setSelectedProducto(null);
+      setCodigoBarraParaAlta('');
       fetchProductos();
       pushToast('success', 'Producto guardado correctamente.');
     } catch (err) {
@@ -134,6 +144,34 @@ const Productos = () => {
         pushToast('error', getErrorMessage(err, 'Ocurrió un error al eliminar el producto.'));
       }
     }
+  };
+
+  // Búsqueda server-side por código de barras (Decisión 5 de design.md: nunca en memoria — la
+  // lista cargada en `productos` puede estar desactualizada). Cada escaneo pega al backend.
+  const handleCodigoDetectado = async (codigo) => {
+    try {
+      const response = await api.get(`/productos/codigo-barra/${encodeURIComponent(codigo)}`);
+      setResultadoBusqueda({ producto: response.data, codigoBuscado: codigo });
+    } catch (err) {
+      console.error(err);
+      if (err.response && err.response.status === 404) {
+        setResultadoBusqueda({ producto: null, codigoBuscado: codigo });
+      } else if (err.response && err.response.status === 403) {
+        denyAccess('No tienes permisos para buscar productos por código de barras (requiere LEER_STOCK).');
+      } else {
+        pushToast('error', getErrorMessage(err, 'Ocurrió un error al buscar el producto por código de barras.'));
+      }
+    }
+  };
+
+  // "Cargar producto con este código" (tarea 9.5, Decisión 8): cierra la ficha de resultado y
+  // abre el alta con el código ya precargado. Sólo se ofrece a quien puede escribir stock (mismo
+  // criterio que el botón "Nuevo Producto" — !isColega).
+  const handleCargarConEsteCodigo = () => {
+    setCodigoBarraParaAlta(resultadoBusqueda?.codigoBuscado || '');
+    setResultadoBusqueda(null);
+    setSelectedProducto(null);
+    setIsFormOpen(true);
   };
 
   const proveedoresDisponibles = Array.from(new Set(
@@ -232,6 +270,18 @@ const Productos = () => {
             className="w-full pl-10 pr-4 py-2 border border-line rounded-base focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-canvas/50 transition-all"
           />
         </div>
+
+        {unidadNegocioActiva === '2' && (
+          <button
+            type="button"
+            onClick={() => setEscanerBusquedaAbierto(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-base border border-line text-body hover:bg-canvas transition-colors cursor-pointer shrink-0 self-start md:self-auto"
+            title="Buscar por código de barras"
+          >
+            <ScanBarcode className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium">Escanear</span>
+          </button>
+        )}
 
         {unidadNegocioActiva === '1' && (
           <div className="flex items-center gap-1.5 bg-canvas rounded-base p-1 shrink-0 self-start md:self-auto w-full md:w-auto">
@@ -494,74 +544,78 @@ const Productos = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-thead border-b border-line">
-                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">{unidadNegocioActiva === '1' ? 'Planta' : 'Producto'}</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Descripción</th>
+                  <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">{unidadNegocioActiva === '1' ? 'Planta' : 'Producto'}</th>
+                  <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Descripción</th>
                   {unidadNegocioActiva === '2' && (
                     <>
-                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Costo</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">% Gan.</th>
+                      <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Costo</th>
+                      <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">% Gan.</th>
                     </>
                   )}
                   {unidadNegocioActiva === '1' && (
                     <>
-                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Siembra</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Lote / Dueño</th>
+                      <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Siembra</th>
+                      <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Lote / Dueño</th>
                     </>
                   )}
                   {unidadNegocioActiva === '3' && (
-                    <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Categoría</th>
+                    <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Categoría</th>
                   )}
-                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Precio</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Acciones</th>
+                  <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Precio</th>
+                  <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Stock</th>
+                  <th className="px-4 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {filteredProductos.map((producto) => (
                   <tr key={producto.id} className="hover:bg-canvas transition-colors group">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center font-semibold">
+                        <div className="w-9 h-9 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center font-semibold shrink-0">
                           <IconoUnidad className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold text-ink text-sm">{producto.nombre}</span>
-                        {unidadNegocioActiva === '2' && producto.proveedorNombre && (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-thead text-body border border-line ml-1">
-                            {producto.proveedorNombre.toUpperCase()}
-                          </span>
-                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-ink text-sm truncate max-w-[180px]" title={producto.nombre}>{producto.nombre}</span>
+                          {unidadNegocioActiva === '2' && producto.proveedorNombre && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-thead text-body border border-line w-fit mt-0.5">
+                              {producto.proveedorNombre.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-muted max-w-md truncate" title={producto.descripcion}>
+                    <td className="px-4 py-4">
+                      <p className="text-sm text-muted max-w-[200px] truncate" title={producto.descripcion}>
                         {producto.descripcion || <span className="text-faint italic">Sin descripción</span>}
                       </p>
                     </td>
                     {unidadNegocioActiva === '2' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-ink font-mono tabular-nums">
-                            ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
-                          </span>
-                          {(() => {
-                            const margen = estadoMargen(producto);
-                            if (!margen) return null;
-                            return (
-                              <span
-                                title={`Margen real actual: ${margen.margenReal.toFixed(1)}%`}
-                                className={`ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-base text-[10px] font-bold border ${
-                                  margen.nivel === 'perdida'
-                                    ? 'bg-danger-bg text-danger-ink border-danger-line'
-                                    : 'bg-warn-bg text-warn-ink border-warn-line'
-                                }`}
-                              >
-                                <AlertCircle className="w-3 h-3" />
-                                {margen.nivel === 'perdida' ? 'Pérdida' : 'Margen bajo'}
-                              </span>
-                            );
-                          })()}
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="text-sm font-semibold text-ink font-mono tabular-nums whitespace-nowrap">
+                              ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
+                            </span>
+                            {(() => {
+                              const margen = estadoMargen(producto);
+                              if (!margen) return null;
+                              return (
+                                <span
+                                  title={`Margen real actual: ${margen.margenReal.toFixed(1)}%`}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-base text-[10px] font-bold border whitespace-nowrap ${
+                                    margen.nivel === 'perdida'
+                                      ? 'bg-danger-bg text-danger-ink border-danger-line'
+                                      : 'bg-warn-bg text-warn-ink border-warn-line'
+                                  }`}
+                                >
+                                  <AlertCircle className="w-3 h-3" />
+                                  {margen.nivel === 'perdida' ? 'Pérdida' : 'Margen bajo'}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-ink bg-thead px-2.5 py-1 rounded-base font-mono tabular-nums">
                             {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}
                           </span>
@@ -570,12 +624,12 @@ const Productos = () => {
                     )}
                     {unidadNegocioActiva === '1' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-ink">
                             {producto.numeroSiembra ? `${producto.numeroSiembra}` : '-'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-sm font-medium text-ink">
                               {producto.lote ? `Lote ${producto.lote}` : <span className="text-faint italic">Sin lote</span>}
@@ -588,18 +642,18 @@ const Productos = () => {
                       </>
                     )}
                     {unidadNegocioActiva === '3' && (
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-ink">
                           {producto.categoriaAbonoNombre ? producto.categoriaAbonoNombre : '-'}
                         </span>
                       </td>
                     )}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-ink font-mono tabular-nums">
                         ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold font-mono tabular-nums ${
                         (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
                           ? 'bg-danger-bg text-danger-ink'
@@ -610,7 +664,7 @@ const Productos = () => {
                         {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock} unidades
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                         {unidadNegocioActiva === '3' && (
                           <button
@@ -669,11 +723,30 @@ const Productos = () => {
       <ProductoForm
         isOpen={isFormOpen}
         producto={selectedProducto}
+        codigoBarraInicial={codigoBarraParaAlta}
         onSave={handleCreateOrUpdate}
         onCancel={() => {
           setIsFormOpen(false);
           setSelectedProducto(null);
+          setCodigoBarraParaAlta('');
         }}
+      />
+
+      {/* Búsqueda por escaneo (sólo Herramientas): el escáner sólo devuelve el código detectado,
+          la búsqueda real pega al backend (handleCodigoDetectado). El resultado se muestra en
+          ProductoEncontradoModal, que además ofrece el alta precargada si no matcheó nada. */}
+      <EscanerCodigoBarra
+        isOpen={escanerBusquedaAbierto}
+        onClose={() => setEscanerBusquedaAbierto(false)}
+        onDetectado={handleCodigoDetectado}
+      />
+      <ProductoEncontradoModal
+        isOpen={Boolean(resultadoBusqueda)}
+        onClose={() => setResultadoBusqueda(null)}
+        producto={resultadoBusqueda?.producto || null}
+        codigoBuscado={resultadoBusqueda?.codigoBuscado || ''}
+        isColega={isColega}
+        onCargarConEsteCodigo={handleCargarConEsteCodigo}
       />
 
       {isAjusteModalOpen && productoParaAjuste && (

@@ -45,4 +45,11 @@ public class PedidoDetalleDTO {
     // reconstruir el ProductoDescuento de un producto nacido de una línea pendiente (tarea 8.6).
     private BigDecimal descuentoPactadoPorcentaje;
     private String descuentoPactadoDetalle;
+
+    // Grupo 12 (extensión post-cierre de codigo-barras-herramientas): código de barras YA
+    // guardado en el producto de esta línea, mapeado desde detalle.getProducto().getCodigoBarra()
+    // cuando el producto ya existe. null en líneas "pendiente de crear" (productoId null) y en
+    // líneas existentes sin código guardado todavía. Le permite al frontend ocultar el botón de
+    // escaneo cuando ya hay un código cargado (no se reemplaza un código ya cargado desde acá).
+    private String codigoBarra;
 }

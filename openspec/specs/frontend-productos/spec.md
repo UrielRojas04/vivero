@@ -1,4 +1,7 @@
-## ADDED Requirements
+## Purpose
+Esta especificación define el comportamiento del catálogo de productos en el frontend, incluyendo listado, creación, edición, eliminación y búsqueda de productos.
+
+## Requirements
 
 ### Requirement: Listado de Productos
 El sistema MUST mostrar una tabla con todos los productos obtenidos de `GET /api/productos`, presentando nombre, descripción, precio, stock y acciones (editar, eliminar).
@@ -159,9 +162,6 @@ El sistema MUST permitir al usuario filtrar los productos en la sección de Stoc
 #### Scenario: No coexisten dos filtros equivalentes
 - **WHEN** el usuario navega a la sección de Stock en la unidad de negocio "Herramientas"
 - **THEN** el sistema no muestra ningún filtro por marca junto al filtro por proveedor
-
-## ADDED Requirements
-
 
 ### Requirement: Proveedor en el Formulario de Producto
 El sistema SHALL permitir seleccionar el proveedor de un producto desde el formulario de producto de la unidad de negocio Herramientas, y SHALL NOT solicitar una marca en esa unidad de negocio.

@@ -24,8 +24,6 @@ Al asignarle un proveedor a un producto que se está creando, el sistema SHALL c
 - **WHEN** un usuario sin permisos envía una solicitud para crear un producto
 - **THEN** el sistema devuelve un estado HTTP 403 Forbidden
 
-## ADDED Requirements
-
 ### Requirement: Definición de Margen de Ganancia
 El frontend SHALL permitir al usuario ingresar el margen de ganancia esperado (%) en el formulario de Producto, pre-calculando e informando visualmente en tiempo real el precio de venta que resultará antes de enviar el formulario. El costo sobre el que se pre-calcula SHALL obtenerse aplicando la misma fórmula canónica y el mismo orden de componentes que aplica el servidor, de modo que el valor mostrado antes de guardar coincida con el que el sistema persiste.
 
@@ -51,7 +49,6 @@ El sistema SHALL permitir ingresar stock a los productos del catálogo mediante 
 - **WHEN** el usuario procesa la finalización de un lote de siembra
 - **THEN** el stock del producto seleccionado se incrementa de acuerdo a la cantidad cosechada de la siembra
 - **AND** se registra un movimiento de stock de tipo `INGRESO_SIEMBRA` con referencia al lote de la siembra
-
 
 ### Requirement: Migración del Vínculo de Catálogo de Marca a Proveedor
 El sistema SHALL convertir, una sola vez y de forma idempotente, el vínculo de catálogo de los productos existentes: por cada marca de la unidad de negocio Herramientas SHALL resolverse un proveedor de la misma unidad con el mismo nombre, reutilizándolo si ya existe y creándolo con perfil de costeo neutro si no existe, y cada producto vinculado a esa marca SHALL quedar vinculado a ese proveedor.
@@ -92,7 +89,6 @@ El vínculo anterior con la marca SHALL conservarse en la base de datos sin modi
 - **WHEN** se ejecuta la conversión en un sistema cuya unidad de negocio Vivero no tiene ninguna marca ni ningún producto con marca
 - **THEN** ningún producto de esa unidad de negocio se modifica y no se crea ningún proveedor para ella
 
-
 ### Requirement: Moneda del Precio de Lista del Producto
 El sistema SHALL registrar, para cada producto, la moneda en la que está expresado su costo de catálogo, con el valor "pesos" por defecto. La moneda SHALL copiarse desde el perfil del proveedor al asignárselo y SHALL ser modificable por el usuario.
 
@@ -103,3 +99,27 @@ El sistema SHALL registrar, para cada producto, la moneda en la que está expres
 #### Scenario: Producto existente sin moneda declarada
 - **WHEN** se consulta un producto creado antes de la introducción de la moneda
 - **THEN** su costo de catálogo se interpreta como expresado en pesos
+
+### Requirement: Identificador Externo Opcional del Producto
+El registro de producto SHALL aceptar, además de sus datos actuales, un identificador externo opcional (`codigoBarra`) correspondiente al código de barras de fábrica del producto. El campo SHALL ser aditivo: su ausencia no altera ningún comportamiento existente del alta, la edición ni el listado de productos.
+
+#### Scenario: Alta de producto con identificador externo
+- **WHEN** un usuario con `ESCRIBIR_STOCK` crea un producto informando `codigoBarra`
+- **THEN** el sistema persiste el producto con ese identificador y lo devuelve en el `ProductoDTO`
+
+#### Scenario: Alta de producto sin identificador externo
+- **WHEN** un usuario crea un producto sin informar `codigoBarra`
+- **THEN** el sistema guarda el producto igual que antes de este cambio, con el identificador en `null`
+
+#### Scenario: Productos existentes no se ven afectados
+- **WHEN** se consulta un producto creado antes de la incorporación del campo
+- **THEN** el sistema lo devuelve con `codigoBarra` en `null` y con todos sus demás campos sin alteración
+
+#### Scenario: El identificador viaja en el DTO, no en la entidad
+- **WHEN** cualquier endpoint del catálogo devuelve un producto que tiene `codigoBarra`
+- **THEN** el valor se expone a través de `ProductoDTO`, nunca serializando la entidad `Producto`
+
+#### Scenario: Cambiar el identificador no altera el costeo
+- **WHEN** un usuario edita únicamente el `codigoBarra` de un producto existente
+- **THEN** el sistema guarda el cambio sin registrar un `MovimientoStock` nuevo y sin recalcular precio ni costo, porque el identificador no es un componente del costo
+

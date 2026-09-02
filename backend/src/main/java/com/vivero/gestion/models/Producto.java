@@ -104,6 +104,14 @@ public class Producto {
     @JoinColumn(name = "categoria_abono_id")
     private CategoriaAbono categoriaAbono;
 
+    // Código de barras de fábrica (EAN-13/UPC-A/Code128) — sólo se usa en Herramientas
+    // (codigo-barras-herramientas). Nullable: la inmensa mayoría de los productos de Vivero y
+    // Abono nunca lo tienen. Unicidad NO se fuerza acá con `unique = true`: se valida en el
+    // service, por unidad de negocio y sobre no borrados (Decisión 3 de design.md) — un
+    // producto soft-deleted conserva su código y un UNIQUE de base impediría recargarlo.
+    @Column(name = "codigo_barra", length = 64)
+    private String codigoBarra;
+
     // Costo de referencia (Decisión 5 de design.md de costeo-fifo-herramientas, grupo 8): el
     // MÁXIMO costo_unitario entre las capas ACTIVAS (cantidad_restante > 0) del producto — no un
     // FIFO, no un "último movimiento". COALESCE cae a la expresión vieja (intacta, sin tocar un
@@ -199,4 +207,7 @@ public class Producto {
     
     public CategoriaAbono getCategoriaAbono() { return categoriaAbono; }
     public void setCategoriaAbono(CategoriaAbono categoriaAbono) { this.categoriaAbono = categoriaAbono; }
+
+    public String getCodigoBarra() { return codigoBarra; }
+    public void setCodigoBarra(String codigoBarra) { this.codigoBarra = codigoBarra; }
 }

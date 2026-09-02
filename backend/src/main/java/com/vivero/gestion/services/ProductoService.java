@@ -13,6 +13,43 @@ public interface ProductoService {
     void eliminarProducto(Long id);
 
     /**
+     * Busca un producto por su código de barras de fábrica (codigo-barras-herramientas),
+     * acotado a la unidad de negocio activa ({@link com.vivero.gestion.security.UnidadNegocioContextHolder})
+     * y a los no borrados. Lanza {@link com.vivero.gestion.exceptions.ResourceNotFoundException}
+     * cuando no hay coincidencia — el controller la traduce a 404.
+     */
+    ProductoDTO buscarPorCodigoBarra(String codigo);
+
+    /**
+     * Asigna (o reemplaza) el código de barras de un producto ya existente, reutilizando la misma
+     * normalización/validación de unicidad que {@link #crearProducto} y {@link #actualizarProducto}
+     * ({@code normalizarCodigoBarra}/{@code validarCodigoBarraUnico} internos de la implementación
+     * — no se duplica esa lógica). Pensado para {@code PedidoServiceImpl.confirmarRecepcion}
+     * (grupo 12 de codigo-barras-herramientas, extensión post-cierre): permite cargar el código
+     * escaneado de una línea existente en el mismo momento en que se confirma la recepción, dentro
+     * de la misma transacción que el ingreso de stock. Lanza {@link IllegalArgumentException} si el
+     * código ya está en uso por otro producto de la misma unidad (la propia unidad se toma de
+     * {@code producto.getUnidadNegocio()}, no del contexto del hilo).
+     */
+    void asignarCodigoBarra(Long productoId, String codigoBarra);
+
+    /**
+     * Libera un código de barras, dejando en {@code null} el {@code codigoBarra} de quien lo
+     * tenga hoy (grupo 13 de codigo-barras-herramientas, extensión post-cierre: aviso de código
+     * duplicado al escanear). Busca en la unidad de negocio ACTIVA
+     * ({@link com.vivero.gestion.security.UnidadNegocioContextHolder}), sobre los no borrados —
+     * mismo alcance que {@link #buscarPorCodigoBarra}. Reutiliza la normalización interna
+     * ({@code normalizarCodigoBarra}) sin duplicarla.
+     *
+     * <p>IDEMPOTENTE: si nadie tiene ese código en la unidad activa, no hace nada — no es un
+     * error, es un "liberar si hace falta". No sabe (ni le importa) quién va a quedarse con el
+     * código después; esa asignación real pasa por el flujo normal de
+     * {@link #crearProducto}/{@link #actualizarProducto}/{@link #asignarCodigoBarra}, que ya
+     * validan unicidad — al quedar el código libre, esos flujos no van a chocar.
+     */
+    void liberarCodigoBarra(String codigoBarra);
+
+    /**
      * Unificación de los tres mecanismos puntuales que existían por separado desde el 2026-08-25
      * ({@code ajustarCostoSiSuperaAlActual}, {@code actualizarIvaEnvioSiDistinto},
      * {@code actualizarDescuentosSiDistinto} — todos eliminados por este método) — fix de un bug

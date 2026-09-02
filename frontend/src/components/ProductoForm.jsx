@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Truck, Download } from 'lucide-react';
+import { X, Plus, Trash2, Truck, Download, ScanBarcode } from 'lucide-react';
 import FormattedNumberInput from './FormattedNumberInput';
+import EscanerCodigoBarra from './EscanerCodigoBarra';
+import CodigoBarraDuplicadoModal from './CodigoBarraDuplicadoModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUIStore } from '../store/useUIStore';
 import { useQuery } from '@tanstack/react-query';
 import { negociosApi } from '../api/negocios.api';
 import { proveedoresApi } from '../api/proveedores.api';
+import { productosApi } from '../api/productos.api';
 import { calcularCosto, resolverEfectivo } from '../utils/costeo';
+import { verificarCodigoBarraDuplicado } from '../utils/verificarCodigoBarraDuplicado';
+import { getErrorMessage } from '../utils/errorMessage';
 
 // Equivalencia porcentaje ↔ multiplicador (OQ8/Decisión 11), mismo helper que ProveedorForm.jsx
 // (tarea 4.4, replicado acá en la 8.9): sólo texto de ayuda, el valor guardado sigue siendo el
@@ -18,9 +23,12 @@ const multiplicadorDescuento = (porcentajeVal) => {
   return (1 - p / 100).toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 };
 
-const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
+// codigoBarraInicial (tarea 8.6): permite precargar el campo en un ALTA disparada desde el
+// resultado "no encontrado" del escaneo de búsqueda (tarea 9.5) — el vendedor escaneó un envase
+// que no matcheó ningún producto y decide cargarlo con ese mismo código ya puesto.
+const ProductoForm = ({ producto, onSave, onCancel, isOpen, codigoBarraInicial }) => {
   const { unidadNegocioActiva } = useAuthStore();
-  const { askConfirm } = useUIStore();
+  const { askConfirm, pushToast } = useUIStore();
 
   const { data: negocios } = useQuery({
     queryKey: ['negocios'],
@@ -80,6 +88,21 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
 
   const [categoriaAbonoId, setCategoriaAbonoId] = useState('');
 
+  // Código de barras de fábrica — sólo Herramientas (unidadNegocioActiva === '2'). Escaneo NO
+  // persiste solo (Decisión 4 de design.md): sólo llena este estado, el guardado sigue siendo el
+  // submit normal del formulario. Editable a mano (tarea 8.4) para cuando la cámara no coopera.
+  const [codigoBarra, setCodigoBarra] = useState('');
+  const [escanerAbierto, setEscanerAbierto] = useState(false);
+  // Grupo 13 (aviso de código duplicado al escanear, extensión post-cierre): { codigo, producto }
+  // del conflicto detectado apenas se escanea — null cuando no hay ningún conflicto abierto.
+  const [conflictoCodigoBarra, setConflictoCodigoBarra] = useState(null);
+  // Bug real reportado por el usuario: liberar el código de inmediato al elegir "Quedarme con
+  // este código" (antes de guardar) dejaba el código sin dueño si el formulario se cerraba sin
+  // guardar — el producto viejo ya lo había perdido, pero el nuevo nunca llegó a recibirlo.
+  // Ahora sólo se recuerda la intención acá; el DELETE real recién se dispara en guardar(),
+  // justo antes del submit — si nunca se guarda, nunca se libera nada.
+  const [codigoALiberarAlGuardar, setCodigoALiberarAlGuardar] = useState(null);
+
   useEffect(() => {
     if (producto) {
       setNombre(producto.nombre || '');
@@ -106,7 +129,10 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       // Snapshot del precio "de antes" para la confirmación del submit — nunca se vuelve a
       // recalcular durante la edición, sólo se lee al comparar en handleSubmit.
       setPrecioOriginal(producto.precio !== null && producto.precio !== undefined ? Number(producto.precio) : null);
+      setCodigoBarra(producto.codigoBarra || '');
+      setCodigoALiberarAlGuardar(null);
     } else {
+      setCodigoALiberarAlGuardar(null);
       setNombre('');
       setDescripcion('');
       setPrecio('');
@@ -127,9 +153,12 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       setProveedorSeleccionadoId('');
       setCategoriaAbonoId('');
       setPrecioOriginal(null);
+      // Alta: precarga el código sólo si viene del flujo "no encontrado" (tarea 8.6/9.5); si no,
+      // vacío — igual que el resto de los campos opcionales en un alta normal.
+      setCodigoBarra(codigoBarraInicial || '');
     }
     setErrors({});
-  }, [producto, isOpen]);
+  }, [producto, isOpen, codigoBarraInicial]);
 
   const calcCostoFinal = (costo, descuentosList, ivaPropioVal, envioPropioVal) => {
     const cBase = costo ? parseFloat(costo) : 0;
@@ -327,7 +356,18 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const guardar = () => {
+  const guardar = async () => {
+    // Si se eligió "Quedarme con este código" en algún momento de esta edición, recién ACÁ se
+    // libera de verdad del producto que lo tenía — justo antes del submit real, nunca antes.
+    // Si falla, se corta acá: no se manda el guardado con un código que puede seguir en conflicto.
+    if (codigoALiberarAlGuardar) {
+      try {
+        await productosApi.liberarCodigoBarra(codigoALiberarAlGuardar);
+      } catch (err) {
+        pushToast('error', getErrorMessage(err, 'Ocurrió un error al liberar el código de barras del producto anterior. No se guardó.'));
+        return;
+      }
+    }
     onSave({
       nombre,
       descripcion,
@@ -354,6 +394,11 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
       // criterio que el resto de los campos de costeo de este formulario.
       monedaCosto,
       categoriaAbonoId: categoriaAbonoId ? parseInt(categoriaAbonoId, 10) : null,
+      // Código de barras (tarea 8.5): sólo viaja en Herramientas, igual que el resto de los
+      // campos exclusivos de esa unidad en este payload (costoProducto, ivaPorcentaje...).
+      // Normalización final (trim / vacío -> null) la hace el backend (Decisión 3); acá sólo se
+      // evita mandar un string vacío en vez de null.
+      ...(unidadNegocioActiva === '2' ? { codigoBarra: codigoBarra.trim() || null } : {}),
     });
   };
 
@@ -395,6 +440,41 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
     if (e.target === e.currentTarget) {
       onCancel();
     }
+  };
+
+  // Grupo 13 (aviso de código duplicado al escanear): reemplaza el onDetectado directo de
+  // EscanerCodigoBarra — antes de escribir el código en el campo, chequea si ya está asignado a
+  // OTRO producto. En alta (producto == null) cualquier resultado encontrado es un conflicto; en
+  // edición, "soy el mismo producto" (mismo id) no es un conflicto real — se escribe directo,
+  // igual que si no se hubiera encontrado nada (404).
+  const handleCodigoEscaneado = async (codigo) => {
+    try {
+      const encontrado = await verificarCodigoBarraDuplicado(codigo);
+      const esElMismoProducto = producto && encontrado && encontrado.id === producto.id;
+      if (encontrado && !esElMismoProducto) {
+        setConflictoCodigoBarra({ codigo, producto: encontrado });
+        return;
+      }
+      setCodigoBarra(codigo);
+    } catch (err) {
+      pushToast('error', getErrorMessage(err, 'Ocurrió un error al verificar el código de barras.'));
+    }
+  };
+
+  // "Descartar código nuevo": cierra el aviso, no toca el campo — el código escaneado se pierde.
+  const handleDescartarCodigoDuplicado = () => {
+    setConflictoCodigoBarra(null);
+  };
+
+  // "Quedarme con este código": NO libera nada todavía (bug corregido, ver el comentario de
+  // codigoALiberarAlGuardar) — sólo escribe el código en el campo y recuerda que hay que
+  // liberarlo del producto viejo cuando se guarde de verdad. Si el usuario cierra el formulario
+  // sin guardar, el producto viejo se queda con su código intacto.
+  const handleQuedarmeConCodigoDuplicado = () => {
+    if (!conflictoCodigoBarra) return;
+    setCodigoBarra(conflictoCodigoBarra.codigo);
+    setCodigoALiberarAlGuardar(conflictoCodigoBarra.codigo);
+    setConflictoCodigoBarra(null);
   };
 
   // Listen for Escape key
@@ -488,6 +568,39 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
               placeholder="Detalles sobre cuidados, tamaño, riego..."
             />
           </div>
+
+          {/* Código de barras de fábrica — sólo Herramientas (tarea 8.2, condicionado a
+              unidadNegocioActiva === '2', mismo patrón que el resto de los bloques
+              condicionales de este formulario). */}
+          {unidadNegocioActiva === '2' && (
+            <div>
+              <label htmlFor="codigoBarra" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+                Código de barras (Opcional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="codigoBarra"
+                  type="text"
+                  value={codigoBarra}
+                  onChange={(e) => setCodigoBarra(e.target.value)}
+                  className="flex-1 min-w-0 px-4 py-2.5 rounded-base border border-line bg-paper focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-mono tabular-nums"
+                  placeholder="Ej: 7791234567890"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEscanerAbierto(true)}
+                  className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-base border border-line text-body hover:bg-canvas transition-colors cursor-pointer"
+                  title="Escanear código de barras"
+                >
+                  <ScanBarcode className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm font-medium">Escanear</span>
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-faint">
+                Escaneá el envase o tipeá el código a mano. No se guarda hasta que confirmes el formulario.
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             {unidadNegocioActiva !== '2' && (
@@ -798,6 +911,26 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen }) => {
         </form>
 
       </div>
+
+      {/* Escáner de código de barras (tarea 8.3): onDetectado sólo llena el campo y cierra el
+          modal del escáner — nunca dispara guardado (Decisión 4 de design.md). El submit sigue
+          siendo la única forma de persistir. Grupo 13: antes de escribirlo, handleCodigoEscaneado
+          chequea duplicados y puede abrir CodigoBarraDuplicadoModal en su lugar. */}
+      <EscanerCodigoBarra
+        isOpen={escanerAbierto}
+        onClose={() => setEscanerAbierto(false)}
+        onDetectado={handleCodigoEscaneado}
+      />
+
+      {/* Grupo 13: aviso de código duplicado apenas se escanea (no recién al guardar). */}
+      <CodigoBarraDuplicadoModal
+        isOpen={!!conflictoCodigoBarra}
+        onClose={handleDescartarCodigoDuplicado}
+        codigo={conflictoCodigoBarra?.codigo}
+        productoEnConflicto={conflictoCodigoBarra?.producto}
+        onDescartar={handleDescartarCodigoDuplicado}
+        onQuedarme={handleQuedarmeConCodigoDuplicado}
+      />
     </div>
   );
 };

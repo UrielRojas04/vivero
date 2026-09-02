@@ -209,6 +209,10 @@ public class PedidoServiceImpl implements PedidoService {
 
         // --- 1) Validación completa, ANTES de modificar nada ---
         Map<Long, Integer> cantidadPorDetalle = new HashMap<>();
+        // Grupo 12 (extensión post-cierre de codigo-barras-herramientas): código escaneado/tipeado
+        // por ítem, opcional. Sólo entran acá los ítems que efectivamente trajeron un código no
+        // vacío — el resto de los ítems ni aparece en el mapa.
+        Map<Long, String> codigoBarraPorDetalle = new HashMap<>();
         for (RecepcionItemDTO item : items) {
             if (item.getDetalleId() == null) {
                 throw new IllegalArgumentException("Cada ítem de la confirmación debe indicar el detalleId.");
@@ -218,6 +222,9 @@ public class PedidoServiceImpl implements PedidoService {
             }
             if (cantidadPorDetalle.put(item.getDetalleId(), item.getCantidadRecibida()) != null) {
                 throw new IllegalArgumentException("El ítem " + item.getDetalleId() + " está repetido en la confirmación.");
+            }
+            if (item.getCodigoBarra() != null && !item.getCodigoBarra().isBlank()) {
+                codigoBarraPorDetalle.put(item.getDetalleId(), item.getCodigoBarra());
             }
         }
 
@@ -253,6 +260,11 @@ public class PedidoServiceImpl implements PedidoService {
         for (PedidoDetalle detalle : detalles) {
             Integer recibida = cantidadPorDetalle.get(detalle.getId());
             detalle.setCantidadRecibida(recibida);
+            // Grupo 12: capturado ANTES del bloque de creación de línea pendiente de más abajo,
+            // que muta detalle.getProducto() de null a la ficha recién creada — asignarCodigoBarra
+            // sólo debe llamarse para líneas que YA eran existentes al entrar a este método (una
+            // línea pendiente ya nace con su código, vía nuevoProductoDTO.setCodigoBarra).
+            boolean eraProductoExistente = detalle.getProducto() != null;
 
             // Fix puntual del 2026-08-26 (pedido explícito del usuario, fuera de OpenSpec): antes
             // esta creación vivía DENTRO del "if (recibida > 0)" de más abajo — si el proveedor no
@@ -318,6 +330,10 @@ public class PedidoServiceImpl implements PedidoService {
                 if (pedido.getProveedor() != null) {
                     nuevoProductoDTO.setProveedorId(pedido.getProveedor().getId());
                 }
+                // Grupo 12 (extensión post-cierre): si se escaneó/tipeó un código para esta línea
+                // "pendiente de crear", el producto nace ya con ese código — crearProducto() ya
+                // valida la unicidad internamente, no se repite acá (tarea 12.3/12.4).
+                nuevoProductoDTO.setCodigoBarra(codigoBarraPorDetalle.get(detalle.getId()));
                 ProductoDTO creado = productoService.crearProducto(nuevoProductoDTO);
                 Producto productoCreado = productoRepository.getReferenceById(creado.getId());
                 detalle.setProducto(productoCreado);
@@ -325,6 +341,20 @@ public class PedidoServiceImpl implements PedidoService {
 
             if (recibida > 0) {
                 Producto producto = detalle.getProducto();
+
+                // Grupo 12 (extensión post-cierre): código escaneado/tipeado para esta línea EXISTENTE
+                // (no aplica a líneas pendientes recién creadas, ver eraProductoExistente arriba —
+                // ésas ya nacieron con su código). Va ANTES del save de más abajo para quedar en la
+                // misma transacción que el ingreso de stock; si la validación de unicidad falla acá,
+                // la excepción se propaga sin capturarse y aborta confirmarRecepcion() entero
+                // (@Transactional de la clase), sin dejar stock a medio ingresar (tarea 12.4/12.5c).
+                if (eraProductoExistente) {
+                    String codigoBarraItem = codigoBarraPorDetalle.get(detalle.getId());
+                    if (codigoBarraItem != null) {
+                        productoService.asignarCodigoBarra(producto.getId(), codigoBarraItem);
+                    }
+                }
+
                 int stockActual = producto.getStock() != null ? producto.getStock() : 0;
                 producto.setStock(stockActual + recibida);
                 productoRepository.save(producto);
@@ -570,10 +600,14 @@ public class PedidoServiceImpl implements PedidoService {
         boolean tieneProducto = detalle.getProducto() != null;
         Long productoId = null;
         String productoNombre = null;
+        // Grupo 12: código YA guardado en el producto de esta línea, para que el frontend sepa si
+        // ofrece el botón de escaneo o el chip de sólo lectura. null en líneas "pendiente de crear".
+        String codigoBarra = null;
         try {
             if (tieneProducto) {
                 productoId = detalle.getProducto().getId();
                 productoNombre = detalle.getProducto().getNombre();
+                codigoBarra = detalle.getProducto().getCodigoBarra();
             }
         } catch (jakarta.persistence.EntityNotFoundException e) {
             productoNombre = "(eliminado)";
@@ -600,6 +634,7 @@ public class PedidoServiceImpl implements PedidoService {
                 .envioPactadoPorcentaje(detalle.getEnvioPactadoPorcentaje())
                 .descuentoPactadoPorcentaje(detalle.getDescuentoPactadoPorcentaje())
                 .descuentoPactadoDetalle(detalle.getDescuentoPactadoDetalle())
+                .codigoBarra(codigoBarra)
                 .build();
     }
 }
