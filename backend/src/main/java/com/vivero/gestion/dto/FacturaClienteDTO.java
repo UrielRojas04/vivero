@@ -21,6 +21,7 @@ public class FacturaClienteDTO {
     private BigDecimal totalPagos;
     private BigDecimal totalConceptos;
     private BigDecimal saldoDeudor;
+    private Integer saldoBandejas;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -52,4 +53,6 @@ public class FacturaClienteDTO {
     public void setTotalConceptos(BigDecimal totalConceptos) { this.totalConceptos = totalConceptos; }
     public BigDecimal getSaldoDeudor() { return saldoDeudor; }
     public void setSaldoDeudor(BigDecimal saldoDeudor) { this.saldoDeudor = saldoDeudor; }
+    public Integer getSaldoBandejas() { return saldoBandejas; }
+    public void setSaldoBandejas(Integer saldoBandejas) { this.saldoBandejas = saldoBandejas; }
 }

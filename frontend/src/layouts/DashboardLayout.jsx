@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
@@ -78,9 +78,16 @@ const navGroups = [
   }
 ];
 
+// Lista plana de todos los items de navegación, para el guard de unidad de más abajo (bug
+// reportado por el usuario: cambiar de unidad de negocio estando parado en una sección propia de
+// OTRA unidad, ej. Pedidos, dejaba verla igual, sólo repintada con el acento de la unidad nueva).
+// Reutiliza literalmente `navGroups`, no duplica la lista de rutas/unidades permitidas.
+const todosLosNavItems = navGroups.flatMap((grupo) => grupo.items);
+
 const DashboardLayout = () => {
   const { logout, user, hasPermission, negociosDisponibles, unidadNegocioActiva, setNegociosDisponibles, setUnidadNegocioActiva } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -99,6 +106,23 @@ const DashboardLayout = () => {
   React.useEffect(() => {
     document.documentElement.dataset.unidad = currentIdentity.slug;
   }, [currentIdentity.slug]);
+
+  // Guard de unidad de negocio (bug reportado por el usuario): busca, entre los items de
+  // navegación cuyo `to` matchea el path actual (por prefijo, para cubrir subrutas como
+  // /abono/traslados/registrar), si ALGUNO permite la unidad activa — hace falta "alguno" y no
+  // "el primero" porque una misma ruta (ej. /productos) puede aparecer varias veces en
+  // navGroups, una entrada por unidad, con label distinto pero mismo `to`. Si hay al menos un
+  // item para este path y ninguno permite la unidad activa, la sección no es válida para la
+  // unidad nueva → redirige. Rutas que no aparecen en navGroups (detalle de cliente, login, etc.)
+  // no tienen ningún item que matchee y no se tocan.
+  React.useEffect(() => {
+    const itemsDeEstaRuta = todosLosNavItems.filter((item) => location.pathname.startsWith(item.to));
+    if (itemsDeEstaRuta.length === 0) return;
+    const permitidoEnEstaUnidad = itemsDeEstaRuta.some((item) => item.unidades.includes(unidadSlug));
+    if (!permitidoEnEstaUnidad) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [unidadSlug, location.pathname, navigate]);
 
   React.useEffect(() => {
     if (user) {

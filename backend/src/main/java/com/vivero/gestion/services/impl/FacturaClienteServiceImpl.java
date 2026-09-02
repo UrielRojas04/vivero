@@ -289,6 +289,10 @@ public class FacturaClienteServiceImpl implements FacturaClienteService {
         BigDecimal saldo = totalVentas.add(totalConceptos).subtract(totalPagos);
         dto.setSaldoDeudor(saldo);
 
+        dto.setSaldoBandejas(factura.getCliente().getCuentaCorrienteBandejas() != null
+                ? factura.getCliente().getCuentaCorrienteBandejas().getBalanceBandejas()
+                : 0);
+
         return dto;
     }
     @Override

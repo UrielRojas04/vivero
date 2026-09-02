@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFacturaActiva, getHistorialFacturas, cerrarFactura, agregarConceptoFactura, registrarPagoFactura, abrirFacturaManual, rechazarPagoFactura } from '../api/facturas.api';
 import { useUIStore } from '../store/useUIStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { getErrorMessage } from '../utils/errorMessage';
-import { ArrowLeft, CheckCircle, CheckCircle2, FileText, Plus, PlusCircle, Receipt, Box, Tag, FileClock, History, XCircle, Download, Lock, Phone, ChevronDown, ChevronUp, TrendingUp, AlertTriangle } from 'lucide-react';
+import api from '../api/axios';
+import { ArrowLeft, CheckCircle, CheckCircle2, FileText, Plus, PlusCircle, Receipt, Box, Tag, FileClock, History, XCircle, Download, Lock, Phone, ChevronDown, ChevronUp, TrendingUp, AlertTriangle, PackageMinus } from 'lucide-react';
 import FormattedNumberInput from '../components/FormattedNumberInput';
 import { toPng } from 'html-to-image';
 const formatFecha = (iso) => new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -100,9 +102,11 @@ const FacturaCliente = () => {
   const { clienteId } = useParams();
   const navigate = useNavigate();
   const { pushToast, askConfirm } = useUIStore();
+  const { unidadNegocioActiva } = useAuthStore();
 
   const [factura, setFactura] = useState(null);
   const [historial, setHistorial] = useState([]);
+  const [devolucionesBandejas, setDevolucionesBandejas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('activa'); // 'activa' | 'historial'
   const [isExporting, setIsExporting] = useState(false);
@@ -146,10 +150,26 @@ const FacturaCliente = () => {
     }
   };
 
+  // Sólo se pide en Vivero (unidadNegocioActiva === '1'): es el mismo gating que el chip
+  // de saldo de bandejas (tarea 3.3), y estos datos sólo se muestran ahí. Se filtra acá,
+  // en el frontend, a las DEVOLUCIONes: las ENTREGAs ya se ven reflejadas en la columna
+  // Cant. de la tabla de ventas y mostrarlas de nuevo sería redundante.
+  const fetchDevolucionesBandejas = async () => {
+    try {
+      const response = await api.get(`/clientes/${clienteId}/bandejas/historial`);
+      setDevolucionesBandejas(response.data.filter((mov) => mov.tipo === 'DEVOLUCION'));
+    } catch (err) {
+      pushToast('error', getErrorMessage(err, 'Error al cargar el historial de bandejas'));
+    }
+  };
+
   useEffect(() => {
     fetchFacturaData();
     fetchHistorial();
-  }, [clienteId]);
+    if (unidadNegocioActiva === '1') {
+      fetchDevolucionesBandejas();
+    }
+  }, [clienteId, unidadNegocioActiva]);
 
   const handleCerrarFactura = () => {
     if (!factura) return;
@@ -276,6 +296,37 @@ const FacturaCliente = () => {
       </div>
     );
 
+    // `devolucionesBandejas` es la lista completa del cliente (fetch único, sin scope por
+    // factura — el backend no tiene un endpoint que la devuelva ya recortada). Cada factura
+    // (activa o cerrada del historial) filtra acá su propio rango: desde su apertura hasta su
+    // cierre, o hasta ahora si sigue activa.
+    const devolucionesBandejasDeEstaFactura = devolucionesBandejas.filter((mov) => {
+      const fechaMov = new Date(mov.fecha);
+      if (fechaMov < new Date(f.fechaApertura)) return false;
+      if (!isActive && f.fechaCierre && fechaMov > new Date(f.fechaCierre)) return false;
+      return true;
+    });
+
+    // Bandejas adeudadas de ESTA factura (pedido del usuario, corrige el uso anterior de
+    // f.saldoBandejas): NO es el saldo global del cliente — se calcula sumando la columna Cant.
+    // de cada línea vendida en esta factura puntual (cada unidad de producto vendida sale en una
+    // bandeja) y restando las devoluciones registradas dentro del rango de esta misma factura
+    // (ya calculadas arriba). f.saldoBandejas (el campo del DTO, saldo global del cliente) queda
+    // sin usar en esta pantalla a partir de acá, pero no se tocó el backend — sigue existiendo
+    // por si hace falta en otro lado más adelante.
+    const bandejasEntregadasEnEstaFactura = (f.ventas || []).reduce(
+      (sum, v) => sum + v.detalles.reduce((s, d) => s + d.cantidad, 0), 0
+    );
+    const bandejasDevueltasEnEstaFactura = devolucionesBandejasDeEstaFactura.reduce((sum, mov) => sum + mov.cantidad, 0);
+    // Bug real reportado por el usuario: si el cliente devuelve más bandejas de las que se llevó
+    // DENTRO de esta factura puntual, el resultado daba negativo — confuso, porque en realidad
+    // esas de más están pagando una deuda de una factura ANTERIOR, no una deuda negativa de ésta.
+    // Se separa en dos números: el adeudado de esta factura nunca baja de 0, y lo que sobra
+    // (si sobra) se muestra aparte, aclarando que corresponde a otra factura.
+    const balanceBandejasEstaFactura = bandejasEntregadasEnEstaFactura - bandejasDevueltasEnEstaFactura;
+    const bandejasAdeudadasEnEstaFactura = Math.max(0, balanceBandejasEstaFactura);
+    const bandejasExcedentesDeEstaFactura = Math.max(0, -balanceBandejasEstaFactura);
+
     return (
       <div className={`${isExporting ? 'p-6 bg-canvas force-light-export' : ''}`} ref={isActive ? facturaRef : null}>
       <div className={`bg-paper border border-line rounded-panel overflow-hidden ${isExporting ? 'border-line-strong' : ''}`}>
@@ -334,6 +385,21 @@ const FacturaCliente = () => {
               Apertura: {formatFechaLarga(f.fechaApertura)}
               {f.fechaCierre && ` — Cierre: ${formatFechaLarga(f.fechaCierre)}`}
             </p>
+            {/* Bandejas de ESTA factura (no el saldo global del cliente, ver el cálculo de
+                bandejasAdeudadasEnEstaFactura más arriba) — igual que las devoluciones, es un
+                hecho propio de este documento, no un saldo vigente, así que ya no hace falta
+                limitarlo a la factura activa: también tiene sentido en las cerradas del
+                historial. */}
+            {unidadNegocioActiva === '1' && (
+              <p className="text-xs text-muted flex items-center gap-1.5 mt-2">
+                <span className="uppercase tracking-wide font-semibold">Bandejas Adeudadas</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium font-mono tabular-nums ${
+                  bandejasAdeudadasEnEstaFactura > 0 ? 'bg-warn-bg text-warn-ink' : 'bg-thead text-body'
+                }`}>
+                  {bandejasAdeudadasEnEstaFactura} bandejas
+                </span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -409,7 +475,10 @@ const FacturaCliente = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-strong border-b border-line-strong">
-                  {[...f.ventas].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).map(v => {
+                  {/* f.ventas || [] (no sólo el spread): con la extensión de más arriba, esta
+                      tabla ahora puede renderizarse con f.ventas null/vacío cuando lo único que
+                      hay son devoluciones de bandejas — spreadear null tiraría TypeError. */}
+                  {[...(f.ventas || [])].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).map(v => {
                     const pagosVenta = f.pagos ? f.pagos.filter(p => p.ventaId === v.id) : [];
                     const totalAbonado = pagosVenta.filter(p => !p.estado || p.estado === 'ACREDITADO').reduce((sum, p) => sum + p.monto, 0);
                     const totalVenta = v.detalles.reduce((sum, d) => sum + d.subtotal, 0);
@@ -498,6 +567,7 @@ const FacturaCliente = () => {
                     </tr>
                     );
                   })}
+
                 </tbody>
                 <tfoot className="bg-thead/70 border-t-2 border-line-strong">
                   <tr>
@@ -552,13 +622,78 @@ const FacturaCliente = () => {
           </div>
         )}
 
-        {/* Total a Pagar Final */}
-        <div className="border-t border-line px-6 py-4 flex items-center justify-end gap-6">
+        {/* Total a Pagar Final — pertenece a la tabla de arriba (ventas/pagos), por eso va antes
+            de la tabla de devoluciones de bandejas, no después (pedido del usuario). */}
+        <div className="border-t border-line px-6 py-4 flex items-center justify-end gap-6 flex-wrap">
           <span className="text-sm font-bold text-muted uppercase">Total a Pagar</span>
           <span className={`text-2xl font-black font-mono tabular-nums ${f.saldoDeudor > 0 ? 'text-danger' : 'text-ok-ink'}`}>
             {formatearDinero(f.saldoDeudor)}
           </span>
         </div>
+
+        {/* Devoluciones de Bandejas: tabla propia y separada de la de arriba (pedido del
+            usuario), con su propio encabezado — ya no son filas mezcladas con las ventas. Mismo
+            criterio que ya se estableció: hecho histórico propio de esta factura (no un saldo
+            vigente), así que se muestra tanto en la activa como en las cerradas del historial.
+            Se renderiza siempre que la unidad sea Vivero (con o sin devoluciones) porque el
+            total de "Bandejas Adeudadas" del pie tiene que verse igual, haya habido devolución o
+            no en esta factura puntual. */}
+        {unidadNegocioActiva === '1' && (
+          <div className="border-t border-line">
+            <div className="px-6 py-4 border-b border-line bg-thead/50 flex items-center">
+              <PackageMinus className="w-5 h-5 text-faint mr-2" />
+              <h3 className="font-bold text-body">Devoluciones de Bandejas</h3>
+            </div>
+            <div className={isExporting ? "w-full" : "overflow-x-auto"}>
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-thead text-xs text-muted uppercase tracking-wide border-b-2 border-line-strong">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold text-center border-r border-line-strong">Fecha</th>
+                    <th className="px-6 py-3 font-semibold text-right">Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-strong border-b border-line-strong">
+                  {devolucionesBandejasDeEstaFactura.length > 0 ? (
+                    devolucionesBandejasDeEstaFactura.map((mov) => (
+                      <tr key={mov.id}>
+                        <td className="px-6 py-3 text-sm text-body text-center border-r border-line-strong">
+                          {formatFecha(mov.fecha)}
+                        </td>
+                        <td className="px-6 py-3 text-sm font-semibold text-ok-ink text-right font-mono tabular-nums">
+                          {mov.cantidad}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2" className="px-6 py-4 text-center text-sm text-muted">
+                        Sin devoluciones registradas en esta factura.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot className="bg-thead/70 border-t-2 border-line-strong">
+                  <tr>
+                    <td className="px-6 py-4 text-right text-sm font-bold text-body uppercase border-r border-line-strong">
+                      Bandejas Adeudadas
+                    </td>
+                    <td className={`px-6 py-4 text-right text-lg font-bold font-mono tabular-nums ${bandejasAdeudadasEnEstaFactura > 0 ? 'text-warn-ink' : 'text-ok-ink'}`}>
+                      {bandejasAdeudadasEnEstaFactura}
+                      {/* Excedente: el cliente devolvió más bandejas de las que se llevó DENTRO
+                          de esta factura puntual — esas de más están pagando una deuda de una
+                          factura anterior, no corresponde restarlas de acá ni mostrar negativo. */}
+                      {bandejasExcedentesDeEstaFactura > 0 && (
+                        <span className="block text-xs font-normal text-ok-ink uppercase mt-0.5">
+                          +{bandejasExcedentesDeEstaFactura} de más
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
 
       </div>
       </div>
