@@ -9,6 +9,7 @@ import { useStockStore } from '../store/useStockStore';
 import { useCartStore } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
 import FormattedNumberInput from '../components/FormattedNumberInput';
+import CrearClienteRapido from '../components/CrearClienteRapido';
 
 // Utilidades para guardar "últimos usados" en LocalStorage
 const getRecents = (key) => JSON.parse(localStorage.getItem(key) || '[]');
@@ -49,7 +50,7 @@ export default function NuevaVenta() {
   };
 
   const [isClienteExpress, setIsClienteExpress] = useState(false);
-  const [clienteExpressData, setClienteExpressData] = useState({ nombre: '', telefono: '', casual: true });
+  const [clienteExpressData, setClienteExpressData] = useState({ nombre: '', telefono: '', casual: true, documentoTipo: '', documentoValor: '' });
 
   const liveStocks = useStockStore(state => state.liveStocks);
 
@@ -125,7 +126,7 @@ export default function NuevaVenta() {
               stockMap[item.productoId] = { invernadero: item.stockInvernadero, colega: item.stockColega };
             });
             const user = useAuthStore.getState().user;
-            const isJefe = user?.username?.includes('jefe');
+            const isJefe = user?.username === 'Sergio';
             finalProductos = finalProductos.map(p => ({
               ...p,
               stockInvernadero: stockMap[p.id]?.invernadero || 0,
@@ -176,6 +177,14 @@ export default function NuevaVenta() {
     setCliente(id);
     setIsClienteExpress(false);
     setBusquedaCliente('');
+  };
+
+  // Alta al vuelo desde el buscador de agenda (change clientes-dni-cuil): el cliente recién
+  // creado queda seleccionado como cualquier otro de la agenda -- clienteId + clienteAdHoc: null,
+  // sin ramas nuevas en el payload de la venta (Decisión 5 de design.md).
+  const clienteCreadoAlVuelo = (cliente) => {
+    setCliente(cliente.id);
+    setBusquedaCliente(cliente.nombreRazonSocial);
   };
 
   const agregarProducto = (producto) => {
@@ -292,9 +301,21 @@ export default function NuevaVenta() {
         return payloadPago;
       });
 
+    // El documento sólo se adjunta si hay tipo Y valor no vacío -- un tipo elegido sin valor
+    // cargado se omite entero, en vez de mandar un tipo sin valor (spec de ventas-cliente-express).
+    let clienteAdHocPayload = null;
+    if (isClienteExpress) {
+      const { nombre, telefono, casual, documentoTipo, documentoValor } = clienteExpressData;
+      clienteAdHocPayload = { nombre, telefono, casual };
+      if (documentoTipo && documentoValor && documentoValor.trim()) {
+        clienteAdHocPayload.documentoTipo = documentoTipo;
+        clienteAdHocPayload.documentoValor = documentoValor;
+      }
+    }
+
     const payload = {
       clienteId: isClienteExpress ? null : parseInt(clienteId),
-      clienteAdHoc: isClienteExpress ? clienteExpressData : null,
+      clienteAdHoc: clienteAdHocPayload,
       porcentajeDescuento: descuentoVal,
       bandejasEntregadas: parseInt(bandejasEntregadas) || 0,
       detalles: detalles.map(d => ({
@@ -322,7 +343,7 @@ export default function NuevaVenta() {
       setBusquedaCliente('');
       setBusquedaProducto('');
       setIsClienteExpress(false);
-      setClienteExpressData({ nombre: '', telefono: '', casual: true });
+      setClienteExpressData({ nombre: '', telefono: '', casual: true, documentoTipo: '', documentoValor: '' });
       setIsModalOpen(false);
       setPagosLineas([]);
 
@@ -399,6 +420,28 @@ export default function NuevaVenta() {
                       placeholder="Opcional"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-body mb-1">Documento</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={clienteExpressData.documentoTipo}
+                        onChange={(e) => setClienteExpressData({ ...clienteExpressData, documentoTipo: e.target.value, documentoValor: '' })}
+                        className="w-28 shrink-0 px-2 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper"
+                      >
+                        <option value="">Sin doc.</option>
+                        <option value="DNI">DNI</option>
+                        <option value="CUIL">CUIL</option>
+                      </select>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper disabled:opacity-50 disabled:cursor-not-allowed"
+                        value={clienteExpressData.documentoValor}
+                        onChange={(e) => setClienteExpressData({ ...clienteExpressData, documentoValor: e.target.value })}
+                        disabled={!clienteExpressData.documentoTipo}
+                        placeholder={clienteExpressData.documentoTipo ? `Número de ${clienteExpressData.documentoTipo}` : 'Opcional'}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <input
@@ -453,7 +496,10 @@ export default function NuevaVenta() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-muted text-sm py-2">No se encontraron clientes.</p>
+                      <div className="border border-line rounded-base overflow-hidden">
+                        <p className="px-4 py-2 text-sm text-muted">No se encontraron clientes.</p>
+                        <CrearClienteRapido nombre={busquedaCliente} onCreado={clienteCreadoAlVuelo} />
+                      </div>
                     )
                   ) : clientesRecientes.length > 0 ? (
                     <div>
@@ -500,18 +546,18 @@ export default function NuevaVenta() {
               {busquedaProducto ? (
                 productosFiltrados.length > 0 ? (
                   productosFiltrados.map(prod => (
-                    <div key={prod.id} className="flex justify-between items-center p-3 hover:bg-canvas rounded-base border border-line transition-colors">
+                    <div
+                      key={prod.id}
+                      onClick={() => agregarProducto(prod)}
+                      className="flex justify-between items-center p-3 hover:bg-canvas rounded-base border border-line transition-colors cursor-pointer"
+                    >
                       <div>
                         <p className="font-medium text-ink">{prod.nombre}</p>
                         <p className="text-sm text-muted">Stock: {prod.stock} | Precio: ${prod.precio}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => agregarProducto(prod)}
-                        className="p-2 text-accent hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
-                      >
+                      <span className="p-2 text-accent rounded-base">
                         <Plus className="w-5 h-5" />
-                      </button>
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -523,18 +569,18 @@ export default function NuevaVenta() {
                     <Clock className="w-3.5 h-3.5"/> Agregados recientemente
                   </p>
                   {productosRecientes.map(prod => (
-                    <div key={prod.id} className="flex justify-between items-center p-3 bg-canvas hover:bg-thead rounded-base border border-line mb-2 transition-colors">
+                    <div
+                      key={prod.id}
+                      onClick={() => agregarProducto(prod)}
+                      className="flex justify-between items-center p-3 bg-canvas hover:bg-thead rounded-base border border-line mb-2 transition-colors cursor-pointer"
+                    >
                       <div>
                         <p className="font-medium text-ink text-sm">{prod.nombre}</p>
                         <p className="text-xs text-muted">Stock: {prod.stock} | ${prod.precio}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => agregarProducto(prod)}
-                        className="p-1.5 text-muted hover:text-accent hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
-                      >
+                      <span className="p-1.5 text-muted rounded-base">
                         <Plus className="w-4 h-4" />
-                      </button>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -643,7 +689,13 @@ export default function NuevaVenta() {
       {/* Modal de Liquidación */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm p-4">
-          <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
+          {/* Bug real corregido (2026-09-05, reportado por el dueño con captura): max-w-4xl
+              dejaba la columna de "Desglose de Pagos" (mitad del modal, por el grid de 2
+              columnas de más abajo) demasiado angosta para la fila de cada pago -- esa fila usa
+              sm:flex-row, que decide según el ancho de la VENTANA del navegador, no del modal
+              ni de la columna real, así que en pantallas no maximizadas el botón de eliminar
+              quedaba empujado fuera del modal. max-w-6xl le da a esa columna espacio de sobra. */}
+          <div className="bg-paper rounded-none sm:rounded-panel border border-line-strong w-full max-w-6xl h-full sm:h-auto sm:max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
             <h2 className="text-2xl font-bold text-ink mb-6">Liquidar Venta</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">

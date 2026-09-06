@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useCartStore } from '../store/useCartStore';
 import { useStockEvents } from '../hooks/useStockEvents';
 import ToastContainer from '../components/ToastContainer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import ThemeToggle from '../components/ThemeToggle';
 import { siembrasApi } from '../api/siembras.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory } from 'lucide-react';
+import { registroSemillasApi } from '../api/registroSemillas.api';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory, PackagePlus } from 'lucide-react';
 import logoVivero from '../assets/logo-vivero.png';
 import logoHerramientas from '../assets/logo-herramientas.png';
 
@@ -32,7 +34,9 @@ const identities = {
   }
 };
 
-const navGroups = [
+// Exportado (además de usarse acá abajo) para que DefaultRedirect.jsx pueda derivar de la MISMA
+// lista la página de aterrizaje tras el login -- ver comentario en ese archivo.
+export const navGroups = [
   {
     title: 'Principal',
     items: [
@@ -51,18 +55,19 @@ const navGroups = [
     items: [
       { to: '/productos', label: 'Productos (Plantas)', icon: Package, permission: 'LEER_STOCK', unidades: ['vivero'] },
       { to: '/productos', label: 'Productos', icon: Package, permission: 'LEER_STOCK', unidades: ['herramientas'] },
+      { to: '/pedidos', label: 'Pedidos', icon: ClipboardList, permission: 'LEER_PEDIDOS', unidades: ['herramientas'] },
       { to: '/productos', label: 'Productos', icon: Package, permission: 'LEER_STOCK', unidades: ['abono'] },
+      { to: '/abono/produccion', label: 'Producción', icon: Factory, permission: 'ESCRIBIR_PRODUCCION', unidades: ['abono'] },
       { to: '/insumos', label: 'Insumos', icon: Wrench, permission: 'LEER_INSUMOS', unidades: ['vivero', 'abono'] },
       { to: '/siembras', label: 'Siembras', icon: Sprout, permission: 'LEER_SIEMBRAS', unidades: ['vivero'] },
+      { to: '/registro-semillas', label: 'Registro de Semillas', icon: PackagePlus, permission: 'LEER_REGISTRO_SEMILLAS', unidades: ['vivero'] },
     ]
   },
   {
-    title: 'Abono',
+    title: 'Logística',
     items: [
-      { to: '/abono/produccion', label: 'Producción', icon: Factory, permission: 'ESCRIBIR_PRODUCCION', unidades: ['abono'] },
       { to: '/abono/traslados', label: 'Traslados', icon: Truck, permission: 'ESCRIBIR_STOCK', unidades: ['abono'] },
       { to: '/abono/rendiciones', label: 'Rendiciones', icon: HandCoins, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
-      { to: '/abono/liquidacion', label: 'Liquidación', icon: TrendingUp, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
     ]
   },
   {
@@ -71,9 +76,12 @@ const navGroups = [
       { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES', unidades: ['vivero', 'herramientas', 'abono'] },
       { to: '/bandejas', label: 'Devolución de Bandejas', icon: PackageMinus, permission: ['LEER_CLIENTES', 'LEER_BANDEJAS'], unidades: ['vivero'] },
       { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas'] },
+      // Misma pantalla que antes (/abono/liquidacion), renombrada "Finanzas" y movida a Gestión
+      // (pedido del dueño 2026-09-04) -- es conceptualmente lo mismo que el ítem "Finanzas" de
+      // arriba, sólo que Abono tiene su propia ruta/pantalla en vez de reusar /finanzas.
+      { to: '/abono/liquidacion', label: 'Finanzas', icon: TrendingUp, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
       { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas', 'abono'] },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB', unidades: ['vivero', 'herramientas', 'abono'] },
-      { to: '/pedidos', label: 'Pedidos', icon: ClipboardList, permission: 'LEER_PEDIDOS', unidades: ['herramientas'] },
     ]
   }
 ];
@@ -124,15 +132,55 @@ const DashboardLayout = () => {
     }
   }, [unidadSlug, location.pathname, navigate]);
 
-  React.useEffect(() => {
-    if (user) {
-      if (hasPermission('LEER_STOCK')) {
+  // Bug real (2026-09-04): las alertas de siembras sólo se pedían una vez, al iniciar sesión --
+  // como DashboardLayout queda montado mientras navegás por toda la app, si una siembra entraba
+  // en la ventana de alerta (o dejaba de estarlo) DESPUÉS del login, la campanita nunca se
+  // enteraba. fetchAlertas ahora se llama también al abrir la campanita, no sólo al loguearse.
+  // Notificaciones sólo en Vivero (pedido del dueño 2026-09-04): las alertas son de Siembras y
+  // Registro de Semillas, dos secciones exclusivas de Vivero -- Herramientas y Abono no las usan
+  // por ahora, así que ni se pide el dato ni se muestra la campanita en esas unidades. El botón
+  // se oculta más abajo con la misma condición.
+  //
+  // Dos fuentes con permisos INDEPENDIENTES (pedido del dueño 2026-09-03, ver comentario de
+  // RegistroSemillaController): un usuario puede tener LEER_SIEMBRAS sin LEER_REGISTRO_SEMILLAS, o
+  // viceversa -- cada fetch se pide sólo si el usuario tiene el permiso correspondiente, nunca
+  // los dos a ciegas, para no dispararle un 403 a alguien que legítimamente no tiene uno de los
+  // dos accesos. Cada alerta se etiqueta con `__tipo` para que el render sepa cuál rama de
+  // mensaje/ícono/navegación usar (pedido del dueño 2026-09-05: "notificación de sembrar
+  // semilla").
+  //
+  // Bug real corregido (2026-09-05, reportado por el dueño): la fuente de Siembras chequeaba
+  // LEER_STOCK en vez de LEER_SIEMBRAS -- el permiso real que protege la sección /siembras (ver
+  // App.jsx y el sidebar más abajo). Un usuario con LEER_SIEMBRAS pero sin LEER_STOCK nunca pedía
+  // el dato y no veía notificaciones de una sección a la que sí tenía acceso.
+  const fetchAlertas = React.useCallback(() => {
+    if (!user || unidadSlug !== 'vivero') return;
+
+    const pedidos = [];
+    if (hasPermission('LEER_SIEMBRAS')) {
+      pedidos.push(
         siembrasApi.getAlertas()
-          .then(res => setAlertas(res.data || []))
-          .catch(err => console.error("Error fetching alertas", err));
-      }
+          .then(res => (res.data || []).map(a => ({ ...a, __tipo: 'SIEMBRA' })))
+          .catch(err => { console.error("Error fetching alertas de siembras", err); return []; })
+      );
     }
-  }, [user]);
+    if (hasPermission('LEER_REGISTRO_SEMILLAS')) {
+      pedidos.push(
+        registroSemillasApi.getAlertas()
+          .then(res => (res.data || []).map(a => ({ ...a, __tipo: 'SEMILLA' })))
+          .catch(err => { console.error("Error fetching alertas de semillas", err); return []; })
+      );
+    }
+    if (pedidos.length === 0) {
+      setAlertas([]);
+      return;
+    }
+    Promise.all(pedidos).then(listas => setAlertas(listas.flat()));
+  }, [user, unidadSlug, hasPermission]);
+
+  React.useEffect(() => {
+    fetchAlertas();
+  }, [user, unidadSlug]);
 
   // Inicializar conexión SSE globalmente
   useStockEvents();
@@ -143,7 +191,16 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas flex overflow-hidden">
+    // Bug real corregido (2026-09-05, reportado por el dueño, visible al probar por túnel:
+    // "3 barras de scroll, 2 verticales y 1 horizontal"): este contenedor usaba min-h-screen, que
+    // deja crecer la altura más allá del viewport si algún hijo la empuja -- ahí el body termina
+    // scrolleando la PÁGINA entera además de que <main> más abajo ya scrollea su propio
+    // contenido con overflow-y-auto (scrollbar doble). h-screen la deja fija en el alto del
+    // viewport, igual que max-h-screen en <main>, así el único scroll vertical es el de adentro.
+    // Esa segunda barra de scroll de la página también le robaba ~15px de ancho al contenido,
+    // lo que empujaba a las tablas anchas (como Registro de Semillas) a necesitar scroll
+    // horizontal que antes no hacía falta.
+    <div className="h-screen bg-canvas flex overflow-hidden">
       {/* Barra de identidad de la unidad activa (Decisión 3 P3: decoración de identidad → accent) */}
       <div className="w-1 bg-accent shrink-0" />
 
@@ -189,7 +246,7 @@ const DashboardLayout = () => {
         </div>
 
         {/* Placa de unidad de negocio (Decisión 10): envuelve al <select> real, no lo reemplaza */}
-        {negociosDisponibles.length > 0 && user?.username === 'jefe@vivero.com' && (
+        {negociosDisponibles.length > 0 && user?.username === 'Sergio' && (
           <div className="px-4 py-3 bg-accent-soft border-b border-line">
             <p className="text-[10px] font-bold text-accent-ink uppercase tracking-wider mb-1">
               Unidad de Negocio
@@ -197,6 +254,12 @@ const DashboardLayout = () => {
             <select
               value={unidadNegocioActiva || ''}
               onChange={(e) => {
+                // Bug real corregido (2026-09-05, reportado por el dueño): el carrito de Nueva
+                // Venta vive en sessionStorage (useCartStore, persist), así que sobrevivía al
+                // window.location.reload() de acá abajo -- cambiar de unidad podía dejar
+                // productos de OTRO negocio cargados en el carrito de la unidad nueva. Se limpia
+                // antes de recargar, mismo momento en que cambia la unidad activa.
+                useCartStore.getState().clearCart();
                 setUnidadNegocioActiva(e.target.value);
                 window.location.reload();
               }}
@@ -212,12 +275,12 @@ const DashboardLayout = () => {
         {/* Placa de cuenta activa (Abono) REMOVED */}
 
 
-        <nav className="flex-1 p-4 overflow-y-auto space-y-6">
+        <nav className="flex-1 p-4 overflow-y-auto space-y-6 scrollbar-thin">
           {navGroups.map((group, idx) => {
             // Filtrar los items del grupo según permisos
 
             const visibleItems = group.items.filter((item) => {
-              if (item.onlyJefe && user?.username !== 'jefe@vivero.com') return false;
+              if (item.onlyJefe && user?.username !== 'Sergio') return false;
 
               if (item.permission) {
                 const permisos = Array.isArray(item.permission) ? item.permission : [item.permission];
@@ -294,14 +357,25 @@ const DashboardLayout = () => {
                   <div className="absolute bottom-16 left-4 right-4 bg-paper border border-line-strong rounded-panel py-2 z-50 animate-in fade-in slide-in-from-bottom-2">
                     <p className="px-3 py-1 mb-1 text-[10px] font-bold text-faint uppercase tracking-wider">Opciones</p>
 
-                    <NavLink
-                      to="/configuracion"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                      className={({ isActive }) => `flex items-center px-4 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-accent-soft text-accent-ink' : 'text-body hover:bg-canvas hover:text-accent-ink'}`}
-                    >
-                      <Settings className="w-4 h-4 mr-3" />
-                      Configuración
-                    </NavLink>
+                    {/* Bug real corregido (2026-09-05, reportado por el dueño): este link no
+                        chequeaba ningún permiso -- cualquier usuario logueado lo veía, aunque en
+                        Vivero/Abono todas las secciones de adentro (Configuracion.jsx) requieren
+                        LEER_CONFIGURACION y terminaba en una página vacía. Ahora sólo se muestra
+                        con ese permiso (o ADMIN_DB, para no sacarle el acceso a nadie que ya lo
+                        tuviera por ese permiso más amplio) en esas dos unidades. Herramientas
+                        queda sin cambios (pedido explícito del dueño), sigue visible para
+                        cualquiera -- sus subsecciones ya se filtran con sus propios permisos
+                        (ESCRIBIR_STOCK/LEER_PEDIDOS/ADMIN_DB, ver Configuracion.jsx). */}
+                    {(unidadSlug === 'herramientas' || hasPermission('LEER_CONFIGURACION') || hasPermission('ADMIN_DB')) && (
+                      <NavLink
+                        to="/configuracion"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className={({ isActive }) => `flex items-center px-4 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-accent-soft text-accent-ink' : 'text-body hover:bg-canvas hover:text-accent-ink'}`}
+                      >
+                        <Settings className="w-4 h-4 mr-3" />
+                        Configuración
+                      </NavLink>
+                    )}
 
                     <div className="h-px bg-line my-2"></div>
 
@@ -321,7 +395,7 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto scrollbar-thin">
         {/* Topbar for notifications */}
         <header className="h-16 flex items-center justify-between md:justify-end px-4 md:px-8 border-b border-line bg-paper sticky top-0 z-20">
           <button
@@ -336,9 +410,14 @@ const DashboardLayout = () => {
               izquierda de la campana). */}
           <div className="flex items-center gap-1">
             <ThemeToggle />
+            {unidadSlug === 'vivero' && (
             <div className="relative">
               <button
-                onClick={() => setIsAlertsOpen(!isAlertsOpen)}
+                onClick={() => {
+                  const abriendo = !isAlertsOpen;
+                  setIsAlertsOpen(abriendo);
+                  if (abriendo) fetchAlertas();
+                }}
                 className="relative p-2 text-muted hover:text-accent hover:bg-accent-soft rounded-full transition-colors outline-none focus:ring-2 focus:ring-accent cursor-pointer"
               >
                 <Bell className="w-5 h-5" />
@@ -362,29 +441,105 @@ const DashboardLayout = () => {
                       </div>
                     ) : (
                       <div className="divide-y divide-line">
-                        {alertas.map(alerta => (
-                          <div key={alerta.id} className="p-4 hover:bg-accent-soft transition-colors">
-                            <div className="flex gap-3">
-                              <div className="mt-0.5">
-                                {alerta.estado === 'FINALIZADA' ? (
-                                  <Package className="w-4 h-4 text-ok" />
-                                ) : (
-                                  <Clock className="w-4 h-4 text-warn" />
-                                )}
+                        {alertas.map(alerta => {
+                          if (alerta.__tipo === 'SEMILLA') {
+                            // "Hora de sembrar" (pedido del dueño 2026-09-05): mismo criterio de
+                            // "todavía falta" vs "ya debería estar hecho" que ya usa la rama de
+                            // Siembras de acá abajo, pero sobre fechaSiembraProgramada en vez de
+                            // fechaEstimada -- el backend (RegistroSemillaServiceImpl.obtenerAlertas)
+                            // ya filtra sólo SIN_SEMBRAR dentro de la ventana de 5 días.
+                            const diffDays = alerta.fechaSiembraProgramada
+                              ? Math.ceil((new Date(alerta.fechaSiembraProgramada) - new Date()) / (1000 * 60 * 60 * 24))
+                              : null;
+                            const yaVencida = diffDays !== null && diffDays <= 0;
+                            let mensaje;
+                            if (yaVencida) {
+                              mensaje = diffDays === 0 ? 'Hoy toca sembrarla' : 'Ya pasó la fecha de siembra — revisar';
+                            } else if (diffDays !== null) {
+                              mensaje = `Hay que sembrarla en ${diffDays} d`;
+                            } else {
+                              mensaje = 'Próxima a sembrar';
+                            }
+
+                            return (
+                              <div
+                                key={`SEMILLA-${alerta.id}`}
+                                onClick={() => {
+                                  setIsAlertsOpen(false);
+                                  // Resalta la tarjeta al llegar (pedido del dueño 2026-09-05):
+                                  // mismo mecanismo de router state de un solo uso que ya usa el
+                                  // botón "Sembrar".
+                                  navigate('/registro-semillas', { state: { resaltarRegistroId: alerta.id } });
+                                }}
+                                className="p-4 hover:bg-accent-soft transition-colors cursor-pointer"
+                              >
+                                <div className="flex gap-3">
+                                  <div className="mt-0.5">
+                                    <Sprout className={`w-4 h-4 ${yaVencida ? 'text-danger' : 'text-warn'}`} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-ink">
+                                      {alerta.descripcionSemilla} (Lote {alerta.lote || '-'})
+                                    </p>
+                                    <p className="text-xs text-muted mt-0.5">{mensaje}</p>
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm font-medium text-ink">
-                                  {alerta.variedadPlanta?.nombre} (Siembra {alerta.numeroSiembra || '-'})
-                                </p>
-                                <p className="text-xs text-muted mt-0.5">
-                                  {alerta.estado === 'FINALIZADA'
-                                    ? 'Lista para pasar a stock'
-                                    : 'Próxima a finalizar (en 5 días o menos)'}
-                                </p>
+                            );
+                          }
+
+                          // Bug real corregido 2026-09-04: antes esta rama era un solo texto fijo
+                          // ("Próxima a finalizar en 5 días o menos") para CUALQUIER alerta que no
+                          // estuviera Finalizada -- pero el backend (SiembraServiceImpl.obtenerAlertas)
+                          // mete en esa misma lista tanto las que están por vencer COMO las que ya
+                          // vencieron y siguen En Proceso (fecha estimada en el pasado, sin marcar
+                          // como lista). Había que distinguir "todavía falta" de "ya debería estar
+                          // lista", que es justo lo que reportó el dueño.
+                          const diffDays = alerta.fechaEstimada
+                            ? Math.ceil((new Date(alerta.fechaEstimada) - new Date()) / (1000 * 60 * 60 * 24))
+                            : null;
+                          const yaVencida = alerta.estado !== 'FINALIZADA' && diffDays !== null && diffDays <= 0;
+
+                          let mensaje;
+                          if (alerta.estado === 'FINALIZADA') {
+                            mensaje = 'Lista para pasar a stock';
+                          } else if (yaVencida) {
+                            mensaje = 'Ya venció la fecha estimada — revisar';
+                          } else if (diffDays !== null) {
+                            mensaje = diffDays === 0 ? 'Vence hoy' : `Próxima a finalizar (en ${diffDays} d)`;
+                          } else {
+                            mensaje = 'Próxima a finalizar';
+                          }
+
+                          return (
+                            <div
+                              key={`SIEMBRA-${alerta.id}`}
+                              onClick={() => {
+                                setIsAlertsOpen(false);
+                                navigate('/siembras', { state: { resaltarSiembraId: alerta.id } });
+                              }}
+                              className="p-4 hover:bg-accent-soft transition-colors cursor-pointer"
+                            >
+                              <div className="flex gap-3">
+                                <div className="mt-0.5">
+                                  {alerta.estado === 'FINALIZADA' ? (
+                                    <Package className="w-4 h-4 text-ok" />
+                                  ) : yaVencida ? (
+                                    <Clock className="w-4 h-4 text-danger" />
+                                  ) : (
+                                    <Clock className="w-4 h-4 text-warn" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-ink">
+                                    {alerta.variedadPlanta?.nombre} (Siembra {alerta.numeroSiembra || '-'})
+                                  </p>
+                                  <p className="text-xs text-muted mt-0.5">{mensaje}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -392,17 +547,23 @@ const DashboardLayout = () => {
                     <button
                       onClick={() => {
                         setIsAlertsOpen(false);
-                        navigate('/siembras');
+                        // Con dos fuentes mezcladas, cada fila ya navega a su propia pantalla al
+                        // hacer click -- este botón de abajo es sólo un atajo genérico, así que va
+                        // a donde haya más alertas pendientes (empate a favor de Siembras).
+                        const semillas = alertas.filter(a => a.__tipo === 'SEMILLA').length;
+                        const siembras = alertas.length - semillas;
+                        navigate(semillas > siembras ? '/registro-semillas' : '/siembras');
                       }}
                       className="w-full py-1.5 text-xs font-semibold text-accent hover:text-accent-ink hover:bg-accent-soft rounded-base transition-colors cursor-pointer"
                     >
-                      Ver todas las siembras
+                      Ver todas
                     </button>
                   </div>
                 </div>
               </>
             )}
             </div>
+            )}
           </div>
         </header>
 

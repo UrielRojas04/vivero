@@ -31,7 +31,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     public List<UsuarioResponseDTO> getAll() {
         Long unidadId = com.vivero.gestion.security.UnidadNegocioContextHolder.getUnidadNegocioId();
         return usuarioRepository.findAll().stream()
-                .filter(u -> unidadId == null || "jefe@vivero.com".equalsIgnoreCase(u.getUsername()) || u.getUnidadesNegocio().stream().anyMatch(un -> un.getId().equals(unidadId)))
+                .filter(u -> unidadId == null || "Sergio".equalsIgnoreCase(u.getUsername()) || u.getUnidadesNegocio().stream().anyMatch(un -> un.getId().equals(unidadId)))
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -80,7 +80,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id " + id));
 
-        if ("jefe@vivero.com".equalsIgnoreCase(usuario.getUsername()) || "admin2".equalsIgnoreCase(usuario.getUsername())) {
+        if ("Sergio".equalsIgnoreCase(usuario.getUsername()) || "admin2".equalsIgnoreCase(usuario.getUsername())) {
             throw new RuntimeException("El usuario " + usuario.getUsername() + " está protegido y no puede ser modificado desde la interfaz");
         }
 
@@ -110,7 +110,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id " + id));
 
-        if ("jefe@vivero.com".equalsIgnoreCase(usuario.getUsername()) || "admin2".equalsIgnoreCase(usuario.getUsername())) {
+        if ("Sergio".equalsIgnoreCase(usuario.getUsername()) || "admin2".equalsIgnoreCase(usuario.getUsername())) {
             throw new RuntimeException("El usuario " + usuario.getUsername() + " está protegido y no puede ser eliminado desde la interfaz");
         }
 

@@ -5,6 +5,10 @@ export const clientesApi = {
     const { data } = await api.get('/clientes');
     return data;
   },
+  create: async (payload) => {
+    const { data } = await api.post('/clientes', payload);
+    return data;
+  },
   ajustarSaldoCliente: async (id, monto) => {
     const { data } = await api.post(`/clientes/${id}/saldo/ajuste`, { monto });
     return data;

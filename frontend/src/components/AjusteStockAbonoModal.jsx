@@ -40,7 +40,7 @@ const AjusteStockAbonoModal = ({ isOpen, onClose, producto }) => {
       return;
     }
 
-    const isJefe = user?.username?.includes('jefe');
+    const isJefe = user?.username === 'Sergio';
     const valorAjuste = tipo === 'RESTA' ? -Math.abs(parseInt(cantidad)) : Math.abs(parseInt(cantidad));
     
     // Validar stock negativo en frontend
@@ -90,7 +90,7 @@ const AjusteStockAbonoModal = ({ isOpen, onClose, producto }) => {
           <div>
             <label className="block text-sm font-semibold text-ink mb-1">Depósito a afectar</label>
             <div className="w-full px-3 py-2 bg-canvas border border-line rounded-base text-ink font-semibold">
-              {user?.username?.includes('jefe') ? 'Invernadero' : 'Depósito Colega'}
+              {user?.username === 'Sergio' ? 'Invernadero' : 'Depósito 2'}
             </div>
           </div>
 

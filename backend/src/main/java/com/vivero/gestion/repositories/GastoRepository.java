@@ -16,6 +16,10 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
     List<Gasto> findByFechaBetween(LocalDateTime startDate, LocalDateTime endDate);
     List<Gasto> findByUnidadNegocioIdAndFechaBetween(Long unidadNegocioId, LocalDateTime startDate, LocalDateTime endDate);
 
+    // Bug real corregido 2026-09-04: la rama de insumos filtraba con "unidadId = 1" (hardcodeado a
+    // Vivero) en vez de comparar contra el unidad_negocio_id real de cada insumo -- cualquier otra
+    // unidad con insumos propios (Abono, que ya tiene los suyos) nunca los veía en este listado.
+    // Ahora usa el mismo criterio que la rama de "gastos" de arriba (ver GastoServiceInsumosPorUnidadTest).
     @Query(value = """
             SELECT * FROM (
                 SELECT 
@@ -34,7 +38,7 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     fecha_compra as fecha, 
                     'INSUMO' as tipo 
                 FROM insumos
-                WHERE deleted = false AND (:unidadId IS NULL OR :unidadId = 1)
+                WHERE deleted = false AND (:unidadId IS NULL OR unidad_negocio_id = :unidadId)
             ) as unificados
             WHERE (:q IS NULL OR :q = '' OR LOWER(unificados.concepto) LIKE LOWER(CONCAT('%', :q, '%')))
             """,
@@ -56,7 +60,7 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
                     fecha_compra as fecha, 
                     'INSUMO' as tipo 
                 FROM insumos
-                WHERE deleted = false AND (:unidadId IS NULL OR :unidadId = 1)
+                WHERE deleted = false AND (:unidadId IS NULL OR unidad_negocio_id = :unidadId)
             ) as unificados
             WHERE (:q IS NULL OR :q = '' OR LOWER(unificados.concepto) LIKE LOWER(CONCAT('%', :q, '%')))
             """,

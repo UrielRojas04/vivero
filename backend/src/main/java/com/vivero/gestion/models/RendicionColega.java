@@ -29,6 +29,13 @@ public class RendicionColega {
     @JoinColumn(name = "unidad_negocio_id", nullable = false)
     private UnidadNegocio unidadNegocio;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DireccionRendicion direccion;
+
+    @Column(length = 30)
+    private String medioPago; // mismo criterio que Pago.metodoPago (String simple, ej. "EFECTIVO"/"TRANSFERENCIA")
+
     public RendicionColega() {}
 
     public Long getId() { return id; }
@@ -43,4 +50,8 @@ public class RendicionColega {
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
     public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
+    public DireccionRendicion getDireccion() { return direccion; }
+    public void setDireccion(DireccionRendicion direccion) { this.direccion = direccion; }
+    public String getMedioPago() { return medioPago; }
+    public void setMedioPago(String medioPago) { this.medioPago = medioPago; }
 }

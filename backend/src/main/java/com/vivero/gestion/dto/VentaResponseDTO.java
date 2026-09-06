@@ -8,6 +8,8 @@ public class VentaResponseDTO {
     private Long id;
     private String clienteNombre;
     private String clienteTelefono;
+    private String clienteDni;
+    private String clienteCuil;
     private String usuarioNombre;
     private BigDecimal subtotal;
     private BigDecimal porcentajeDescuento;
@@ -28,6 +30,10 @@ public class VentaResponseDTO {
     public void setClienteNombre(String clienteNombre) { this.clienteNombre = clienteNombre; }
     public String getClienteTelefono() { return clienteTelefono; }
     public void setClienteTelefono(String clienteTelefono) { this.clienteTelefono = clienteTelefono; }
+    public String getClienteDni() { return clienteDni; }
+    public void setClienteDni(String clienteDni) { this.clienteDni = clienteDni; }
+    public String getClienteCuil() { return clienteCuil; }
+    public void setClienteCuil(String clienteCuil) { this.clienteCuil = clienteCuil; }
     public String getUsuarioNombre() { return usuarioNombre; }
     public void setUsuarioNombre(String usuarioNombre) { this.usuarioNombre = usuarioNombre; }
     public BigDecimal getSubtotal() { return subtotal; }

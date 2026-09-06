@@ -14,4 +14,5 @@ import lombok.Builder;
 public class RolRequestDTO {
     private String nombre;
     private List<Long> permisoIds;
+    private Long unidadNegocioId; // nullable: null = rol global (todos los negocios)
 }

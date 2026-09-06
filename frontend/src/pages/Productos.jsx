@@ -28,7 +28,7 @@ const estadoMargen = (producto) => {
 const Productos = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
   const { unidadNegocioActiva, user } = useAuthStore();
-  const isColega = user?.username === 'colega@vivero.com';
+  const isColega = user?.username === 'Pablo';
   const IconoUnidad = getIconoUnidad(unidadNegocioActiva);
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -412,13 +412,13 @@ const Productos = () => {
                           ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                         </p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-base text-[10px] font-bold ${
-                          (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
+                          (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
                             ? 'bg-danger-bg text-danger-ink border border-danger-line'
-                            : (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) <= 5
+                            : (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock) <= 5
                               ? 'bg-warn-bg text-warn-ink border border-warn-line'
                               : 'bg-ok-bg text-ok-ink border border-ok-line'
                         }`}>
-                          Stock: {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock}
+                          Stock: {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock}
                         </span>
                         {unidadNegocioActiva === '2' && (() => {
                           const margen = estadoMargen(producto);
@@ -655,13 +655,13 @@ const Productos = () => {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold font-mono tabular-nums ${
-                        (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
+                        (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
                           ? 'bg-danger-bg text-danger-ink'
-                          : (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock) <= 5
+                          : (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock) <= 5
                             ? 'bg-warn-bg text-warn-ink'
                             : 'bg-ok-bg text-ok-ink'
                       }`}>
-                        {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username?.includes('jefe') ? producto.stockInvernadero : producto.stockColega) : producto.stock} unidades
+                        {unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock} unidades
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">

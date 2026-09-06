@@ -30,7 +30,7 @@ public class RendicionColegaController {
     @PostMapping
     @PreAuthorize("hasAuthority('ESCRIBIR_VENTAS')")
     public ResponseEntity<Void> registrarRendicion(@RequestBody RendicionRequestDTO request) {
-        rendicionService.registrarRendicion(request.getMonto(), request.getObservacion());
+        rendicionService.registrarRendicion(request);
         return ResponseEntity.ok().build();
     }
 

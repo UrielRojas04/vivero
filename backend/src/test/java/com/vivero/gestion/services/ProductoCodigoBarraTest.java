@@ -263,6 +263,6 @@ class ProductoCodigoBarraTest {
                 .map(SimpleGrantedAuthority::new)
                 .toList();
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("jefe@vivero.com", null, authorities));
+                new UsernamePasswordAuthenticationToken("Sergio", null, authorities));
     }
 }

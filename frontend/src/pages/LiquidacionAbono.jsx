@@ -4,18 +4,26 @@ import { TrendingUp, Calendar, AlertTriangle, FileText, ArrowRightLeft } from 'l
 import { rendicionesApi } from '../api/rendiciones.api';
 import { negociosApi } from '../api/negocios.api';
 import { useAuthStore } from '../store/useAuthStore';
+import GastosDrillDown from '../components/GastosDrillDown';
 
 const formatMoney = (value) =>
   `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const currentYear = new Date().getFullYear();
-const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
+// Mismo criterio que Finanzas.jsx (pedido del dueño 2026-09-04): el sistema arrancó en 2026, así
+// que el piso del selector de año queda fijo ahí en vez de deslizar hacia atrás con el tiempo.
+const PRIMER_ANIO_CON_DATOS = 2026;
+const availableYears = Array.from(
+  { length: currentYear + 1 - PRIMER_ANIO_CON_DATOS + 1 },
+  (_, i) => PRIMER_ANIO_CON_DATOS + i
+);
 
 const LiquidacionAbono = () => {
   const { hasPermission } = useAuthStore();
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [showGastos, setShowGastos] = useState(false);
 
   const liquidacionQuery = useQuery({
     queryKey: ['abono', 'liquidacion', selectedMonth, selectedYear],
@@ -33,6 +41,7 @@ const LiquidacionAbono = () => {
   const config = configQuery.data;
   const hasConfig = config && config.porcentajeRepartoColega !== undefined && config.porcentajeRepartoColega !== null;
   const porcentaje = config?.porcentajeRepartoColega ?? 50;
+  const repartoSobreVentasColega = !!config?.repartoSobreVentasColega;
 
   return (
     <div className="max-w-6xl mx-auto animate-fadeIn">
@@ -84,7 +93,7 @@ const LiquidacionAbono = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-paper border border-line rounded-panel p-6 flex flex-col justify-between">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Ventas Jefe</h3>
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Ventas de Sergio</h3>
               </div>
               <p className="text-3xl font-bold text-ink font-mono tabular-nums">{formatMoney(liq.ventasJefe)}</p>
               <div className="mt-4 pt-3 border-t border-line">
@@ -95,7 +104,7 @@ const LiquidacionAbono = () => {
             
             <div className="bg-paper border border-line rounded-panel p-6 flex flex-col justify-between">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Ventas Colega</h3>
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Ventas de Pablo</h3>
               </div>
               <p className="text-3xl font-bold text-ink font-mono tabular-nums">{formatMoney(liq.ventasColega)}</p>
               <div className="mt-4 pt-3 border-t border-line">
@@ -104,16 +113,23 @@ const LiquidacionAbono = () => {
               </div>
             </div>
             
-            <div className="bg-paper border border-line rounded-panel p-6 flex flex-col justify-between">
+            <div
+              onClick={() => setShowGastos(!showGastos)}
+              className={`bg-paper rounded-panel border p-6 flex flex-col justify-between transition-all cursor-pointer hover:border-line-strong ${showGastos ? 'border-ink ring-1 ring-ink' : 'border-line'}`}
+            >
               <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Gastos (Insumos)</h3>
               <p className="text-3xl font-bold text-warn font-mono tabular-nums">{formatMoney(liq.gastosInsumos)}</p>
             </div>
-            
+
             <div className="bg-paper border border-line rounded-panel p-6 flex flex-col justify-between">
-              <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Rendiciones (Colega a Jefe)</h3>
+              <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Rendiciones (Pablo a Sergio)</h3>
               <p className="text-3xl font-bold text-ok font-mono tabular-nums">{formatMoney(liq.rendicionesEntregadas)}</p>
             </div>
           </div>
+
+          {showGastos && (
+            <GastosDrillDown onClose={() => setShowGastos(false)} />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-paper border border-line rounded-panel p-6">
@@ -123,11 +139,11 @@ const LiquidacionAbono = () => {
               </h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-line">
-                  <span className="text-body font-medium">En poder del Jefe (Caja Vivero)</span>
+                  <span className="text-body font-medium">En poder de Sergio (Caja Vivero)</span>
                   <span className="font-mono tabular-nums font-bold text-ink text-lg">{formatMoney(liq.ingresosJefe + liq.rendicionesEntregadas)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3">
-                  <span className="text-body font-medium">En poder del Colega (Caja Colega)</span>
+                  <span className="text-body font-medium">En poder de Pablo (Caja Pablo)</span>
                   <span className="font-mono tabular-nums font-bold text-ink text-lg">{formatMoney(liq.saldoCajaColega)}</span>
                 </div>
               </div>
@@ -141,13 +157,22 @@ const LiquidacionAbono = () => {
               <div className="space-y-4">
                 <div className="p-4 bg-canvas rounded-base border border-line">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-body font-medium">Ingresos netos a repartir (Cobros - Insumos)</span>
-                    <span className="font-mono tabular-nums text-ink">{formatMoney((liq.ingresosJefe + liq.ingresosColega) - liq.gastosInsumos)}</span>
+                    <span className="text-body font-medium">
+                      {repartoSobreVentasColega ? 'Cobros de Pablo (sin restar gastos)' : 'Ingresos netos a repartir (Cobros - Insumos)'}
+                    </span>
+                    <span className="font-mono tabular-nums text-ink">
+                      {formatMoney(repartoSobreVentasColega ? liq.ingresosColega : (liq.ingresosJefe + liq.ingresosColega) - liq.gastosInsumos)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-t border-line mt-2">
-                    <span className="text-body font-bold text-accent-ink">Parte correspondiente al Colega</span>
+                    <span className="text-body font-bold text-accent-ink">Parte correspondiente a Pablo</span>
                     <span className="font-mono tabular-nums font-bold text-accent-ink">{formatMoney(liq.compensacionTeorica)}</span>
                   </div>
+                  {repartoSobreVentasColega && (
+                    <p className="text-xs text-muted mt-2">
+                      Modo "ventas del colega" activo: los gastos e insumos quedan a cargo de Sergio.
+                    </p>
+                  )}
                 </div>
 
                 {(() => {
@@ -156,12 +181,12 @@ const LiquidacionAbono = () => {
                     <div className="mt-4 flex flex-col items-center justify-center py-6">
                       {ajusteFinal > 0 ? (
                         <>
-                          <p className="text-sm font-medium text-body mb-2 uppercase tracking-wider">El Colega debe entregar al Jefe</p>
+                          <p className="text-sm font-medium text-body mb-2 uppercase tracking-wider">Pablo debe entregar a Sergio</p>
                           <p className="text-4xl font-bold text-ink font-mono tabular-nums text-center">{formatMoney(ajusteFinal)}</p>
                         </>
                       ) : ajusteFinal < 0 ? (
                         <>
-                          <p className="text-sm font-medium text-body mb-2 uppercase tracking-wider">El Jefe debe compensar al Colega</p>
+                          <p className="text-sm font-medium text-body mb-2 uppercase tracking-wider">Sergio debe compensar a Pablo</p>
                           <p className="text-4xl font-bold text-ink font-mono tabular-nums text-center">{formatMoney(Math.abs(ajusteFinal))}</p>
                         </>
                       ) : (

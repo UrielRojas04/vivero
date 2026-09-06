@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
+// VITE_API_URL (opcional, ver frontend/.env): pisa la URL del backend cuando no alcanza con
+// derivarla del hostname actual -- caso real: demo por túnel (ngrok/Cloudflare Tunnel), donde
+// frontend y backend quedan cada uno detrás de una URL pública distinta y no hay forma de
+// derivar una a partir de la otra. Sin la variable, sigue el comportamiento de siempre.
 const api = axios.create({
-  baseURL: `http://${window.location.hostname}:8080/api`,
+  baseURL: import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8080/api`,
 });
 
 // Interceptor para inyectar el JWT en cada request

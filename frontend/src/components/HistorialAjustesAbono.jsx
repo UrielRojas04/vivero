@@ -48,7 +48,7 @@ const HistorialAjustesAbono = () => {
                       {new Date(mov.fecha).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
                     </div>
                     <span className="text-body">
-                      {mov.ubicacion === 'INVERNADERO' ? 'Invernadero' : 'Dep. Colega'}
+                      {mov.ubicacion === 'INVERNADERO' ? 'Invernadero' : 'Depósito 2'}
                     </span>
                   </div>
                   {mov.usuarioNombre && (
@@ -85,7 +85,7 @@ const HistorialAjustesAbono = () => {
                         {mov.productoNombre}
                       </td>
                       <td className="px-4 py-3 text-sm text-body">
-                        {mov.ubicacion === 'INVERNADERO' ? 'Invernadero' : 'Depósito Colega'}
+                        {mov.ubicacion === 'INVERNADERO' ? 'Invernadero' : 'Depósito 2'}
                       </td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-sm font-semibold">
                         <span className={mov.cantidad > 0 ? "text-ok-ink" : "text-danger-ink"}>

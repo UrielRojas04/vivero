@@ -76,23 +76,36 @@ public class VentaServiceImpl implements VentaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
                 
         Cliente cliente = null;
+        TipoDocumento documentoCasualTipo = null;
+        String documentoCasualValor = null;
         if (request.getClienteId() != null) {
             cliente = clienteRepository.findById(request.getClienteId())
                     .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
         } else if (request.getClienteAdHoc() != null) {
-            if (!request.getClienteAdHoc().isCasual()) {
+            com.vivero.gestion.dto.ClienteAdHocDTO adHoc = request.getClienteAdHoc();
+            DocumentoAdHocResuelto documento = resolverDocumentoAdHoc(adHoc);
+
+            if (!adHoc.isCasual()) {
                 // Crear el cliente en la base de datos
                 Cliente nuevoCliente = new Cliente();
-                nuevoCliente.setNombreRazonSocial(request.getClienteAdHoc().getNombre());
-                nuevoCliente.setTelefono(request.getClienteAdHoc().getTelefono());
-                
+                nuevoCliente.setNombreRazonSocial(adHoc.getNombre());
+                nuevoCliente.setTelefono(adHoc.getTelefono());
+                if (documento.tipo() == TipoDocumento.DNI) {
+                    nuevoCliente.setDni(documento.valor());
+                } else if (documento.tipo() == TipoDocumento.CUIL) {
+                    nuevoCliente.setCuil(documento.valor());
+                }
+
                 Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
                 if (unidadId != null) {
                     UnidadNegocio unidad = unidadNegocioRepository.findById(unidadId).orElse(null);
                     nuevoCliente.setUnidadNegocio(unidad);
                 }
-                
+
                 cliente = clienteRepository.save(nuevoCliente);
+            } else {
+                documentoCasualTipo = documento.tipo();
+                documentoCasualValor = documento.valor();
             }
         } else {
             throw new IllegalArgumentException("Debe enviar un clienteId o los datos de un cliente express");
@@ -107,6 +120,8 @@ public class VentaServiceImpl implements VentaService {
         if (cliente == null && request.getClienteAdHoc() != null && request.getClienteAdHoc().isCasual()) {
             venta.setClienteNombreCasual(request.getClienteAdHoc().getNombre());
             venta.setClienteTelefonoCasual(request.getClienteAdHoc().getTelefono());
+            venta.setClienteDocumentoCasualTipo(documentoCasualTipo);
+            venta.setClienteDocumentoCasualValor(documentoCasualValor);
         }
         venta.setUsuario(usuario);
         venta.setFecha(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
@@ -426,9 +441,19 @@ public class VentaServiceImpl implements VentaService {
             if (venta.getCliente() != null) {
                 dto.setClienteNombre(venta.getCliente().getNombreRazonSocial());
                 dto.setClienteTelefono(venta.getCliente().getTelefono());
+                dto.setClienteDni(venta.getCliente().getDni());
+                dto.setClienteCuil(venta.getCliente().getCuil());
             } else if (venta.getClienteNombreCasual() != null) {
                 dto.setClienteNombre(venta.getClienteNombreCasual() + " (Casual)");
                 dto.setClienteTelefono(venta.getClienteTelefonoCasual());
+                // Proyección unificada (Decisión 3 de design.md): el documento casual se expone
+                // en el mismo par clienteDni/clienteCuil que usa una venta con Cliente real, para
+                // que el frontend (historial, remito) nunca tenga que distinguir el origen.
+                if (venta.getClienteDocumentoCasualTipo() == TipoDocumento.DNI) {
+                    dto.setClienteDni(venta.getClienteDocumentoCasualValor());
+                } else if (venta.getClienteDocumentoCasualTipo() == TipoDocumento.CUIL) {
+                    dto.setClienteCuil(venta.getClienteDocumentoCasualValor());
+                }
             } else {
                 dto.setClienteNombre("(eliminado)");
             }
@@ -500,5 +525,46 @@ public class VentaServiceImpl implements VentaService {
             dto.setPagos(new ArrayList<>());
         }
         return dto;
+    }
+
+    // Consolida la resolución del documento ad-hoc de una venta (tarea 2.9 de tasks.md): parsea
+    // el tipo, normaliza el valor y aplica la invariante de consistencia en un solo lugar
+    // (Decisión 2 de design.md: el par se guarda completo o vacío, nunca un tipo sin su valor).
+    // Un solo punto de entrada tanto para el camino casual (el par queda en la Venta) como para
+    // el de creación de cliente real (el valor va al dni/cuil del Cliente nuevo).
+    private DocumentoAdHocResuelto resolverDocumentoAdHoc(com.vivero.gestion.dto.ClienteAdHocDTO adHoc) {
+        TipoDocumento tipo = parseTipoDocumento(adHoc.getDocumentoTipo());
+        String valor = normalizarValorDocumento(adHoc.getDocumentoValor());
+        if (valor == null) {
+            tipo = null;
+        }
+        return new DocumentoAdHocResuelto(tipo, valor);
+    }
+
+    // Resultado inmutable de resolverDocumentoAdHoc: o ambos campos poblados, o ambos null.
+    private record DocumentoAdHocResuelto(TipoDocumento tipo, String valor) {}
+
+    // Parsea el documentoTipo crudo de ClienteAdHocDTO (String, no enum -- ver comentario en ese
+    // DTO) a TipoDocumento. null/blank => "no se cargó documento" (null, sin error). Cualquier
+    // otro valor que no sea DNI/CUIL es un dato inválido de negocio (tarea 2.8 de tasks.md).
+    private TipoDocumento parseTipoDocumento(String documentoTipoRaw) {
+        if (documentoTipoRaw == null || documentoTipoRaw.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return TipoDocumento.valueOf(documentoTipoRaw.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Tipo de documento no reconocido: " + documentoTipoRaw);
+        }
+    }
+
+    // Mismo criterio de normalización que ClienteServiceImpl.normalizarDocumento (Decisión 1 de
+    // design.md): un valor en blanco o solo espacios se representa como null.
+    private String normalizarValorDocumento(String valor) {
+        if (valor == null) {
+            return null;
+        }
+        String trimmed = valor.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

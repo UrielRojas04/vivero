@@ -53,10 +53,13 @@ const RendicionColega = () => {
       return;
     }
 
+    // Sin campo de dirección: se deriva sola en el backend según la cuenta (Jefe/Colega) del
+    // usuario logueado (pedido del dueño 2026-09-04) -- si estoy logueado como Jefe, la rendición
+    // es Jefe->Colega; si estoy logueado como Colega, es Colega->Jefe.
     rendicionMutation.mutate({
       monto: parseFloat(formData.monto),
       fecha: formData.fecha,
-      cuentaDestino: formData.cuentaDestino
+      medioPago: formData.cuentaDestino
     });
   };
 
@@ -66,17 +69,17 @@ const RendicionColega = () => {
     <div className="max-w-6xl mx-auto animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink">Rendiciones del Colega</h1>
-        <p className="text-muted mt-1">Gestión del dinero entregado por el Colega al Jefe</p>
+        <p className="text-muted mt-1">Gestión de rendiciones entre el Colega y el Jefe</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Formulario y Tarjeta */}
         <div className="lg:col-span-1 space-y-6">
           
-          {/* Tarjeta de Saldo */}
+          {/* Tarjeta de Saldo (Colega) */}
           <div className="bg-paper border border-line rounded-panel p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Saldo en Caja (Colega)</h3>
+              <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Saldo en Caja (Pablo)</h3>
               <Wallet className="w-5 h-5 text-accent" />
             </div>
             {liquidacionQuery.isLoading ? (
@@ -87,7 +90,32 @@ const RendicionColega = () => {
                   {formatMoney(liquidacionQuery.data?.saldoCajaColega)}
                 </p>
                 <p className="text-xs text-muted mt-2">
-                  Dinero recaudado por ventas del colega menos las rendiciones entregadas este mes.
+                  Dinero recaudado por ventas del colega, neto de las rendiciones (en cualquier
+                  dirección) de este mes.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Tarjeta de Saldo (Jefe) -- pedido del dueño 2026-09-04. Mismo cálculo que ya usa
+              "En poder del Jefe" en LiquidacionAbono.jsx (ingresosJefe + rendicionesEntregadas,
+              donde rendicionesEntregadas ya es el neto firmado por dirección): no hace falta un
+              campo nuevo en el backend, el DTO de liquidación ya trae todo lo necesario. */}
+          <div className="bg-paper border border-line rounded-panel p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Saldo en Caja (Sergio)</h3>
+              <Wallet className="w-5 h-5 text-accent" />
+            </div>
+            {liquidacionQuery.isLoading ? (
+              <p className="text-2xl font-bold text-faint">Cargando...</p>
+            ) : (
+              <div>
+                <p className="text-3xl font-bold text-ink font-mono tabular-nums">
+                  {formatMoney((liquidacionQuery.data?.ingresosJefe ?? 0) + (liquidacionQuery.data?.rendicionesEntregadas ?? 0))}
+                </p>
+                <p className="text-xs text-muted mt-2">
+                  Dinero recaudado por ventas del jefe, más lo que recibió (o menos lo que entregó)
+                  por rendiciones este mes.
                 </p>
               </div>
             )}
@@ -168,22 +196,29 @@ const RendicionColega = () => {
                   <thead>
                     <tr className="bg-thead border-b border-line">
                       <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Dirección</th>
                       <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Monto</th>
                       <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Medio</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
-                    {rendicionesQuery.data?.content?.map((ren) => (
-                      <tr key={ren.id} className="hover:bg-canvas transition-colors">
-                        <td className="px-4 py-3 text-sm text-body">
-                          {new Date(ren.fecha).toLocaleDateString('es-AR')}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-ok font-mono tabular-nums">
-                          {formatMoney(ren.monto)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-body">{ren.cuentaDestino}</td>
-                      </tr>
-                    ))}
+                    {rendicionesQuery.data?.content?.map((ren) => {
+                      const esJefeAColega = ren.direccion === 'JEFE_A_COLEGA';
+                      return (
+                        <tr key={ren.id} className="hover:bg-canvas transition-colors">
+                          <td className="px-4 py-3 text-sm text-body">
+                            {new Date(ren.fecha).toLocaleDateString('es-AR')}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-body">
+                            {esJefeAColega ? 'Sergio → Pablo' : 'Pablo → Sergio'}
+                          </td>
+                          <td className={`px-4 py-3 text-sm font-medium font-mono tabular-nums ${esJefeAColega ? 'text-warn' : 'text-ok'}`}>
+                            {formatMoney(ren.monto)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-body">{ren.medioPago}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 })
 class PedidoRecepcionCodigoBarraTest {
 
-    private static final String USERNAME = "jefe@vivero.com";
+    private static final String USERNAME = "Sergio";
 
     @Autowired
     private PedidoService pedidoService;

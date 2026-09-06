@@ -76,8 +76,8 @@ public class DataInitializer implements CommandLineRunner {
             // false para las dos, explícito. Nadie activa el costeo por capas en el seed — se
             // activa recién en la migración real (grupo 7, PUERTA 3), fuera de este apply.
             // 8vo y 9no parámetro = modeloCosto y porcentajeRepartoColega (negocio-abono)
-            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS, java.math.BigDecimal.ZERO));
-            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, com.vivero.gestion.models.ModeloCostoUnidad.MERCADERIA_VENDIDA, java.math.BigDecimal.ZERO));
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Vivero", "Unidad principal de Vivero", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS, java.math.BigDecimal.ZERO, false));
+            unidadNegocioRepository.save(new UnidadNegocio(null, "Herramientas", "Venta de herramientas", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, com.vivero.gestion.models.ModeloCostoUnidad.MERCADERIA_VENDIDA, java.math.BigDecimal.ZERO, false));
         }
 
         // Migración retroactiva: asegurar que Herramientas tenga MERCADERIA_VENDIDA si ya existía
@@ -93,18 +93,32 @@ public class DataInitializer implements CommandLineRunner {
         Rol rolJefe = crearRol("JEFE", permisosJefe);
         // Asegurar que el jefe siempre tenga todos los permisos, incluso si el rol ya existía
         rolJefe.setPermisos(permisosJefe);
+        // JEFE es un rol global (visible en las 3 unidades) — explícito aunque null ya sea el
+        // default, para dejar documentada la intención (modelo unidadNegocio en Rol).
+        rolJefe.setUnidadNegocio(null);
         rolRepository.save(rolJefe);
 
         Set<PermisoEnum> permisosColega = EnumSet.allOf(PermisoEnum.class);
         permisosColega.remove(PermisoEnum.ADMIN_DB);
+        // LEER_CONFIGURACION también afuera (pedido del dueño 2026-09-05): la sección
+        // Configuración debe verla sólo el JEFE en Vivero y Abono, Colega incluido -- aunque
+        // Colega sea el otro "administrador" de Abono para temas financieros, no debe ver esta
+        // sección en particular.
+        permisosColega.remove(PermisoEnum.LEER_CONFIGURACION);
         Rol rolColega = crearRol("COLEGA", permisosColega);
         rolColega.setPermisos(permisosColega);
+        // COLEGA sólo pertenece a Abono (confirmado por el dueño — ver modelo unidadNegocio en Rol).
+        rolColega.setUnidadNegocio(unidadNegocioRepository.findByNombre("Abono")
+                .orElseThrow(() -> new IllegalStateException("Falta la unidad de negocio Abono")));
         rolRepository.save(rolColega);
 
         // 3. Crear o actualizar Usuario Jefe
-        Usuario jefe = usuarioRepository.findByUsername("jefe@vivero.com").orElse(new Usuario());
+        // Username real "Sergio" (2026-09-04, antes "jefe@vivero.com" -- pedido del dueño, ver
+        // también CuentaAbonoFilter, UsuarioServiceImpl y los checks de frontend que dependen de
+        // este literal exacto).
+        Usuario jefe = usuarioRepository.findByUsername("Sergio").orElse(new Usuario());
         if (jefe.getId() == null) {
-            jefe.setUsername("jefe@vivero.com");
+            jefe.setUsername("Sergio");
             // Sin contraseña hardcodeada en el código fuente (2026-08-27, limpieza pre-GitHub):
             // sólo se usa en la primera creación del usuario, en una base recién levantada — la
             // base real ya tiene este usuario, así que esta rama nunca vuelve a correr para él.
@@ -130,9 +144,10 @@ public class DataInitializer implements CommandLineRunner {
         usuarioRepository.save(jefe);    
         
         // Crear o actualizar Usuario Colega
-        Usuario colega = usuarioRepository.findByUsername("colega@vivero.com").orElse(new Usuario());
+        // Username real "Pablo" (2026-09-04, antes "colega@vivero.com" -- pedido del dueño).
+        Usuario colega = usuarioRepository.findByUsername("Pablo").orElse(new Usuario());
         if (colega.getId() == null) {
-            colega.setUsername("colega@vivero.com");
+            colega.setUsername("Pablo");
             String initialColegaPassword = System.getenv("INITIAL_COLEGA_PASSWORD");
             if (initialColegaPassword == null || initialColegaPassword.isBlank()) {
                 // Fallback a la password del jefe si no hay variable para el colega
@@ -350,9 +365,9 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedUnidadAbono() {
         if (unidadNegocioRepository.findByNombre("Abono").isEmpty()) {
-            UnidadNegocio abono = new UnidadNegocio(null, "Abono", "Unidad de abono", 
-                java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false, 
-                com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS, java.math.BigDecimal.ZERO);
+            UnidadNegocio abono = new UnidadNegocio(null, "Abono", "Unidad de abono",
+                java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, true, false,
+                com.vivero.gestion.models.ModeloCostoUnidad.INSUMOS, java.math.BigDecimal.ZERO, false);
             unidadNegocioRepository.save(abono);
             System.out.println("Unidad de Negocio 'Abono' creada.");
         }

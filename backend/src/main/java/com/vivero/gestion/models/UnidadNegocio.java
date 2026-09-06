@@ -59,4 +59,12 @@ public class UnidadNegocio {
     // de esta unidad requieren calcular una deuda hacia el socio.
     @Column(name = "porcentaje_reparto_colega", precision = 5, scale = 2)
     private java.math.BigDecimal porcentajeRepartoColega = java.math.BigDecimal.ZERO;
+
+    // Modo de reparto (pedido del dueño 2026-09-04). Mismo patrón que costeoPorCapasHabilitado:
+    // default false preserva el cálculo histórico (porcentaje sobre el ingreso neto GLOBAL,
+    // Jefe + Colega - gastos). En true, RendicionColegaServiceImpl.obtenerLiquidacion aplica el
+    // porcentaje sólo sobre lo efectivamente cobrado por el colega, sin restar gastos/insumos --
+    // esos quedan a cargo del Jefe en este modo (decisión explícita del dueño, no una suposición).
+    @Column(name = "reparto_sobre_ventas_colega", nullable = false, columnDefinition = "boolean default false")
+    private boolean repartoSobreVentasColega = false;
 }

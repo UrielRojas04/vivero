@@ -32,7 +32,26 @@ public class Siembra {
 
     private LocalDate fechaEstimada;
 
+    // Snapshot obligatorio del nombre del dueño -- "Jefe / Vivero propio" (siembra sin
+    // cliente, para stock propio) o el nombre del cliente vinculado, copiado en el momento del
+    // alta (NO es una referencia viva, mismo patrón que RegistroSemilla.descripcionSemilla/
+    // nombreQuienTrajo). Cuando cliente != null, este texto siempre coincide con
+    // cliente.getNombreRazonSocial() en el momento del alta.
     private String dueno;
+
+    // Vínculo OPCIONAL a un Cliente real (pedido del dueño 2026-09-05: "ahora sí necesitamos
+    // asociar la siembra a un cliente"). Null cuando el dueño es "Jefe / Vivero propio" -- esa
+    // opción sigue existiendo y nunca requiere cliente.
+    //
+    // Vuelta atrás parcial (2026-09-05, mismo día): el modo "Cliente" del formulario había
+    // quedado sin nombre libre, exigiendo un cliente real del catálogo. El dueño aclaró que acá
+    // sólo hace falta el nombre para identificar a quién pertenece la siembra en el listado -- el
+    // perfil de cliente de verdad se crea recién al momento de la venta, no antes. Vuelve a ser
+    // el mismo patrón "buscar o escribir libre" que ya usan RegistroSemilla y VariedadPlanta: sin
+    // coincidencia real, se guarda como nombre libre en `dueno`, con `cliente` en null.
+    @ManyToOne
+    @JoinColumn(name = "cliente_id")
+    private Cliente cliente;
 
     // Código de lote impreso por el proveedor en el sobre de semillas.
     // NO lleva restricción de unicidad: varias siembras pueden compartir el
@@ -59,4 +78,18 @@ public class Siembra {
 
     @Enumerated(EnumType.STRING)
     private EstadoSiembra estado = EstadoSiembra.EN_PROCESO;
+
+    // Vínculo opcional al RegistroSemilla del que salió esta siembra (sólo tiene sentido con
+    // tipoOrigen = SOBRE). Un mismo RegistroSemilla puede vincularse a varias siembras -- no
+    // hay restricción de unicidad, mismo criterio que codigoLote (change
+    // trazabilidad-semillas-siembras, 2026-09-04).
+    @ManyToOne
+    @JoinColumn(name = "registro_semilla_id")
+    private RegistroSemilla registroSemilla;
+
+    // Nota libre opcional (pedido del dueño 2026-09-05): mismo campo que ya existe en
+    // RegistroSemilla.observaciones, con el mismo propósito -- cualquier aclaración que no entra
+    // en un campo estructurado (ej. "se usó sólo la mitad del sobre de 10kg"). No se interpreta
+    // ni se usa para ningún cálculo, es puramente informativo.
+    private String observaciones;
 }

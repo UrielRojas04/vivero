@@ -1,0 +1,17 @@
+# Build de producción real para frontend-prod (docker-compose.yml). Antes de esto, el servicio
+# usaba el mismo Dockerfile del modo desarrollo (levanta Vite dev en :5173, sin nada escuchando
+# en :80) -- nunca se había terminado de armar (2026-09-05, necesario para exponer la app entera
+# detrás de un solo túnel de demo).
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

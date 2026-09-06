@@ -56,7 +56,7 @@ export default function StockUbicacionAbono() {
               <tr className="bg-thead border-b border-line text-xs text-muted uppercase tracking-wider">
                 <th className="px-3 sm:px-4 py-3 font-semibold">Producto</th>
                 <th className="px-3 sm:px-4 py-3 font-semibold text-right">Invernadero</th>
-                <th className="px-3 sm:px-4 py-3 font-semibold text-right">Depósito Colega</th>
+                <th className="px-3 sm:px-4 py-3 font-semibold text-right">Depósito 2</th>
                 <th className="px-3 sm:px-4 py-3 font-semibold text-right">Total</th>
               </tr>
             </thead>

@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -19,8 +21,15 @@ public class Venta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // NotFoundAction.IGNORE (tarea 3.5 de tasks.md de clientes-dni-cuil): un Cliente
+    // soft-eliminado (@SQLRestriction) ya no matchea el filtro de la fila referenciada por
+    // cliente_id, y sin esta anotación Hibernate 6 lanza FetchNotFoundException al listar ventas
+    // (findAllByUnidadNegocioIdOrderByFechaDesc, fetch EAGER por defecto de @ManyToOne) en vez de
+    // devolver simplemente null -- que es lo que mapearAVentaResponseDTO ya sabía manejar
+    // ("(eliminado)", clienteDni/clienteCuil en null) pero nunca llegaba a ejecutarse.
     @ManyToOne
     @JoinColumn(name = "cliente_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     private Cliente cliente;
 
     @Column(name = "cliente_nombre_casual")
@@ -28,6 +37,16 @@ public class Venta {
 
     @Column(name = "cliente_telefono_casual")
     private String clienteTelefonoCasual;
+
+    // Documento puntual de una venta a cliente casual (Decisión 2 de design.md de
+    // clientes-dni-cuil): "qué documento mostró quien compró en este mostrador, esta vez", no un
+    // dato de ficha. Ambos nullable; el par se guarda completo o vacío (nunca un tipo sin valor).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cliente_documento_casual_tipo")
+    private TipoDocumento clienteDocumentoCasualTipo;
+
+    @Column(name = "cliente_documento_casual_valor")
+    private String clienteDocumentoCasualValor;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
@@ -74,6 +93,10 @@ public class Venta {
     public void setClienteNombreCasual(String clienteNombreCasual) { this.clienteNombreCasual = clienteNombreCasual; }
     public String getClienteTelefonoCasual() { return clienteTelefonoCasual; }
     public void setClienteTelefonoCasual(String clienteTelefonoCasual) { this.clienteTelefonoCasual = clienteTelefonoCasual; }
+    public TipoDocumento getClienteDocumentoCasualTipo() { return clienteDocumentoCasualTipo; }
+    public void setClienteDocumentoCasualTipo(TipoDocumento clienteDocumentoCasualTipo) { this.clienteDocumentoCasualTipo = clienteDocumentoCasualTipo; }
+    public String getClienteDocumentoCasualValor() { return clienteDocumentoCasualValor; }
+    public void setClienteDocumentoCasualValor(String clienteDocumentoCasualValor) { this.clienteDocumentoCasualValor = clienteDocumentoCasualValor; }
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }

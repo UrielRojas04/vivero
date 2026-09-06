@@ -3,8 +3,12 @@ package com.vivero.gestion.services.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Objects;
 
 import com.vivero.gestion.dto.VariedadPlantaDTO;
 import com.vivero.gestion.models.VariedadPlanta;
@@ -38,6 +42,7 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
         VariedadPlanta model = new VariedadPlanta();
         model.setNombre(dto.getNombre());
         model.setDescripcion(dto.getDescripcion());
+        model.setSemillasPorGramo(dto.getSemillasPorGramo());
         model.setDiasEnero(dto.getDiasEnero());
         model.setDiasFebrero(dto.getDiasFebrero());
         model.setDiasMarzo(dto.getDiasMarzo());
@@ -53,17 +58,42 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
         return mapToDTO(repository.save(model));
     }
 
+    // Pedido del dueño 2026-09-05: la variedad "en uso" sólo bloquea los DÍAS DE CRECIMIENTO --
+    // cambiarlos podría descuadrar cálculos de siembras ya hechas (fechaEstimada). nombre,
+    // descripcion y semillasPorGramo no afectan nada retroactivo (semillasPorGramo sólo se usa
+    // para calcular registros nuevos de ahí en adelante), así que siempre se pueden editar,
+    // incluso en una variedad en uso. Antes el bloqueo era todo-o-nada, lo que impedía cargar
+    // semillasPorGramo en cualquier variedad ya usada en una siembra -- el caso más común, no
+    // la excepción.
+    private boolean diasDeCrecimientoCambiaron(VariedadPlanta model, VariedadPlantaDTO dto) {
+        return !Objects.equals(model.getDiasEnero(), dto.getDiasEnero())
+                || !Objects.equals(model.getDiasFebrero(), dto.getDiasFebrero())
+                || !Objects.equals(model.getDiasMarzo(), dto.getDiasMarzo())
+                || !Objects.equals(model.getDiasAbril(), dto.getDiasAbril())
+                || !Objects.equals(model.getDiasMayo(), dto.getDiasMayo())
+                || !Objects.equals(model.getDiasJunio(), dto.getDiasJunio())
+                || !Objects.equals(model.getDiasJulio(), dto.getDiasJulio())
+                || !Objects.equals(model.getDiasAgosto(), dto.getDiasAgosto())
+                || !Objects.equals(model.getDiasSeptiembre(), dto.getDiasSeptiembre())
+                || !Objects.equals(model.getDiasOctubre(), dto.getDiasOctubre())
+                || !Objects.equals(model.getDiasNoviembre(), dto.getDiasNoviembre())
+                || !Objects.equals(model.getDiasDiciembre(), dto.getDiasDiciembre());
+    }
+
     @Override
     @Transactional
     public VariedadPlantaDTO actualizar(Long id, VariedadPlantaDTO dto) {
-        if (siembraRepository.existsByVariedadPlantaId(id)) {
-            throw new RuntimeException("No se puede editar una variedad de planta que ya está en uso en siembras registradas.");
-        }
-
         VariedadPlanta model = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("VariedadPlanta no encontrada"));
+
+        if (siembraRepository.existsByVariedadPlantaId(id) && diasDeCrecimientoCambiaron(model, dto)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se pueden cambiar los días de crecimiento de una variedad que ya está en uso en siembras registradas.");
+        }
+
         model.setNombre(dto.getNombre());
         model.setDescripcion(dto.getDescripcion());
+        model.setSemillasPorGramo(dto.getSemillasPorGramo());
         model.setDiasEnero(dto.getDiasEnero());
         model.setDiasFebrero(dto.getDiasFebrero());
         model.setDiasMarzo(dto.getDiasMarzo());
@@ -90,6 +120,7 @@ public class VariedadPlantaServiceImpl implements VariedadPlantaService {
         dto.setId(model.getId());
         dto.setNombre(model.getNombre());
         dto.setDescripcion(model.getDescripcion());
+        dto.setSemillasPorGramo(model.getSemillasPorGramo());
         dto.setDiasEnero(model.getDiasEnero());
         dto.setDiasFebrero(model.getDiasFebrero());
         dto.setDiasMarzo(model.getDiasMarzo());

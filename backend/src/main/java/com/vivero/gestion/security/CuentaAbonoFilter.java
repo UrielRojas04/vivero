@@ -13,8 +13,8 @@ import java.io.IOException;
 @Component
 public class CuentaAbonoFilter extends OncePerRequestFilter {
 
-    private static final String USERNAME_COLEGA = "colega@vivero.com";
-    private static final String USERNAME_JEFE = "jefe@vivero.com";
+    private static final String USERNAME_COLEGA = "Pablo";
+    private static final String USERNAME_JEFE = "Sergio";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

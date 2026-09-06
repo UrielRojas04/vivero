@@ -21,6 +21,10 @@ public class Rol {
     @Column(name = "permiso")
     private Set<PermisoEnum> permisos = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_negocio_id")
+    private UnidadNegocio unidadNegocio; // null = rol global, visible en todas las unidades (ej. JEFE)
+
     public Rol() {}
 
     public Rol(String nombre) {
@@ -35,4 +39,7 @@ public class Rol {
 
     public Set<PermisoEnum> getPermisos() { return permisos; }
     public void setPermisos(Set<PermisoEnum> permisos) { this.permisos = permisos; }
+
+    public UnidadNegocio getUnidadNegocio() { return unidadNegocio; }
+    public void setUnidadNegocio(UnidadNegocio unidadNegocio) { this.unidadNegocio = unidadNegocio; }
 }

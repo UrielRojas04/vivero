@@ -34,11 +34,22 @@ export default function HistorialVentas() {
       String(text ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const nq = normalize(q);
 
+    // Normalización de documentos (Decisión 8 de design.md de clientes-dni-cuil): se elimina todo
+    // carácter no alfanumérico de ambos lados antes de comparar, para que "20.123.456" y
+    // "20123456" matcheen entre sí sin importar cómo se haya tipeado el documento al cargarlo.
+    // Independiente de `normalize` de arriba (esa es para el nombre, ésta es sólo para documento).
+    const normalizeDoc = (text) => String(text ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nqDoc = normalizeDoc(q);
+
     return ventas.filter((venta) => {
       return (
         normalize(venta.clienteNombre).includes(nq) ||
         normalize(venta.estadoPago).includes(nq) ||
-        normalize(new Date(venta.fecha).toLocaleDateString('es-AR')).includes(nq)
+        normalize(new Date(venta.fecha).toLocaleDateString('es-AR')).includes(nq) ||
+        (nqDoc.length > 0 && (
+          normalizeDoc(venta.clienteDni).includes(nqDoc) ||
+          normalizeDoc(venta.clienteCuil).includes(nqDoc)
+        ))
       );
     });
   }, [ventas, filtro]);
@@ -57,7 +68,7 @@ export default function HistorialVentas() {
           type="text"
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
-          placeholder="Buscar por cliente, estado o fecha…"
+          placeholder="Buscar por cliente, DNI, CUIL, estado o fecha…"
           className="w-full pl-9 pr-4 py-2 rounded-base border border-line bg-paper text-sm text-body placeholder-faint focus:outline-none focus:ring-2 focus:ring-accent transition-shadow"
         />
       </div>

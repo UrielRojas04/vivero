@@ -210,3 +210,25 @@ select option {
   background-color: var(--color-paper);
   color: var(--color-ink);
 }
+
+/* Scroll delgado (pedido del dueño 2026-09-05, reportado como "un scroll horrible en la
+   sidebar"): al corregir el bug de las 3 barras de scroll (el contenedor raíz pasó de
+   min-h-screen a h-screen), el menú lateral empezó a scrollear de verdad dentro de su propia
+   altura quieta -- antes nunca hacía falta porque la página entera crecía para mostrar todos los
+   ítems. La barra nativa gruesa, sin estilo, se ve fuera de lugar en la sidebar; esta clase la
+   angosta y la pinta a juego con el tema en vez de sacarla (sacarla dejaría "Cheques"/"Usuarios"
+   inalcanzables en ventanas bajas). */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-line-strong);
+  border-radius: 999px;
+}

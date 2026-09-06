@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { siembrasApi } from '../api/siembras.api';
 import SiembraForm from '../components/SiembraForm';
 import FinalizarSiembraModal from '../components/FinalizarSiembraModal';
@@ -6,10 +7,13 @@ import PaseStockModal from '../components/PaseStockModal';
 import ConversorBandejas from '../components/ConversorBandejas';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
+import { parsearFechaLocal, formatearFechaLocal } from '../utils/fechaLocal';
 import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Siembras = () => {
   const { pushToast, denyAccess, askConfirm } = useUIStore();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [siembras, setSiembras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,6 +34,13 @@ const Siembras = () => {
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedSiembra, setSelectedSiembra] = useState(null);
+  // Precarga desde el botón "Sembrar" de Registro de Semillas (pedido del dueño 2026-09-05):
+  // viaja como router state, no como query param, porque es un dato de un solo uso -- no tiene
+  // sentido que sobreviva a un refresh de página ni que quede en el historial de navegación.
+  const [registroSemillaParaSembrar, setRegistroSemillaParaSembrar] = useState(null);
+  // Resalta la tarjeta/fila al llegar desde la notificación de la campana (pedido del dueño
+  // 2026-09-05): mismo mecanismo de router state de un solo uso.
+  const [siembraResaltada, setSiembraResaltada] = useState(null);
   
   // Finalizar Modal states (Old workflow)
   const [isFinalizarOpen, setIsFinalizarOpen] = useState(false);
@@ -61,6 +72,31 @@ const Siembras = () => {
     fetchSiembras();
   }, []);
 
+  useEffect(() => {
+    if (location.state?.registroSemillaParaSembrar) {
+      setRegistroSemillaParaSembrar(location.state.registroSemillaParaSembrar);
+      setSelectedSiembra(null);
+      setIsFormOpen(true);
+      // Limpia el state de router después de consumirlo: si el usuario refresca la página o
+      // vuelve con el botón "Atrás" del navegador, el modal no se debe reabrir solo.
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (location.state?.resaltarSiembraId) {
+      const id = location.state.resaltarSiembraId;
+      setSiembraResaltada(id);
+      navigate(location.pathname, { replace: true, state: {} });
+      const timeout = setTimeout(() => setSiembraResaltada(null), 2500);
+      return () => clearTimeout(timeout);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  useEffect(() => {
+    if (siembraResaltada != null) {
+      const el = document.getElementById(`siembra-${siembraResaltada}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [siembraResaltada]);
+
   const handleCreateOrUpdate = async (formData) => {
     try {
       if (selectedSiembra) {
@@ -70,6 +106,7 @@ const Siembras = () => {
       }
       setIsFormOpen(false);
       setSelectedSiembra(null);
+      setRegistroSemillaParaSembrar(null);
       fetchSiembras();
       pushToast('success', 'Siembra guardada correctamente.');
     } catch (err) {
@@ -145,12 +182,81 @@ const Siembras = () => {
   // en lugar de mostrar un valor vacío.
   const formatPeriodoSiembra = (siembra) => {
     if (!siembra.fechaSiembraInicio) return null;
-    const inicio = new Date(siembra.fechaSiembraInicio).toLocaleDateString('es-AR');
+    const inicio = formatearFechaLocal(siembra.fechaSiembraInicio);
     if (!siembra.fechaSiembraFin || siembra.fechaSiembraFin === siembra.fechaSiembraInicio) {
       return inicio;
     }
-    const fin = new Date(siembra.fechaSiembraFin).toLocaleDateString('es-AR');
+    const fin = formatearFechaLocal(siembra.fechaSiembraFin);
     return `${inicio} - ${fin}`;
+  };
+
+  // Bug real corregido (2026-09-04): antes el progreso se calculaba SOLO en base a cuánto
+  // faltaba para la fecha estimada, capado a una ventana de 30 días -- cualquier siembra con más
+  // de 30 días por delante quedaba pegada en 10% sin moverse, sin importar cuánto tiempo pasara.
+  // Ahora se calcula como tiempo transcurrido sobre tiempo total planeado (desde
+  // fechaSiembraInicio hasta fechaEstimada), así que avanza de forma pareja durante todo el
+  // ciclo. Si falta la fecha de inicio (siembras viejas sin ese dato), cae al criterio anterior
+  // como red de seguridad. El color distingue tres estados: verde = Finalizada de verdad, rojo =
+  // venció la fecha estimada y sigue En Proceso (necesita atención), ámbar = a 10 días o menos
+  // (mismo margen que usa el aviso al pasar a stock, más abajo), gris = todavía con tiempo.
+  const calcularProgresoSiembra = (siembra) => {
+    if (!siembra.fechaEstimada) return { progress: 0, diffDays: null, colorClass: 'bg-line-strong' };
+
+    const est = parsearFechaLocal(siembra.fechaEstimada);
+    const now = new Date();
+    const diffDays = Math.ceil((est - now) / (1000 * 60 * 60 * 24));
+
+    let progress;
+    if (diffDays <= 0) {
+      progress = 100;
+    } else if (siembra.fechaSiembraInicio) {
+      const inicio = parsearFechaLocal(siembra.fechaSiembraInicio);
+      const totalMs = est - inicio;
+      const transcurridoMs = now - inicio;
+      progress = totalMs > 0 ? (transcurridoMs / totalMs) * 100 : 100;
+    } else {
+      progress = diffDays > 30 ? 10 : 100 - diffDays * 3;
+    }
+    progress = Math.min(100, Math.max(0, Math.round(progress)));
+
+    let colorClass = 'bg-line-strong';
+    if (siembra.estado === 'FINALIZADA') {
+      colorClass = 'bg-ok';
+    } else if (diffDays <= 0) {
+      colorClass = 'bg-danger';
+    } else if (diffDays <= 10) {
+      colorClass = 'bg-warn';
+    }
+
+    return { progress, diffDays, colorClass };
+  };
+
+  // Margen de aviso al pasar a stock antes de tiempo (pedido del dueño 2026-09-04): no bloquea
+  // -- a veces hay una razón real para adelantarlo (plaga, clima, la estimación estaba mal) --
+  // pero avisa si faltan más de 10 días para la fecha estimada y todavía está En Proceso.
+  const MARGEN_AVISO_PASE_STOCK_DIAS = 10;
+
+  const iniciarPaseAStock = (siembra) => {
+    const { diffDays } = calcularProgresoSiembra(siembra);
+    const faltaMucho = siembra.estado === 'EN_PROCESO' && diffDays !== null && diffDays > MARGEN_AVISO_PASE_STOCK_DIAS;
+
+    const abrirModal = () => {
+      setSiembraToPaseStock(siembra);
+      setIsPaseStockOpen(true);
+    };
+
+    if (faltaMucho) {
+      askConfirm({
+        title: 'Pasar a stock antes de tiempo',
+        message: `Todavía faltan ${diffDays} días para la fecha estimada de esta siembra. ¿Querés pasarla a stock igual?`,
+        variant: 'warning',
+        confirmLabel: 'Pasar a stock igual',
+        cancelLabel: 'Cancelar',
+        onConfirm: abrirModal,
+      });
+    } else {
+      abrirModal();
+    }
   };
 
   const getStatusBadge = (estado) => {
@@ -194,6 +300,7 @@ const Siembras = () => {
           <button
             onClick={() => {
               setSelectedSiembra(null);
+              setRegistroSemillaParaSembrar(null);
               setIsFormOpen(true);
             }}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-accent hover:brightness-95 text-paper font-semibold px-4 sm:px-5 py-2.5 rounded-base transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap"
@@ -267,23 +374,19 @@ const Siembras = () => {
           {/* MOBILE VIEW: Cards Layout */}
           <div className="grid grid-cols-1 gap-4 sm:hidden">
             {filteredSiembras.map((siembra) => {
-              let progress = 0;
-              let diffDays = 0;
-              let est = null;
-              if (siembra.fechaEstimada) {
-                est = new Date(siembra.fechaEstimada);
-                const now = new Date();
-                const diffTime = est - now;
-                diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if (diffDays <= 0) progress = 100;
-                else if (diffDays > 30) progress = 10;
-                else progress = Math.max(10, 100 - (diffDays * 3));
-              }
+              const est = parsearFechaLocal(siembra.fechaEstimada);
+              const { progress, diffDays, colorClass } = calcularProgresoSiembra(siembra);
 
               const isExpanded = expandedIds.has(siembra.id);
 
               return (
-                <div key={siembra.id} className="bg-paper border border-line rounded-panel overflow-hidden">
+                <div
+                  key={siembra.id}
+                  id={`siembra-${siembra.id}`}
+                  className={`bg-paper border rounded-panel overflow-hidden transition-colors duration-700 ${
+                    siembraResaltada === siembra.id ? 'border-accent bg-accent-soft' : 'border-line'
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => toggleExpanded(siembra.id)}
@@ -340,6 +443,10 @@ const Siembras = () => {
                         </div>
                       </div>
 
+                      {siembra.observaciones && (
+                        <p className="text-xs text-muted">{siembra.observaciones}</p>
+                      )}
+
                       {est && (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex justify-between items-end">
@@ -350,7 +457,7 @@ const Siembras = () => {
                           </div>
                           <div className="w-full bg-thead rounded-full h-2 overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${progress === 100 ? 'bg-ok' : 'bg-line-strong'}`}
+                              className={`h-full rounded-full transition-all ${colorClass}`}
                               style={{ width: `${progress}%` }}
                             />
                           </div>
@@ -360,10 +467,7 @@ const Siembras = () => {
                       <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                         {(siembra.estado === 'FINALIZADA' || siembra.estado === 'EN_PROCESO') && (
                           <button
-                            onClick={() => {
-                              setSiembraToPaseStock(siembra);
-                              setIsPaseStockOpen(true);
-                            }}
+                            onClick={() => iniciarPaseAStock(siembra)}
                             className="flex-1 py-2 bg-accent-soft hover:brightness-95 text-accent-ink font-medium rounded-base text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                           >
                             <PackagePlus className="w-4 h-4" /> Stock
@@ -416,7 +520,13 @@ const Siembras = () => {
               </thead>
               <tbody className="divide-y divide-line">
                 {filteredSiembras.map((siembra) => (
-                  <tr key={siembra.id} className="hover:bg-canvas transition-colors group">
+                  <tr
+                    key={siembra.id}
+                    id={`siembra-${siembra.id}`}
+                    className={`hover:bg-canvas transition-colors duration-700 group ${
+                      siembraResaltada === siembra.id ? 'bg-accent-soft' : ''
+                    }`}
+                  >
                     <td className="px-6 py-4">
                       <div className="font-semibold text-ink">{siembra.variedadPlanta?.nombre || '-'}</div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -433,6 +543,9 @@ const Siembras = () => {
                       {formatPeriodoSiembra(siembra) && (
                         <div className="text-xs text-muted">Sembrado: {formatPeriodoSiembra(siembra)}</div>
                       )}
+                      {siembra.observaciones && (
+                        <div className="text-xs text-muted mt-0.5">{siembra.observaciones}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-body">
                       {siembra.dueno}
@@ -443,15 +556,8 @@ const Siembras = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-body">
                       {(() => {
                         if (!siembra.fechaEstimada) return '-';
-                        const est = new Date(siembra.fechaEstimada);
-                        const now = new Date();
-                        const diffTime = est - now;
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                        let progress = 0;
-                        if (diffDays <= 0) progress = 100;
-                        else if (diffDays > 30) progress = 10;
-                        else progress = Math.max(10, 100 - (diffDays * 3));
+                        const est = parsearFechaLocal(siembra.fechaEstimada);
+                        const { progress, diffDays, colorClass } = calcularProgresoSiembra(siembra);
 
                         return (
                           <div className="flex flex-col gap-1 w-32">
@@ -461,7 +567,7 @@ const Siembras = () => {
                             </span>
                             <div className="w-full bg-thead rounded-full h-1.5 overflow-hidden">
                               <div
-                                className={`h-1.5 rounded-full ${progress === 100 ? 'bg-ok' : 'bg-line-strong'}`}
+                                className={`h-1.5 rounded-full ${colorClass}`}
                                 style={{ width: `${progress}%` }}
                               ></div>
                             </div>
@@ -476,10 +582,7 @@ const Siembras = () => {
                       <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                         {(siembra.estado === 'FINALIZADA' || siembra.estado === 'EN_PROCESO') && (
                           <button
-                            onClick={() => {
-                              setSiembraToPaseStock(siembra);
-                              setIsPaseStockOpen(true);
-                            }}
+                            onClick={() => iniciarPaseAStock(siembra)}
                             className="p-1.5 hover:bg-accent-soft text-accent-ink rounded-base transition-colors cursor-pointer"
                             title="Pasar a Stock"
                           >
@@ -526,10 +629,12 @@ const Siembras = () => {
         <SiembraForm
           isOpen={isFormOpen}
           siembra={selectedSiembra}
+          registroSemillaInicial={registroSemillaParaSembrar}
           onSave={handleCreateOrUpdate}
           onCancel={() => {
             setIsFormOpen(false);
             setSelectedSiembra(null);
+            setRegistroSemillaParaSembrar(null);
           }}
         />
       )}

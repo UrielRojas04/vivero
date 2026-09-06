@@ -5,6 +5,11 @@ import { abonoApi } from '../api/abono.api';
 import { productosApi } from '../api/productos.api';
 import { useUIStore } from '../store/useUIStore';
 
+// El backend sigue guardando la ubicación como "COLEGA" (UbicacionAbono.COLEGA, sin tocar por ser
+// un cambio puramente cosmético) -- acá sólo se traduce a la etiqueta visible pedida por el dueño
+// (2026-09-04): "Depósito 2" en vez de "Colega".
+const mostrarUbicacion = (ubicacion) => (ubicacion === 'COLEGA' ? 'Depósito 2' : 'Invernadero');
+
 const RegistrarTrasladoAbono = () => {
   const { pushToast } = useUIStore();
   const queryClient = useQueryClient();
@@ -72,7 +77,7 @@ const RegistrarTrasladoAbono = () => {
     const cant = parseInt(formData.cantidad);
     const disp = getStockDisponible(formData.productoId, formData.direccion);
     if (cant > disp) {
-      pushToast('error', `Stock insuficiente en ${formData.direccion === 'COLEGA_A_INVERNADERO' ? 'Colega' : 'Invernadero'} (disponible: ${disp})`);
+      pushToast('error', `Stock insuficiente en ${mostrarUbicacion(formData.direccion === 'COLEGA_A_INVERNADERO' ? 'COLEGA' : 'INVERNADERO')} (disponible: ${disp})`);
       return;
     }
 
@@ -96,7 +101,7 @@ const RegistrarTrasladoAbono = () => {
     <div className="max-w-6xl mx-auto animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink">Traslados de Abono</h1>
-        <p className="text-muted mt-1">Gestionar movimientos de stock entre Invernadero y Depósito Colega</p>
+        <p className="text-muted mt-1">Gestionar movimientos de stock entre Invernadero y Depósito 2</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -117,7 +122,7 @@ const RegistrarTrasladoAbono = () => {
                     onClick={() => setFormData({ ...formData, direccion: 'INVERNADERO_A_COLEGA' })}
                     className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${formData.direccion === 'INVERNADERO_A_COLEGA' ? 'bg-paper text-ink' : 'text-muted hover:text-body cursor-pointer'}`}
                   >
-                    Hacia Colega
+                    Hacia Depósito 2
                   </button>
                   <button
                     type="button"
@@ -166,7 +171,7 @@ const RegistrarTrasladoAbono = () => {
                 )}
                 {formData.productoId && (
                   <p className="text-xs text-muted mt-1 font-medium">
-                    Disponible en {formData.direccion === 'COLEGA_A_INVERNADERO' ? 'Colega' : 'Invernadero'}: <span className="font-mono tabular-nums">{stockDisponible}</span>
+                    Disponible en {mostrarUbicacion(formData.direccion === 'COLEGA_A_INVERNADERO' ? 'COLEGA' : 'INVERNADERO')}: <span className="font-mono tabular-nums">{stockDisponible}</span>
                   </p>
                 )}
               </div>
@@ -241,7 +246,7 @@ const RegistrarTrasladoAbono = () => {
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-muted">Ruta:</span>
                           <span className="text-body font-medium">
-                            {origen} <span className="text-muted mx-1">➔</span> {destino}
+                            {mostrarUbicacion(origen)} <span className="text-muted mx-1">➔</span> {mostrarUbicacion(destino)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs">
@@ -281,7 +286,7 @@ const RegistrarTrasladoAbono = () => {
                             </td>
                             <td className="px-4 py-3 text-sm text-body">TRASLADO</td>
                             <td className="px-4 py-3 text-sm text-body font-medium">
-                              {origen} <span className="text-muted mx-1">➔</span> {destino}
+                              {mostrarUbicacion(origen)} <span className="text-muted mx-1">➔</span> {mostrarUbicacion(destino)}
                             </td>
                             <td className="px-4 py-3 text-sm text-body font-medium">{mov.usuarioNombre || '-'}</td>
                           </tr>

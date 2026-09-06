@@ -5,6 +5,8 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
     nombreRazonSocial: '',
     telefono: '',
+    dni: '',
+    cuil: '',
   });
 
   useEffect(() => {
@@ -12,11 +14,15 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
       setFormData({
         nombreRazonSocial: initialData.nombreRazonSocial || '',
         telefono: initialData.telefono || '',
+        dni: initialData.dni || '',
+        cuil: initialData.cuil || '',
       });
     } else {
       setFormData({
         nombreRazonSocial: '',
         telefono: '',
+        dni: '',
+        cuil: '',
       });
     }
   }, [initialData, isOpen]);
@@ -81,6 +87,37 @@ const ClienteForm = ({ isOpen, onClose, onSubmit, initialData }) => {
               className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all bg-canvas focus:bg-paper"
               placeholder="Ej: 341 1234567"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="dni" className="block text-sm font-medium text-body mb-1">
+                DNI (opcional)
+              </label>
+              <input
+                type="text"
+                id="dni"
+                name="dni"
+                value={formData.dni}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all bg-canvas focus:bg-paper"
+                placeholder="Ej: 30123456"
+              />
+            </div>
+            <div>
+              <label htmlFor="cuil" className="block text-sm font-medium text-body mb-1">
+                CUIL (opcional)
+              </label>
+              <input
+                type="text"
+                id="cuil"
+                name="cuil"
+                value={formData.cuil}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all bg-canvas focus:bg-paper"
+                placeholder="Ej: 20301234563"
+              />
+            </div>
           </div>
 
           <div className="pt-4 flex gap-3">

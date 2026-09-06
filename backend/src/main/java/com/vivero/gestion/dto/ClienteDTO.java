@@ -15,6 +15,8 @@ public class ClienteDTO {
     private Long id;
     private String nombreRazonSocial;
     private String telefono;
+    private String dni;
+    private String cuil;
     private BigDecimal balanceDinero;
     private Integer balanceBandejas;
 }

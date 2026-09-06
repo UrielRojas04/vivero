@@ -13,8 +13,14 @@ public class FacturaCliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // NotFoundAction.IGNORE: mismo criterio y mismo motivo que Venta.cliente (tarea 3.5 de
+    // tasks.md de clientes-dni-cuil) -- toda venta con Cliente real crea/reutiliza una
+    // FacturaCliente (ver VentaServiceImpl.crearVenta), así que listar ventas de un cliente ya
+    // soft-eliminado atraviesa también esta relación; sin la anotación, Hibernate 6 lanza
+    // FetchNotFoundException en vez de dejar el campo en null.
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Cliente cliente;
 
     @ManyToOne

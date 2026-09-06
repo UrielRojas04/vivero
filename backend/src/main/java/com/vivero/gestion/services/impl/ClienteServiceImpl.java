@@ -82,7 +82,9 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = new Cliente();
         cliente.setNombreRazonSocial(dto.getNombreRazonSocial());
         cliente.setTelefono(dto.getTelefono());
-        
+        cliente.setDni(normalizarDocumento(dto.getDni()));
+        cliente.setCuil(normalizarDocumento(dto.getCuil()));
+
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         if (unidadId != null) {
             cliente.setUnidadNegocio(unidadNegocioRepository.getReferenceById(unidadId));
@@ -129,7 +131,9 @@ public class ClienteServiceImpl implements ClienteService {
         
         cliente.setNombreRazonSocial(dto.getNombreRazonSocial());
         cliente.setTelefono(dto.getTelefono());
-        
+        cliente.setDni(normalizarDocumento(dto.getDni()));
+        cliente.setCuil(normalizarDocumento(dto.getCuil()));
+
         Cliente updated = clienteRepository.save(cliente);
         return mapToDTO(updated);
     }
@@ -263,8 +267,21 @@ public class ClienteServiceImpl implements ClienteService {
                 .id(cliente.getId())
                 .nombreRazonSocial(cliente.getNombreRazonSocial())
                 .telefono(cliente.getTelefono())
+                .dni(cliente.getDni())
+                .cuil(cliente.getCuil())
                 .balanceDinero(cliente.getCuentaCorrienteDinero() != null ? cliente.getCuentaCorrienteDinero().getBalancePesos() : BigDecimal.ZERO)
                 .balanceBandejas(cliente.getCuentaCorrienteBandejas() != null ? cliente.getCuentaCorrienteBandejas().getBalanceBandejas() : 0)
                 .build();
+    }
+
+    // Decisión 1 de design.md (clientes-dni-cuil): un documento en blanco o solo espacios se
+    // persiste como null (una única representación de "ausente"); un valor con contenido se
+    // guarda trimmeado. Reutilizado por create() y update() para dni y cuil.
+    private String normalizarDocumento(String valor) {
+        if (valor == null) {
+            return null;
+        }
+        String trimmed = valor.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

@@ -17,8 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Hallazgo #1 de la auditoría de negocio-abono: el fallback del filtro no debe atribuir
- * silenciosamente a JEFE cualquier usuario que no sea colega@vivero.com. Sólo jefe@vivero.com y
- * colega@vivero.com tienen una cuenta de Abono resuelta; cualquier otro usuario autenticado
+ * silenciosamente a JEFE cualquier usuario que no sea Pablo. Sólo Sergio y
+ * Pablo tienen una cuenta de Abono resuelta; cualquier otro usuario autenticado
  * (ej. un tercer empleado futuro) deja el contexto vacío en vez de heredar la cuenta del jefe.
  */
 @SpringBootTest
@@ -54,12 +54,12 @@ class CuentaAbonoFilterTest {
 
     @Test
     void colegaResuelveCuentaColega() throws Exception {
-        assertThat(ejecutarFiltroComo("colega@vivero.com")).isEqualTo(CuentaAbono.COLEGA);
+        assertThat(ejecutarFiltroComo("Pablo")).isEqualTo(CuentaAbono.COLEGA);
     }
 
     @Test
     void jefeResuelveCuentaJefe() throws Exception {
-        assertThat(ejecutarFiltroComo("jefe@vivero.com")).isEqualTo(CuentaAbono.JEFE);
+        assertThat(ejecutarFiltroComo("Sergio")).isEqualTo(CuentaAbono.JEFE);
     }
 
     @Test
@@ -72,7 +72,7 @@ class CuentaAbonoFilterTest {
 
     @Test
     void contextoSeLimpiaDespuesDeCadaPeticion() throws Exception {
-        ejecutarFiltroComo("colega@vivero.com");
+        ejecutarFiltroComo("Pablo");
         // Fuera del doFilter (ya en el finally del filtro), el ThreadLocal debe estar vacío.
         assertThat(CuentaAbonoContextHolder.getCuentaAbono()).isNull();
     }

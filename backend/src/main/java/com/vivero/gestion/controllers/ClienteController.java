@@ -21,7 +21,14 @@ public class ClienteController {
 
     private final ClienteService clienteService;
 
-    @PreAuthorize("hasAuthority('LEER_CLIENTES')")
+    // Ampliado 2026-09-03 (pedido del dueño): además de LEER_CLIENTES, lo pueden llamar
+    // LEER_SIEMBRAS (buscador de "dueño de lote" en SiembraForm.jsx), LEER_REGISTRO_SEMILLAS
+    // (buscador de cliente en RegistroSemillaForm.jsx) y ESCRIBIR_VENTAS (buscador de cliente en
+    // NuevaVenta.jsx -- la sección "Ventas" del modal de roles ya NO empaqueta LEER_CLIENTES, así
+    // que sin esto un rol de sólo Ventas no podría buscar clientes al cargar una venta). Ninguno
+    // de esos formularios muestra el saldo, así que no hay exposición visual de datos financieros
+    // pese a que ClienteDTO trae el balance completo en la respuesta.
+    @PreAuthorize("hasAnyAuthority('LEER_CLIENTES', 'LEER_SIEMBRAS', 'LEER_REGISTRO_SEMILLAS', 'ESCRIBIR_VENTAS')")
     @GetMapping
     public ResponseEntity<List<ClienteDTO>> getAll() {
         return ResponseEntity.ok(clienteService.getAll());
@@ -33,7 +40,17 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.getById(id));
     }
 
-    @PreAuthorize("hasAuthority('ESCRIBIR_CLIENTES')")
+    // Ampliado 2026-09-05 (pedido del dueño): además de ESCRIBIR_CLIENTES, lo pueden llamar
+    // ESCRIBIR_SIEMBRAS y ESCRIBIR_REGISTRO_SEMILLAS -- los buscadores de "dueño"/"quién trajo"
+    // de SiembraForm.jsx y RegistroSemillaForm.jsx ahora ofrecen crear un cliente real al vuelo
+    // (sólo nombre + teléfono, que es literalmente todo el modelo de Cliente hoy) en vez de
+    // resignarse siempre al nombre libre. Mismo criterio que ya usa el GET de acá arriba.
+    // Ampliado de nuevo (clientes-dni-cuil, Decisión 4 de design.md): se suma ESCRIBIR_VENTAS --
+    // el buscador de cliente de NuevaVenta.jsx ahora también crea un cliente al vuelo, y un rol
+    // de sólo Ventas necesita poder darlo de alta sin depender de otro rol (el GET de acá arriba
+    // ya incluía ESCRIBIR_VENTAS: Ventas podía leer la agenda pero no crear -- esto cierra esa
+    // asimetría). No se crea ningún permiso nuevo, DataInitializer no se toca.
+    @PreAuthorize("hasAnyAuthority('ESCRIBIR_CLIENTES', 'ESCRIBIR_SIEMBRAS', 'ESCRIBIR_REGISTRO_SEMILLAS', 'ESCRIBIR_VENTAS')")
     @PostMapping
     public ResponseEntity<ClienteDTO> create(@RequestBody ClienteDTO clienteDTO) {
         return new ResponseEntity<>(clienteService.create(clienteDTO), HttpStatus.CREATED);

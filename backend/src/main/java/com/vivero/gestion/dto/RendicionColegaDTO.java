@@ -9,13 +9,18 @@ public class RendicionColegaDTO {
     private LocalDateTime fecha;
     private String observacion;
     private String usuarioNombre;
+    private String direccion;
+    private String medioPago;
 
-    public RendicionColegaDTO(Long id, BigDecimal monto, LocalDateTime fecha, String observacion, String usuarioNombre) {
+    public RendicionColegaDTO(Long id, BigDecimal monto, LocalDateTime fecha, String observacion,
+                               String usuarioNombre, String direccion, String medioPago) {
         this.id = id;
         this.monto = monto;
         this.fecha = fecha;
         this.observacion = observacion;
         this.usuarioNombre = usuarioNombre;
+        this.direccion = direccion;
+        this.medioPago = medioPago;
     }
 
     public Long getId() { return id; }
@@ -28,4 +33,8 @@ public class RendicionColegaDTO {
     public void setObservacion(String observacion) { this.observacion = observacion; }
     public String getUsuarioNombre() { return usuarioNombre; }
     public void setUsuarioNombre(String usuarioNombre) { this.usuarioNombre = usuarioNombre; }
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
+    public String getMedioPago() { return medioPago; }
+    public void setMedioPago(String medioPago) { this.medioPago = medioPago; }
 }

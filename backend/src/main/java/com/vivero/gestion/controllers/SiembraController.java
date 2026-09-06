@@ -41,23 +41,31 @@ public class SiembraController {
         return ResponseEntity.ok(siembraService.obtenerPorId(id));
     }
 
+    // Bug de seguridad corregido 2026-09-03: la clase sólo exigía LEER_SIEMBRAS y ningún método
+    // de escritura agregaba ESCRIBIR_SIEMBRAS, así que un usuario de solo lectura podía crear,
+    // editar, borrar y finalizar siembras. Cada método de escritura ahora exige explícitamente
+    // ESCRIBIR_SIEMBRAS (ver SiembraControllerPermisoTest).
     @PostMapping
+    @PreAuthorize("hasAuthority('ESCRIBIR_SIEMBRAS')")
     public ResponseEntity<SiembraDTO> crearSiembra(@RequestBody SiembraDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(siembraService.crearSiembra(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ESCRIBIR_SIEMBRAS')")
     public ResponseEntity<SiembraDTO> actualizarSiembra(@PathVariable Long id, @RequestBody SiembraDTO dto) {
         return ResponseEntity.ok(siembraService.actualizarSiembra(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ESCRIBIR_SIEMBRAS')")
     public ResponseEntity<Void> eliminarSiembra(@PathVariable Long id) {
         siembraService.eliminarSiembra(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/finalizar")
+    @PreAuthorize("hasAuthority('ESCRIBIR_SIEMBRAS')")
     public ResponseEntity<SiembraDTO> finalizarSiembra(
             @PathVariable Long id,
             @RequestParam Long idProducto,
@@ -71,6 +79,7 @@ public class SiembraController {
     }
 
     @PostMapping("/{id}/pasar-a-stock")
+    @PreAuthorize("hasAuthority('ESCRIBIR_SIEMBRAS')")
     public ResponseEntity<SiembraDTO> pasarAStock(
             @PathVariable Long id,
             @RequestBody com.vivero.gestion.dto.PasarStockRequestDTO request) {

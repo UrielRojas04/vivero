@@ -32,24 +32,102 @@ export default function UsuariosAdmin() {
     const [selectedPermisos, setSelectedPermisos] = useState([]);
     const [assignmentMode, setAssignmentMode] = useState('permisos'); // 'secciones' | 'permisos'
     const [selectedSections, setSelectedSections] = useState([]);
-    const { unidadNegocioActiva } = useAuthStore();
-    const isHerramientas = parseInt(unidadNegocioActiva) === 2;
-    const isAbono = parseInt(unidadNegocioActiva) === 3;
+    // Permisos que el rol en edición ya tenía y que el filtro de unidad/Finanzas oculta en esta
+    // pantalla (F1-e): se preservan tal cual al guardar, sin importar qué pestaña se use, para no
+    // borrar accesos ya otorgados que hoy no son visibles desde acá. Ver handleRolSave.
+    const [permisosOcultosPreservados, setPermisosOcultosPreservados] = useState([]);
+    // Negocio al que pertenece el rol en edición/creación (campo real Rol.unidadNegocio). String
+    // vacío = "Todos los negocios" (rol global, null en el backend).
+    const [rolUnidadNegocioId, setRolUnidadNegocioId] = useState('');
+    const { unidadNegocioActiva, negociosDisponibles } = useAuthStore();
+
+    // Misma fuente de verdad que `unidadSlug` en layouts/DashboardLayout.jsx: se deriva del
+    // nombre de la unidad de negocio activa (vía negociosDisponibles), no de un mapeo de ids
+    // hardcodeado, para que ambos archivos lean la unidad activa exactamente igual.
+    const activeBusinessId = parseInt(unidadNegocioActiva);
+    const unidadSlug = negociosDisponibles.find(n => n.id === activeBusinessId)?.nombre?.toLowerCase() || 'vivero';
+
+    // Mapa permiso -> unidades que pueden asignarlo desde la pestaña "Avanzado (Permisos)"
+    // (F1-e). LEER_FINANZAS se oculta SIEMPRE en las 3 unidades: el acceso financiero queda
+    // reservado a los administradores de cada unidad (ver comentario junto a SECTIONS más abajo),
+    // no es algo que se reparta creando roles desde esta pantalla. Este filtrado es SOLO VISUAL:
+    // no toca ProtectedRoute, el menú lateral ni ninguna validación del backend.
+    const PERMISO_UNIDAD_MAP = {
+        LEER_STOCK: ['vivero', 'herramientas', 'abono'],
+        ESCRIBIR_STOCK: ['vivero', 'herramientas', 'abono'],
+        ESCRIBIR_VENTAS: ['vivero', 'herramientas', 'abono'],
+        ADMIN_DB: ['vivero', 'herramientas', 'abono'],
+        LEER_CLIENTES: ['vivero', 'herramientas', 'abono'],
+        ESCRIBIR_CLIENTES: ['vivero', 'herramientas', 'abono'],
+        LEER_FACTURACION: ['vivero', 'herramientas', 'abono'],
+        LEER_INSUMOS: ['vivero', 'abono'],
+        ESCRIBIR_INSUMOS: ['vivero', 'abono'],
+        LEER_BANDEJAS: ['vivero'],
+        ESCRIBIR_BANDEJAS: ['vivero'],
+        LEER_SIEMBRAS: ['vivero'],
+        ESCRIBIR_SIEMBRAS: ['vivero'],
+        ADMIN_SIEMBRAS: ['vivero'],
+        LEER_REGISTRO_SEMILLAS: ['vivero'],
+        ESCRIBIR_REGISTRO_SEMILLAS: ['vivero'],
+        LEER_PEDIDOS: ['herramientas'],
+        ESCRIBIR_PEDIDOS: ['herramientas'],
+        ESCRIBIR_PRODUCCION: ['abono'],
+        LEER_FINANZAS: [], // oculto siempre, ver comentario arriba
+        LEER_CONFIGURACION: ['vivero', 'abono'],
+    };
+    const permisosVisiblesAvanzado = permisos.filter(p => (PERMISO_UNIDAD_MAP[p.nombre] || []).includes(unidadSlug));
+
+    // Filtrado de la lista de ROLES por unidad activa (pedido del dueño 2026-09-03): un rol
+    // "pertenece" a una unidad según el campo real `unidadNegocioId` del rol (modelo de datos,
+    // ya no una heurística por permisos -- esa heurística resultó mal: roles con casi todos los
+    // permisos del sistema, como COLEGA, terminaban "perteneciendo" a las 3 unidades). Un rol con
+    // unidadNegocioId null es global (visible en todas las unidades, ej. JEFE).
+    const rolesVisibles = roles.filter(r => r.unidadNegocioId == null || r.unidadNegocioId === activeBusinessId);
 
     const SECTIONS = [
-        { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS', 'LEER_CLIENTES', 'LEER_STOCK'] },
-        { id: 'facturacion', name: 'Facturación', permNames: ['LEER_FACTURACION', 'LEER_CLIENTES'] },
-        { id: 'productos', name: isHerramientas ? 'Productos' : 'Productos (Plantas)', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'] },
-        ...(!isHerramientas ? [{ id: 'siembras', name: 'Siembras', permNames: ['LEER_SIEMBRAS', 'ESCRIBIR_SIEMBRAS', 'ADMIN_SIEMBRAS'] }] : []),
-        ...(!isHerramientas ? [{ id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'] }] : []),
-        ...(isAbono ? [{ id: 'produccion', name: 'Producción', permNames: ['ESCRIBIR_PRODUCCION'] }] : []),
-        { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'] },
-        { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'] },
-        ...(isHerramientas ? [{ id: 'pedidos', name: 'Pedidos', permNames: ['LEER_PEDIDOS', 'ESCRIBIR_PEDIDOS'] }] : []),
-        ...(isHerramientas ? [{ id: 'finanzas', name: 'Finanzas', permNames: ['LEER_FINANZAS'] }] : []),
-        ...(isHerramientas ? [{ id: 'cheques', name: 'Cheques', permNames: ['LEER_FINANZAS'] }] : []),
-        { id: 'admin', name: 'Usuarios (Admin)', permNames: ['ADMIN_DB'] }
+        // LEER_CLIENTES/LEER_STOCK sacados del paquete 2026-09-03 (pedido del dueño): tildar
+        // "Ventas" ya no debe abrir las secciones completas de Clientes, Productos ni Devolución
+        // de Bandejas en el menú (las tres gateadas por esos permisos). El buscador de cliente y
+        // de producto dentro de Ventas (NuevaVenta.jsx) sigue funcionando igual: GET /clientes y
+        // GET /productos ahora también aceptan ESCRIBIR_VENTAS como autorización (ver
+        // ClienteController/ProductoController), así que no hace falta el permiso completo para
+        // buscar, sólo para ver la sección aparte.
+        { id: 'ventas', name: 'Ventas', permNames: ['ESCRIBIR_VENTAS'], unidades: ['vivero', 'herramientas', 'abono'] },
+        { id: 'facturacion', name: 'Facturación', permNames: ['LEER_FACTURACION', 'LEER_CLIENTES'], unidades: ['vivero', 'herramientas', 'abono'] },
+        { id: 'productos', name: unidadSlug === 'vivero' ? 'Productos (Plantas)' : 'Productos', permNames: ['LEER_STOCK', 'ESCRIBIR_STOCK'], unidades: ['vivero', 'herramientas', 'abono'] },
+        // ADMIN_SIEMBRAS deliberadamente fuera de permNames: es un permiso que hoy no verifica
+        // ningún @PreAuthorize/hasPermission del backend (verificado 2026-09-03) y que una
+        // casilla común de "Siembras" lo reparta confunde -- da la impresión de un permiso de
+        // administrador cuando no controla nada. Sigue existiendo en el enum y tildable a mano
+        // desde "Avanzado".
+        { id: 'siembras', name: 'Siembras', permNames: ['LEER_SIEMBRAS', 'ESCRIBIR_SIEMBRAS'], unidades: ['vivero'] },
+        // Independiente de "Siembras" (permisos propios LEER_REGISTRO_SEMILLAS/
+        // ESCRIBIR_REGISTRO_SEMILLAS desde 2026-09-03, pedido del dueño): tildar una casilla no
+        // implica la otra.
+        { id: 'registro-semillas', name: 'Registro de Semillas', permNames: ['LEER_REGISTRO_SEMILLAS', 'ESCRIBIR_REGISTRO_SEMILLAS'], unidades: ['vivero'] },
+        { id: 'insumos', name: 'Insumos', permNames: ['LEER_INSUMOS', 'ESCRIBIR_INSUMOS'], unidades: ['vivero', 'abono'] },
+        { id: 'produccion', name: 'Producción', permNames: ['ESCRIBIR_PRODUCCION'], unidades: ['abono'] },
+        // Faltaban en el modal aunque ya estaban en el menú de Abono (navGroups en
+        // DashboardLayout.jsx) -- agregadas 2026-09-03. Usan el mismo permiso que ya exige la
+        // ruta de cada una en App.jsx/DashboardLayout.jsx.
+        { id: 'traslados-abono', name: 'Traslados', permNames: ['ESCRIBIR_STOCK'], unidades: ['abono'] },
+        { id: 'rendiciones-abono', name: 'Rendiciones', permNames: ['ESCRIBIR_VENTAS'], unidades: ['abono'] },
+        { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'], unidades: ['vivero', 'herramientas', 'abono'] },
+        { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'], unidades: ['vivero'] },
+        { id: 'pedidos', name: 'Pedidos', permNames: ['LEER_PEDIDOS', 'ESCRIBIR_PEDIDOS'], unidades: ['herramientas'] },
+        // Finanzas y Cheques NO tienen casilla acá -- ausencia deliberada, no un olvido. El acceso
+        // financiero queda reservado a los administradores de cada unidad (JEFE en Vivero; JEFE y
+        // Hernán en Herramientas; JEFE y Colega en Abono), que ya lo tienen otorgado; no es algo
+        // que se reparta creando roles desde esta pantalla (pedido explícito del dueño).
+        { id: 'admin', name: 'Usuarios (Admin)', permNames: ['ADMIN_DB'], unidades: ['vivero', 'herramientas', 'abono'] },
+        // Permiso dedicado (2026-09-05, pedido del dueño): antes la sección Configuración de
+        // Vivero/Abono dependía únicamente de ADMIN_DB, sin casilla propia -- ahora se puede
+        // otorgar sola, sin dar de paso "Usuarios (Admin)". Sólo Vivero/Abono: en Herramientas
+        // Configuración sigue visible para cualquiera con acceso a esa unidad (sin cambios, ver
+        // DashboardLayout.jsx).
+        { id: 'configuracion', name: 'Configuración', permNames: ['LEER_CONFIGURACION'], unidades: ['vivero', 'abono'] }
     ];
+    const seccionesVisibles = SECTIONS.filter(s => s.unidades.includes(unidadSlug));
 
     useEffect(() => {
         if (!token) return;
@@ -128,13 +206,33 @@ export default function UsuariosAdmin() {
         if (rol) {
             setRolNombre(rol.nombre);
             setSelectedPermisos(rol.permisos.map(p => p.id));
-            setAssignmentMode('permisos'); // By default when editing, unless we want to try to infer sections
-            setSelectedSections([]);
+            setAssignmentMode('permisos'); // Pestaña por defecto al editar, pero "Por Secciones" también se precarga (ver abajo)
+            // Bug real (2026-09-04): "Por Secciones" siempre abría sin ninguna casilla tildada al
+            // editar un rol, aunque el rol sí tuviera esos permisos -- sólo se precargaba
+            // selectedPermisos (pestaña Avanzado), nunca selectedSections. Se infiere acá: una
+            // sección se tilda si el rol ya tiene TODOS sus permNames (no alcanza con alguno).
+            const nombresDelRol = new Set(rol.permisos.map(p => p.nombre));
+            setSelectedSections(
+                seccionesVisibles
+                    .filter(s => s.permNames.every(nombre => nombresDelRol.has(nombre)))
+                    .map(s => s.id)
+            );
+            // F1-e: ids de permisos que el rol ya tiene y que el filtro de unidad/Finanzas
+            // esconde en esta pantalla (ej. un rol de Herramientas con LEER_SIEMBRAS asignado a
+            // mano, o cualquier rol con LEER_FINANZAS). Se guardan para que handleRolSave los
+            // vuelva a incluir siempre, sin importar la pestaña usada para guardar.
+            const idsVisibles = new Set(permisosVisiblesAvanzado.map(p => p.id));
+            setPermisosOcultosPreservados(rol.permisos.filter(p => !idsVisibles.has(p.id)).map(p => p.id));
+            setRolUnidadNegocioId(rol.unidadNegocioId != null ? String(rol.unidadNegocioId) : '');
         } else {
             setRolNombre('');
             setSelectedPermisos([]);
             setAssignmentMode('secciones');
             setSelectedSections([]);
+            setPermisosOcultosPreservados([]);
+            // Conveniencia: precargar el negocio activo actual, pero dejando que el admin lo
+            // cambie a "Todos los negocios" u otra unidad.
+            setRolUnidadNegocioId(String(activeBusinessId));
         }
         setModalRolOpen(true);
     };
@@ -158,14 +256,24 @@ export default function UsuariosAdmin() {
         if (assignmentMode === 'permisos') {
             finalPermisoIds = selectedPermisos;
         } else {
-            // Find IDs for all permissions in the selected sections
-            const neededNames = SECTIONS.filter(s => selectedSections.includes(s.id))
+            // Find IDs for all permissions in the selected sections (sólo las visibles en esta
+            // unidad -- seccionesVisibles, no SECTIONS a secas)
+            const neededNames = seccionesVisibles.filter(s => selectedSections.includes(s.id))
                                         .flatMap(s => s.permNames);
             finalPermisoIds = permisos.filter(p => neededNames.includes(p.nombre))
                                       .map(p => p.id);
         }
 
-        const payload = { nombre: rolNombre, permisoIds: finalPermisoIds };
+        // F1-e: nunca perder permisos que el rol ya tenía y que el filtro de unidad/Finanzas
+        // esconde en esta pantalla, sin importar qué pestaña se usó para guardar (ver
+        // openRolModal). Para un rol nuevo, permisosOcultosPreservados está vacío.
+        finalPermisoIds = Array.from(new Set([...finalPermisoIds, ...permisosOcultosPreservados]));
+
+        const payload = {
+            nombre: rolNombre,
+            permisoIds: finalPermisoIds,
+            unidadNegocioId: rolUnidadNegocioId === '' ? null : parseInt(rolUnidadNegocioId),
+        };
         try {
             if (editingRol) await api.put(`/roles/${editingRol.id}`, payload);
             else await api.post('/roles', payload);
@@ -244,7 +352,7 @@ export default function UsuariosAdmin() {
                           <span key={idx} className="px-2 py-1 bg-accent-soft text-accent-ink text-xs font-medium rounded-full">{r.nombre}</span>
                         ))}
                       </div>
-                      {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
+                      {u.username === 'Sergio' || u.username === 'admin2' ? (
                         <span className="text-warn-ink italic text-sm text-center py-1">Usuario protegido</span>
                       ) : (
                         <div className="flex items-center gap-2 pt-3 border-t border-line">
@@ -300,7 +408,7 @@ export default function UsuariosAdmin() {
                             )}
                           </td>
                           <td className="p-4 text-right">
-                            {u.username === 'jefe@vivero.com' || u.username === 'admin2' ? (
+                            {u.username === 'Sergio' || u.username === 'admin2' ? (
                               <span className="text-warn-ink italic text-sm">Usuario protegido</span>
                             ) : (
                               <>
@@ -331,7 +439,7 @@ export default function UsuariosAdmin() {
               <div className="space-y-3">
                 {/* MOBILE: Cards */}
                 <div className="grid grid-cols-1 gap-3 sm:hidden">
-                  {roles.map(r => (
+                  {rolesVisibles.map(r => (
                     <div key={r.id} className="bg-paper border border-line rounded-panel p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-3">
@@ -393,7 +501,7 @@ export default function UsuariosAdmin() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
-                      {roles.map(r => (
+                      {rolesVisibles.map(r => (
                         <tr key={r.id} className="hover:bg-canvas transition-colors">
                           <td className="p-4 text-muted">#{r.id}</td>
                           <td className="p-4 font-medium text-ink">
@@ -457,8 +565,14 @@ export default function UsuariosAdmin() {
                                 </div>
                                 <div className="pt-4 border-t border-line">
                                     <h3 className="text-lg font-semibold text-ink mb-3">Roles Asignados</h3>
+                                    {/* rolesVisibles filtra por unidad activa (mismo criterio que
+                                        rolPerteneceAUnidad más arriba). selectedRoles se carga
+                                        completo desde usuario.roles al abrir el modal (línea
+                                        ~152) y sólo se togglea por click -- un rol oculto que el
+                                        usuario ya tenga asignado de otra unidad no se pierde al
+                                        guardar, simplemente no se puede destildar desde acá. */}
                                     <div className="grid grid-cols-2 gap-3">
-                                        {roles.map(r => (
+                                        {rolesVisibles.map(r => (
                                             <label key={r.id} className="flex items-center space-x-3 bg-canvas p-3 rounded-base border border-line cursor-pointer hover:bg-thead transition-colors">
                                                 <input
                                                     type="checkbox"
@@ -495,6 +609,12 @@ export default function UsuariosAdmin() {
                                     <label className="block text-sm font-medium text-body mb-1">Nombre del Rol</label>
                                     <input type="text" required value={rolNombre} onChange={(e) => setRolNombre(e.target.value.toUpperCase())} className="w-full p-2.5 border border-line-strong rounded-base focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all" />
                                 </div>
+                                {/* Sin select de Negocio, ni al crear ni al editar (pedido del dueño): las
+                                    secciones/permisos de un rol suelen ser específicas de un negocio (ej.
+                                    Siembras sólo existe en Vivero), así que dejar cambiar el negocio de un rol
+                                    ya creado podría dejarlo con permisos que no tienen sentido en el negocio
+                                    nuevo. El negocio se fija una sola vez, automáticamente, al crear el rol
+                                    (activeBusinessId en openRolModal) y no se vuelve a tocar desde acá. */}
                                 <div className="pt-4 border-t border-line">
                                     <div className="flex justify-between items-center mb-3">
                                         <h3 className="text-sm font-bold text-body">Asignación de Accesos</h3>
@@ -518,7 +638,7 @@ export default function UsuariosAdmin() {
 
                                     {assignmentMode === 'secciones' ? (
                                         <div className="grid grid-cols-2 gap-3">
-                                            {SECTIONS.map(s => (
+                                            {seccionesVisibles.map(s => (
                                                 <label key={s.id} className="flex items-center space-x-3 bg-canvas p-3 rounded-base border border-line cursor-pointer hover:bg-thead transition-colors">
                                                     <input
                                                         type="checkbox"
@@ -532,7 +652,7 @@ export default function UsuariosAdmin() {
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3">
-                                            {permisos.map(p => (
+                                            {permisosVisiblesAvanzado.map(p => (
                                                 <label key={p.id} className="flex items-center space-x-3 bg-canvas p-3 rounded-base border border-line cursor-pointer hover:bg-thead transition-colors">
                                                     <input
                                                         type="checkbox"

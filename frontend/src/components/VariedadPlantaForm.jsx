@@ -12,6 +12,7 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
+    semillasPorGramo: '',
     diasEnero: 30,
     diasFebrero: 30,
     diasMarzo: 30,
@@ -33,6 +34,7 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
       setFormData({
         nombre: variedad.nombre || '',
         descripcion: variedad.descripcion || '',
+        semillasPorGramo: variedad.semillasPorGramo ?? '',
         diasEnero: variedad.diasEnero || 30,
         diasFebrero: variedad.diasFebrero || 30,
         diasMarzo: variedad.diasMarzo || 30,
@@ -139,7 +141,12 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.nombre.trim()) return;
-    mutation.mutate(formData);
+    mutation.mutate({
+      ...formData,
+      // '' -> null (mismo patrón que contenidoPorSobre en RegistroSemillaForm.jsx): el backend
+      // espera un BigDecimal o nada, un string vacío rompe la deserialización.
+      semillasPorGramo: formData.semillasPorGramo === '' ? null : formData.semillasPorGramo,
+    });
   };
 
   return (
@@ -232,6 +239,19 @@ export default function VariedadPlantaForm({ variedad, onClose }) {
                 </div>
               </>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-body mb-1">Semillas por gramo (opcional)</label>
+            <FormattedNumberInput
+              className="w-full rounded-base border border-line px-4 py-2.5 text-ink focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
+              value={formData.semillasPorGramo}
+              onChange={(val) => setFormData({ ...formData, semillasPorGramo: val })}
+              placeholder="Ej: 850"
+            />
+            <p className="mt-1 text-xs text-muted">
+              Habilita convertir registros de semillas cargados en gramos a cantidad de semillas y bandejas sugeridas. Varía mucho según la especie -- dejalo vacío si no lo sabés.
+            </p>
           </div>
 
           <div>

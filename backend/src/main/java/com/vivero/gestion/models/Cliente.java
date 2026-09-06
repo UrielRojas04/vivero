@@ -33,6 +33,10 @@ public class Cliente {
 
     private String telefono;
 
+    private String dni;
+
+    private String cuil;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 

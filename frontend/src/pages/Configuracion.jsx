@@ -22,8 +22,16 @@ export default function Configuracion() {
   const unidadSlug = negociosDisponibles.find(n => n.id === activeBusinessId)?.nombre?.toLowerCase() || 'vivero';
   const isAbono = unidadSlug === 'abono';
 
+  // Sin animate-fadeIn en el div de abajo a propósito (bug real, 2026-09-04): esa clase estaba
+  // puesta en el CONTENEDOR de toda la página, no en un modal -- un elemento con una animación
+  // CSS activa se convierte en el "contenedor de referencia" para sus descendientes con
+  // position:fixed, así que los modales abiertos desde acá (VariedadPlantaForm, etc., todos fixed
+  // inset-0) quedaban atrapados dentro de este div en vez de cubrir toda la pantalla: el fondo
+  // desenfocado no llegaba hasta la sidebar. El fade-in de entrada de la página no vale ese costo
+  // -- si algún modal necesita su propia animación de aparición, animate-fadeIn va en el modal
+  // mismo (así ya lo hacen ProductoForm.jsx, InsumoForm.jsx, etc.), no en un ancestro.
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fadeIn">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-ink flex items-center gap-3">
           <div className="p-2 bg-accent-soft rounded-base text-accent-ink">
@@ -34,8 +42,10 @@ export default function Configuracion() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Vivero Configs require ADMIN_DB */}
-        {hasPermission('ADMIN_DB') && unidadSlug === 'vivero' && (
+        {/* Vivero Configs: ADMIN_DB (histórico) o LEER_CONFIGURACION (permiso dedicado nuevo,
+            2026-09-05 -- pedido del dueño de poder otorgar esta sección desde el modal de roles
+            sin depender de ADMIN_DB, que es un permiso más amplio de "Usuarios (Admin)"). */}
+        {(hasPermission('ADMIN_DB') || hasPermission('LEER_CONFIGURACION')) && unidadSlug === 'vivero' && (
           <>
             <button
               onClick={() => setActiveSection('plantas')}
@@ -150,8 +160,8 @@ export default function Configuracion() {
           </button>
         )}
 
-        {/* Abono Configs require ADMIN_DB */}
-        {hasPermission('ADMIN_DB') && isAbono && (
+        {/* Abono Configs: ADMIN_DB (histórico) o LEER_CONFIGURACION (ver comentario arriba) */}
+        {(hasPermission('ADMIN_DB') || hasPermission('LEER_CONFIGURACION')) && isAbono && (
           <button
             onClick={() => setActiveSection('abono')}
             className={`bg-paper p-6 rounded-panel border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
@@ -178,8 +188,8 @@ export default function Configuracion() {
           </button>
         )}
 
-        {/* Abono Categorias require ADMIN_DB */}
-        {hasPermission('ADMIN_DB') && isAbono && (
+        {/* Abono Categorias: ADMIN_DB (histórico) o LEER_CONFIGURACION (ver comentario arriba) */}
+        {(hasPermission('ADMIN_DB') || hasPermission('LEER_CONFIGURACION')) && isAbono && (
           <button
             onClick={() => setActiveSection('categorias-abono')}
             className={`bg-paper p-6 rounded-panel border transition-all group flex items-start gap-4 cursor-pointer text-left w-full ${
@@ -208,7 +218,10 @@ export default function Configuracion() {
       </div>
 
       {activeSection && (
-        <div className="pt-4 animate-fadeIn">
+        // Sin animate-fadeIn (mismo bug de arriba): este div es el padre directo de
+        // VariedadesPlantas/Proveedores/etc., que abren sus propios modales fixed inset-0 -- era
+        // el trap más cercano al problema real.
+        <div className="pt-4">
           {activeSection === 'plantas' && <VariedadesPlantas />}
           {activeSection === 'bandejas' && <VariedadesBandejas />}
           {activeSection === 'herramientas' && <ConfiguracionHerramientas />}

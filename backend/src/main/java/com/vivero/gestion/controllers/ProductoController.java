@@ -36,8 +36,12 @@ public class ProductoController {
         return ResponseEntity.ok(dto);
     }
 
+    // Ampliado 2026-09-03 (pedido del dueño): ESCRIBIR_VENTAS también autoriza -- el buscador de
+    // producto en NuevaVenta.jsx (productosApi.getAll()) lo necesita, ya que la sección "Ventas"
+    // del modal de roles ya NO empaqueta LEER_STOCK (para que un rol de sólo Ventas no vea la
+    // sección completa de Productos en el menú).
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('LEER_STOCK', 'ESCRIBIR_PRODUCCION')")
+    @PreAuthorize("hasAnyAuthority('LEER_STOCK', 'ESCRIBIR_PRODUCCION', 'ESCRIBIR_VENTAS')")
     public ResponseEntity<List<ProductoDTO>> obtenerTodosLosProductos() {
         List<ProductoDTO> dtos = productoService.obtenerTodosLosProductos();
         return ResponseEntity.ok(dtos);

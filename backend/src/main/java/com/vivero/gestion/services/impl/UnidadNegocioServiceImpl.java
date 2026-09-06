@@ -34,6 +34,7 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         model.setActivo(dto.isActivo());
         if (dto.getModeloCosto() != null) model.setModeloCosto(dto.getModeloCosto());
         if (dto.getPorcentajeRepartoColega() != null) model.setPorcentajeRepartoColega(dto.getPorcentajeRepartoColega());
+        model.setRepartoSobreVentasColega(dto.isRepartoSobreVentasColega());
         return mapToDTO(repository.save(model));
     }
 
@@ -51,8 +52,16 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         if (dto.getIvaPorcentaje() != null) model.setIvaPorcentaje(dto.getIvaPorcentaje());
         if (dto.getModeloCosto() != null) model.setModeloCosto(dto.getModeloCosto());
         if (dto.getPorcentajeRepartoColega() != null) model.setPorcentajeRepartoColega(dto.getPorcentajeRepartoColega());
+        model.setRepartoSobreVentasColega(dto.isRepartoSobreVentasColega());
         model.setActivo(dto.isActivo());
         return mapToDTO(repository.save(model));
+    }
+
+    @Override
+    public boolean esHerramientas(Long id) {
+        return repository.findById(id)
+                .map(u -> "Herramientas".equalsIgnoreCase(u.getNombre()))
+                .orElse(false);
     }
 
     private UnidadNegocioDTO mapToDTO(UnidadNegocio model) {
@@ -65,6 +74,7 @@ public class UnidadNegocioServiceImpl implements UnidadNegocioService {
         dto.setActivo(model.isActivo());
         dto.setModeloCosto(model.getModeloCosto());
         dto.setPorcentajeRepartoColega(model.getPorcentajeRepartoColega());
+        dto.setRepartoSobreVentasColega(model.isRepartoSobreVentasColega());
         return dto;
     }
 }

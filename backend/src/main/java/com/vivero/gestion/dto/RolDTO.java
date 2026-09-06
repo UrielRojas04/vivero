@@ -16,4 +16,6 @@ public class RolDTO {
     private String nombre;
     private List<PermisoDTO> permisos;
     private boolean enUso;
+    private Long unidadNegocioId;
+    private String unidadNegocioNombre;
 }

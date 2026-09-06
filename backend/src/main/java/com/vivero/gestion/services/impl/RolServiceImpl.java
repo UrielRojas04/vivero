@@ -13,7 +13,9 @@ import com.vivero.gestion.dto.RolDTO;
 import com.vivero.gestion.dto.RolRequestDTO;
 import com.vivero.gestion.models.PermisoEnum;
 import com.vivero.gestion.models.Rol;
+import com.vivero.gestion.models.UnidadNegocio;
 import com.vivero.gestion.repositories.RolRepository;
+import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.services.RolService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class RolServiceImpl implements RolService {
 
     private final RolRepository rolRepository;
+    private final UnidadNegocioRepository unidadNegocioRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,14 +53,21 @@ public class RolServiceImpl implements RolService {
 
         Rol rol = new Rol();
         rol.setNombre(dto.getNombre());
-        
+
         Set<PermisoEnum> permisos = dto.getPermisoIds().stream()
                 .map(PermisoEnum::fromId)
                 .collect(Collectors.toSet());
         rol.setPermisos(permisos);
-        
+        rol.setUnidadNegocio(resolverUnidadNegocio(dto.getUnidadNegocioId()));
+
         Rol saved = rolRepository.save(rol);
         return mapToDTO(saved);
+    }
+
+    private UnidadNegocio resolverUnidadNegocio(Long unidadNegocioId) {
+        if (unidadNegocioId == null) return null;
+        return unidadNegocioRepository.findById(unidadNegocioId)
+                .orElseThrow(() -> new RuntimeException("Unidad de negocio no encontrada"));
     }
 
     @Override
@@ -71,13 +81,14 @@ public class RolServiceImpl implements RolService {
         }
 
         rol.setNombre(dto.getNombre());
-        
+
         Set<PermisoEnum> permisos = dto.getPermisoIds().stream()
                 .map(PermisoEnum::fromId)
                 .collect(Collectors.toSet());
         rol.getPermisos().clear();
         rol.getPermisos().addAll(permisos);
-        
+        rol.setUnidadNegocio(resolverUnidadNegocio(dto.getUnidadNegocioId()));
+
         Rol saved = rolRepository.save(rol);
         return mapToDTO(saved);
     }
@@ -114,12 +125,21 @@ public class RolServiceImpl implements RolService {
                 .collect(Collectors.toList());
                 
         boolean enUso = rolRepository.isRolInUse(rol.getId());
-                
+
+        Long unidadNegocioId = null;
+        String unidadNegocioNombre = null;
+        if (rol.getUnidadNegocio() != null) {
+            unidadNegocioId = rol.getUnidadNegocio().getId();
+            unidadNegocioNombre = rol.getUnidadNegocio().getNombre();
+        }
+
         return RolDTO.builder()
                 .id(rol.getId())
                 .nombre(rol.getNombre())
                 .permisos(permisos)
                 .enUso(enUso)
+                .unidadNegocioId(unidadNegocioId)
+                .unidadNegocioNombre(unidadNegocioNombre)
                 .build();
     }
 }

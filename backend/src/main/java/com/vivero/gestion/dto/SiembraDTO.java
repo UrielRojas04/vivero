@@ -21,4 +21,8 @@ public class SiembraDTO {
     private TipoOrigenSiembra tipoOrigen;
     private Integer cantidad;
     private EstadoSiembra estado;
+    private Long registroSemillaId;
+    private String registroSemillaLote;
+    private Long clienteId;
+    private String observaciones;
 }

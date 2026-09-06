@@ -1,8 +1,10 @@
 package com.vivero.gestion.controllers;
 
+import com.vivero.gestion.models.CuentaAbono;
 import com.vivero.gestion.models.RendicionColega;
 import com.vivero.gestion.repositories.RendicionColegaRepository;
 import com.vivero.gestion.repositories.UnidadNegocioRepository;
+import com.vivero.gestion.security.CuentaAbonoContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +54,9 @@ class RendicionColegaControllerPermisoTest {
     @AfterEach
     void limpiarContexto() {
         SecurityContextHolder.clearContext();
+        CuentaAbonoContextHolder.clear();
         unidadNegocioRepository.findByNombre("Abono").ifPresent(abono ->
-                rendicionRepository.findAllByUnidadNegocioIdOrderByFechaDesc(abono.getId(), PageRequest.of(0, 5))
+                rendicionRepository.findAllByUnidadNegocioIdOrderByFechaDescIdDesc(abono.getId(), PageRequest.of(0, 5))
                         .stream()
                         .filter(r -> OBSERVACION_TEST.equals(r.getObservacion()))
                         .forEach(rendicionRepository::delete));
@@ -66,7 +69,12 @@ class RendicionColegaControllerPermisoTest {
         SecurityContextHolder.getContext().setAuthentication(
                 // Username real (sembrado en DataInitializer): RendicionColegaServiceImpl busca
                 // el usuario autenticado por username para adjuntarlo a la RendicionColega.
-                new UsernamePasswordAuthenticationToken("jefe@vivero.com", null, authorities));
+                new UsernamePasswordAuthenticationToken("Sergio", null, authorities));
+        // La dirección de la rendición se deriva de CuentaAbonoContextHolder (ver
+        // RendicionColegaServiceImpl), que normalmente puebla CuentaAbonoFilter según el username
+        // -- acá se llama al controller directo, sin pasar por el filtro, así que se fija a mano
+        // para que coincida con "Sergio" (mismo patrón que CuentaAbonoFilterTest).
+        CuentaAbonoContextHolder.setCuentaAbono(CuentaAbono.JEFE);
     }
 
     @Test

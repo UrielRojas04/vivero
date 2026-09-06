@@ -27,7 +27,7 @@ const Login = () => {
         };
         const negocios = response.data.negociosDisponibles || [];
         login(response.data.token, user, negocios);
-        const isJefe = user.username === 'jefe@vivero.com';
+        const isJefe = user.username === 'Sergio';
         navigate(isJefe ? '/dashboard' : '/productos');
       } else {
         setError('Respuesta inválida del servidor.');

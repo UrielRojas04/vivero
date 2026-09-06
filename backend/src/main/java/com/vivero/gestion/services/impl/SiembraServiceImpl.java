@@ -9,14 +9,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.vivero.gestion.dto.SiembraDTO;
+import com.vivero.gestion.models.Cliente;
+import com.vivero.gestion.models.EstadoRegistroSemilla;
 import com.vivero.gestion.models.EstadoSiembra;
 import com.vivero.gestion.models.MovimientoStock;
 import com.vivero.gestion.models.Producto;
+import com.vivero.gestion.models.RegistroSemilla;
 import com.vivero.gestion.models.Siembra;
 import com.vivero.gestion.models.TipoOrigenSiembra;
 import com.vivero.gestion.models.Usuario;
+import com.vivero.gestion.repositories.ClienteRepository;
 import com.vivero.gestion.repositories.MovimientoStockRepository;
 import com.vivero.gestion.repositories.ProductoRepository;
+import com.vivero.gestion.repositories.RegistroSemillaRepository;
 import com.vivero.gestion.repositories.SiembraRepository;
 import com.vivero.gestion.repositories.UsuarioRepository;
 import com.vivero.gestion.repositories.VariedadBandejaRepository;
@@ -37,6 +42,8 @@ public class SiembraServiceImpl implements SiembraService {
     private final UsuarioRepository usuarioRepository;
     private final VariedadPlantaRepository variedadPlantaRepository;
     private final VariedadBandejaRepository variedadBandejaRepository;
+    private final RegistroSemillaRepository registroSemillaRepository;
+    private final ClienteRepository clienteRepository;
 
     @Override
     public List<SiembraDTO> obtenerTodas() {
@@ -73,6 +80,59 @@ public class SiembraServiceImpl implements SiembraService {
         }
         if (dto.getTipoOrigen() == TipoOrigenSiembra.SUELTO) {
             dto.setCodigoLote(null);
+            // Un origen SUELTO no viene de ningún sobre registrado (change
+            // trazabilidad-semillas-siembras, 2026-09-04): mismo criterio que codigoLote, se
+            // descarta cualquier vínculo recibido en vez de rechazar el registro.
+            dto.setRegistroSemillaId(null);
+        }
+    }
+
+    /**
+     * Vincula (o desvincula) una Siembra con un RegistroSemilla existente (change
+     * trazabilidad-semillas-siembras, Decisión 2 de design.md). El estado del registro pasa a
+     * SEMBRADAS en el momento de vincular -- no espera a finalizarSiembra -- y sólo la
+     * primera vez (SEMBRADAS -> SEMBRADAS es idempotente, permite repartir un mismo registro
+     * en varias tandas). Un registro CONSUMIDA no se puede vincular.
+     */
+    private void vincularRegistroSemilla(Siembra siembra, Long registroSemillaId) {
+        if (registroSemillaId == null) {
+            siembra.setRegistroSemilla(null);
+            return;
+        }
+
+        RegistroSemilla registro = registroSemillaRepository.findById(registroSemillaId)
+                .orElseThrow(() -> new RuntimeException("Registro de semilla no encontrado con ID: " + registroSemillaId));
+
+        if (registro.getEstado() == EstadoRegistroSemilla.CONSUMIDA) {
+            throw new RuntimeException("No se puede vincular un registro de semilla ya consumido");
+        }
+
+        siembra.setRegistroSemilla(registro);
+
+        if (registro.getEstado() == EstadoRegistroSemilla.SIN_SEMBRAR) {
+            registro.setEstado(EstadoRegistroSemilla.SEMBRADAS);
+            registroSemillaRepository.save(registro);
+        }
+    }
+
+    /**
+     * Vincula (o desvincula) una Siembra con un Cliente real (pedido del dueño 2026-09-05:
+     * "ahora sí necesitamos asociar la siembra a un cliente"). Con clienteId, dueno es un
+     * snapshot obligatorio del nombre del cliente -- NUNCA lo que venga en el DTO -- mismo
+     * patrón exacto que RegistroSemilla con su cliente/nombreQuienTrajo. Sin clienteId (el
+     * caso "Jefe / Vivero propio", o un nombre libre sin cliente real vinculado -- vuelta
+     * atrás del 2026-09-05, ver comentario en Siembra.cliente), se usa el dueno tal cual
+     * venga en el DTO. Este método nunca exigió cliente real: ese comportamiento, cuando
+     * existió, vivía sólo en el frontend.
+     */
+    private void aplicarCliente(Siembra siembra, SiembraDTO dto) {
+        if (dto.getClienteId() != null) {
+            Cliente cliente = clienteRepository.findById(dto.getClienteId()).orElse(null);
+            siembra.setCliente(cliente);
+            siembra.setDueno(cliente != null ? cliente.getNombreRazonSocial() : dto.getDueno());
+        } else {
+            siembra.setCliente(null);
+            siembra.setDueno(dto.getDueno());
         }
     }
 
@@ -110,14 +170,16 @@ public class SiembraServiceImpl implements SiembraService {
             siembra.setVariedadBandeja(variedadBandejaRepository.findById(dto.getVariedadBandeja().getId()).orElse(null));
         }
         siembra.setFechaEstimada(dto.getFechaEstimada());
-        siembra.setDueno(dto.getDueno());
+        aplicarCliente(siembra, dto);
         siembra.setCodigoLote(dto.getCodigoLote());
         siembra.setNumeroSiembra(dto.getNumeroSiembra());
         siembra.setFechaSiembraInicio(dto.getFechaSiembraInicio());
         siembra.setFechaSiembraFin(dto.getFechaSiembraFin());
         siembra.setTipoOrigen(dto.getTipoOrigen());
         siembra.setCantidad(dto.getCantidad());
+        siembra.setObservaciones(dto.getObservaciones());
         siembra.setEstado(EstadoSiembra.EN_PROCESO);
+        vincularRegistroSemilla(siembra, dto.getRegistroSemillaId());
 
         Siembra saved = siembraRepository.save(siembra);
         return mapToDTO(saved);
@@ -139,13 +201,15 @@ public class SiembraServiceImpl implements SiembraService {
             siembra.setVariedadBandeja(variedadBandejaRepository.findById(dto.getVariedadBandeja().getId()).orElse(null));
         }
         siembra.setFechaEstimada(dto.getFechaEstimada());
-        siembra.setDueno(dto.getDueno());
+        aplicarCliente(siembra, dto);
         siembra.setCodigoLote(dto.getCodigoLote());
         siembra.setNumeroSiembra(dto.getNumeroSiembra());
         siembra.setFechaSiembraInicio(dto.getFechaSiembraInicio());
         siembra.setFechaSiembraFin(dto.getFechaSiembraFin());
         siembra.setTipoOrigen(dto.getTipoOrigen());
         siembra.setCantidad(dto.getCantidad());
+        siembra.setObservaciones(dto.getObservaciones());
+        vincularRegistroSemilla(siembra, dto.getRegistroSemillaId());
 
         Siembra saved = siembraRepository.save(siembra);
         return mapToDTO(saved);
@@ -282,6 +346,17 @@ public class SiembraServiceImpl implements SiembraService {
         dto.setTipoOrigen(siembra.getTipoOrigen());
         dto.setCantidad(siembra.getCantidad());
         dto.setEstado(siembra.getEstado());
+        dto.setObservaciones(siembra.getObservaciones());
+
+        if (siembra.getCliente() != null) {
+            dto.setClienteId(siembra.getCliente().getId());
+        }
+
+        if (siembra.getRegistroSemilla() != null) {
+            dto.setRegistroSemillaId(siembra.getRegistroSemilla().getId());
+            dto.setRegistroSemillaLote(siembra.getRegistroSemilla().getLote());
+        }
+
         return dto;
     }
 }

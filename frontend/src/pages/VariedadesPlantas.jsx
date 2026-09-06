@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Leaf } from 'lucide-react';
+import { Plus, Edit2, Trash2, Leaf, Search } from 'lucide-react';
 import { variedadesPlantasApi } from '../api/variedades-plantas.api';
 import { useUIStore } from '../store/useUIStore';
 import VariedadPlantaForm from '../components/VariedadPlantaForm';
@@ -8,7 +8,8 @@ import VariedadPlantaForm from '../components/VariedadPlantaForm';
 export default function VariedadesPlantas() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVariedad, setSelectedVariedad] = useState(null);
-  
+  const [searchTerm, setSearchTerm] = useState('');
+
   const queryClient = useQueryClient();
   const { pushToast, askConfirm } = useUIStore();
 
@@ -67,28 +68,49 @@ export default function VariedadesPlantas() {
 
   if (isLoading) return <div className="p-6 text-muted">Cargando...</div>;
 
+  const variedadesFiltradas = searchTerm
+    ? variedades.filter((v) =>
+        (v.nombre && v.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (v.descripcion && v.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    : variedades;
+
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-end mb-2">
+      <div className="bg-paper rounded-panel border border-line p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative w-full md:max-w-md">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-5 h-5 text-faint" />
+          </span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre o descripción..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-line rounded-base focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-canvas/50 transition-all"
+          />
+        </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-paper rounded-base hover:brightness-95 transition-colors cursor-pointer font-medium"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-accent text-paper rounded-base hover:brightness-95 transition-colors cursor-pointer font-medium sm:ml-auto"
         >
           <Plus size={20} />
           Nueva Variedad
         </button>
       </div>
 
-      {variedades.length === 0 ? (
+      {variedadesFiltradas.length === 0 ? (
         <div className="bg-paper rounded-panel border border-line p-12 flex flex-col items-center justify-center text-center">
           <Leaf className="w-12 h-12 text-faint mb-4" />
-          <p className="text-muted">No hay variedades registradas</p>
+          <p className="text-muted">
+            {searchTerm ? 'Ninguna variedad coincide con la búsqueda' : 'No hay variedades registradas'}
+          </p>
         </div>
       ) : (
         <>
           {/* MOBILE: Cards */}
           <div className="grid grid-cols-1 gap-4 sm:hidden">
-            {variedades.map((variedad) => (
+            {variedadesFiltradas.map((variedad) => (
               <div key={variedad.id} className="bg-paper border border-line rounded-panel p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
@@ -148,7 +170,7 @@ export default function VariedadesPlantas() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line bg-paper">
-                {variedades.map((variedad) => (
+                {variedadesFiltradas.map((variedad) => (
                   <tr key={variedad.id} className="hover:bg-canvas transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-ink">
                       {variedad.nombre}

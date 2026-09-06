@@ -11,6 +11,7 @@ import UsuariosAdmin from './pages/UsuariosAdmin';
 import Finanzas from './pages/Finanzas';
 import Cheques from './pages/Cheques';
 import Siembras from './pages/Siembras';
+import RegistroSemillas from './pages/RegistroSemillas';
 import VariedadesPlantas from './pages/VariedadesPlantas';
 import VariedadesBandejas from './pages/VariedadesBandejas';
 import Configuracion from './pages/Configuracion';
@@ -58,6 +59,13 @@ function App() {
 
             <Route element={<ProtectedRoute requiredPermission="LEER_SIEMBRAS" />}>
               <Route path="/siembras" element={<Siembras />} />
+            </Route>
+
+            {/* Registro de Semillas: permiso independiente de Siembras desde 2026-09-03 (pedido
+                del dueño, cambio de alcance de registro-semillas-clientes) -- antes compartía
+                bloque y permiso con /siembras. */}
+            <Route element={<ProtectedRoute requiredPermission="LEER_REGISTRO_SEMILLAS" />}>
+              <Route path="/registro-semillas" element={<RegistroSemillas />} />
             </Route>
 
             <Route element={<ProtectedRoute requiredPermission="LEER_INSUMOS" />}>

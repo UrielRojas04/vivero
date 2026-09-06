@@ -18,4 +18,5 @@ public class UnidadNegocioDTO {
     private boolean activo;
     private com.vivero.gestion.models.ModeloCostoUnidad modeloCosto;
     private java.math.BigDecimal porcentajeRepartoColega;
+    private boolean repartoSobreVentasColega;
 }

@@ -1,18 +1,24 @@
 import React, { useRef } from 'react';
 import { jsPDF } from 'jspdf';
-import { toPng } from 'html-to-image';
 import { X, FileDown, FileImage, MessageCircle, Receipt, Share2 } from 'lucide-react';
 import { useUIStore } from '../store/useUIStore';
+import { useAuthStore } from '../store/useAuthStore';
+import {
+  normalizarTelefonoWhatsApp,
+  generarPngDeNodo,
+  soportaCompartirArchivos,
+  abrirWhatsApp,
+  getMarcaDocumento,
+  getPaletaClaraUnidad,
+  cargarImagenLogo,
+  hexARgb,
+} from '../utils/comprobanteExport';
 
-const NOMBRE_VIVERO = 'Vivero ERP';
+// Mismo verde que --accent de Vivero en index.css (#35682F), para la línea divisoria del
+// encabezado del PDF cuando el logo va sin placa de color.
+const ACCENT_VIVERO_RGB = [53, 104, 47];
+
 const WHATSAPP_CONTACTO = '';
-const NOMBRE_VENTANA_WHATSAPP = 'whatsapp-remito';
-// Referencia a nivel de MÓDULO (NO useRef): sobrevive al desmontaje del modal (el componente se
-// destruye al cerrarse) y a los re-renders. La referencia directa es el único mecanismo fiable
-// para reutilizar la MISMA pestaña: el "nombre de ventana" se pierde cuando WhatsApp Web te
-// redirige cross-origin (web.whatsapp.com/send → web.whatsapp.com/), y entonces window.open() con
-// ese nombre ya no encuentra la pestaña y abre una nueva.
-let ventanaWhatsAppAbierta = null;
 
 const formatearDinero = (valor) => {
   const numero = Number(valor) || 0;
@@ -29,13 +35,6 @@ const truncarTexto = (texto, maxCaracteres) => {
   return texto.length > maxCaracteres ? `${texto.slice(0, maxCaracteres - 1)}…` : texto;
 };
 
-const normalizarTelefonoWhatsApp = (tel) => {
-  if (!tel) return '';
-  const soloDigitos = String(tel).replace(/\D/g, '');
-  if (!soloDigitos) return '';
-  return soloDigitos.startsWith('00') ? soloDigitos.slice(2) : soloDigitos;
-};
-
 const estiloEstadoPago = (estadoPago) => {
   if (estadoPago === 'PAGADO') return 'bg-ok-bg text-ok-ink';
   if (estadoPago === 'PARCIAL') return 'bg-warn-bg text-warn-ink';
@@ -46,6 +45,10 @@ const estiloEstadoPago = (estadoPago) => {
 const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
   const { pushToast, askConfirm } = useUIStore();
   const previewRef = useRef(null);
+  const unidadNegocioActiva = useAuthStore((state) => state.unidadNegocioActiva);
+  const marca = getMarcaDocumento(unidadNegocioActiva);
+  const paletaClara = getPaletaClaraUnidad(unidadNegocioActiva);
+  const nombreDocumento = marca.nombre;
 
   if (!isOpen || !venta) return null;
 
@@ -54,7 +57,7 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
 
   const clienteNombreLimpio = venta.clienteNombre ? venta.clienteNombre.replace(' (Casual)', '') : '-';
 
-  const descargarPDF = () => {
+  const descargarPDF = async () => {
     try {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' });
       const pageWidth = 210;
@@ -68,18 +71,57 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
       const rowH = 8;
       let y = 34;
 
-      doc.setFillColor(16, 185, 129);
-      doc.rect(0, 0, pageWidth, 24, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.text(NOMBRE_VIVERO, MARGIN, 12);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('REMITO DE VENTA', MARGIN, 19);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(`Nº ${venta.id}`, pageWidth - MARGIN, 15, { align: 'right' });
+      if (marca.logo && marca.placaHex) {
+        // Herramientas: el logo Serhan es arte blanco, necesita placa oscura detrás (mismo
+        // criterio que --accent-plate en el sidebar) o se vuelve invisible sobre el PDF blanco.
+        const logoImg = await cargarImagenLogo(marca.logo);
+        const [r, g, b] = hexARgb(marca.placaHex);
+        doc.setFillColor(r, g, b);
+        doc.rect(0, 0, pageWidth, 24, 'F');
+        const logoAltura = 16;
+        const logoAncho = logoAltura * (logoImg.naturalWidth / logoImg.naturalHeight);
+        doc.addImage(logoImg, 'PNG', MARGIN, 4, logoAncho, logoAltura);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        doc.text('REMITO DE VENTA', MARGIN, 21);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(`Nº ${venta.id}`, pageWidth - MARGIN, 15, { align: 'right' });
+      } else if (marca.logo) {
+        // Vivero: sin placa de color -- el logo ya trae sus propios colores, va grande directo
+        // sobre el fondo blanco del PDF (mismo criterio que la vista previa/JSX).
+        const logoImg = await cargarImagenLogo(marca.logo);
+        const logoAltura = 20;
+        const logoAncho = logoAltura * (logoImg.naturalWidth / logoImg.naturalHeight);
+        doc.addImage(logoImg, 'PNG', MARGIN, 2, logoAncho, logoAltura);
+        doc.setTextColor(107, 114, 128);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('REMITO DE VENTA', pageWidth - MARGIN, 10, { align: 'right' });
+        doc.setTextColor(31, 41, 55);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text(`Nº ${venta.id}`, pageWidth - MARGIN, 18, { align: 'right' });
+        doc.setDrawColor(...ACCENT_VIVERO_RGB);
+        doc.setLineWidth(0.6);
+        doc.line(MARGIN, 25, pageWidth - MARGIN, 25);
+      } else {
+        // Sin logo propio (Abono, o unidad desconocida): encabezado de texto con el nombre de la
+        // unidad, sobre la misma placa genérica de siempre.
+        doc.setFillColor(16, 185, 129);
+        doc.rect(0, 0, pageWidth, 24, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text(marca.nombre, MARGIN, 12);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        doc.text('REMITO DE VENTA', MARGIN, 19);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(`Nº ${venta.id}`, pageWidth - MARGIN, 15, { align: 'right' });
+      }
 
       doc.setTextColor(31, 41, 55);
       doc.setFontSize(11);
@@ -89,6 +131,16 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
       ];
       if (venta.clienteTelefono) {
         meta.push(['Teléfono', venta.clienteTelefono]);
+      }
+      // Documento del comprador (change clientes-dni-cuil): tomado indistintamente del Cliente
+      // vinculado o del documento puntual de una venta casual -- VentaResponseDTO ya unifica
+      // ambos casos en clienteDni/clienteCuil (Decisión 3 de design.md), así que acá no hay que
+      // distinguir el origen. Se omiten por completo si la venta no tiene ninguno cargado.
+      if (venta.clienteDni) {
+        meta.push(['DNI', venta.clienteDni]);
+      }
+      if (venta.clienteCuil) {
+        meta.push(['CUIL', venta.clienteCuil]);
       }
       meta.forEach(([label, value]) => {
         doc.setFont('helvetica', 'bold');
@@ -179,58 +231,9 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
     }
   };
 
-  const generarPngDePreview = async () => {
-    const nodo = previewRef.current;
-    if (!nodo) return null;
-
-    const clon = nodo.cloneNode(true);
-    const wrapper = document.createElement('div');
-    wrapper.style.position = 'fixed';
-    wrapper.style.left = '-99999px';
-    wrapper.style.top = '0';
-    // Forzar un ancho mínimo de 500px para que la imagen no se corte en mobile.
-    // En pantallas chicas el nodo visible puede ser de 320-375px, lo que recorta el contenido.
-    const anchoMinimo = Math.max(nodo.offsetWidth, 500);
-    wrapper.style.width = `${anchoMinimo}px`;
-    clon.style.width = '100%';
-    clon.style.maxWidth = 'none';
-    clon.style.height = 'auto';
-    clon.style.maxHeight = 'none';
-    clon.style.overflow = 'visible';
-
-    document.body.appendChild(wrapper);
-    wrapper.appendChild(clon);
-    try {
-      const ancho = clon.offsetWidth;
-      const alto = clon.offsetHeight;
-      const dataUrl = await toPng(clon, {
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        cacheBust: true,
-        width: ancho,
-        height: alto,
-      });
-      const blob = await (await fetch(dataUrl)).blob();
-      return { dataUrl, blob };
-    } finally {
-      if (wrapper.parentNode) {
-        wrapper.parentNode.removeChild(wrapper);
-      }
-    }
-  };
-
-  // Detecta si es dispositivo táctil (mobile/tablet)
-  const esDispositivoTactil = typeof window !== 'undefined'
-    && window.matchMedia('(pointer: coarse)').matches;
-
-  // Verifica si el navegador soporta compartir archivos via Web Share API
-  const soportaCompartirArchivos = esDispositivoTactil
-    && typeof navigator !== 'undefined'
-    && !!navigator.canShare && !!navigator.share;
-
   const descargarImagen = async () => {
     try {
-      const resultado = await generarPngDePreview();
+      const resultado = await generarPngDeNodo(previewRef.current);
       if (!resultado) return;
 
       // En mobile: intentar abrir el panel nativo de "Compartir" para que el usuario
@@ -265,132 +268,56 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
   };
 
   const generarArchivoCompartir = async () => {
-    const resultado = await generarPngDePreview();
+    const resultado = await generarPngDeNodo(previewRef.current);
     if (!resultado) return null;
     return new File([resultado.blob], `remito-${venta.id}.png`, { type: 'image/png' });
   };
 
   const enviarWhatsApp = async () => {
     const resumen = [
-      `REMITO DE VENTA - ${NOMBRE_VIVERO}`,
+      `REMITO DE VENTA - ${nombreDocumento}`,
       '',
       `Venta Nº: ${venta.id}`,
       `Fecha: ${formatearFecha(venta.fecha)}`,
       `Cliente: ${clienteNombreLimpio}`,
       venta.clienteTelefono ? `Teléfono: ${venta.clienteTelefono}` : null,
+      venta.clienteDni ? `DNI: ${venta.clienteDni}` : null,
+      venta.clienteCuil ? `CUIL: ${venta.clienteCuil}` : null,
       `Total final: ${formatearDinero(venta.totalFinal)}`,
       `Estado de pago: ${venta.estadoPago || '-'}`,
     ].filter(Boolean).join('\n');
 
     const telefono = normalizarTelefonoWhatsApp(venta.clienteTelefono || WHATSAPP_CONTACTO);
 
-    // esDispositivoTactil ya definido a nivel del componente
+    const ejecutarEnvio = async () => {
+      const archivo = await generarArchivoCompartir();
+      await abrirWhatsApp({
+        telefono,
+        resumen,
+        archivo,
+        tituloCompartir: `Remito de venta Nº ${venta.id}`,
+        pushToast,
+        mensajeExitoConImagenCopiada: 'WhatsApp abierto. Pegá la imagen del remito con Ctrl+V.',
+        mensajeExitoSinImagenCopiada: 'WhatsApp abierto con el resumen de la venta.',
+      });
+    };
 
-    // Móvil/tablet: intenta Web Share con el PNG (abre WhatsApp app con la imagen lista para enviar).
-    const puedeCompartirArchivo = esDispositivoTactil
-      && typeof navigator !== 'undefined'
-      && !!navigator.canShare && !!navigator.share;
-    if (puedeCompartirArchivo) {
-      try {
-        const archivo = await generarArchivoCompartir();
-        if (archivo && navigator.canShare({ files: [archivo] })) {
-          await navigator.share({
-            files: [archivo],
-            title: `Remito de venta Nº ${venta.id}`,
-            text: resumen,
-          });
-          pushToast('success', 'Comprobante compartido correctamente.');
-          return;
-        }
-      } catch (error) {
-        if (error && error.name === 'AbortError') return;
-      }
+    // Móvil/tablet con Web Share: mismo comportamiento previo a la extracción -- el envío es
+    // directo (abrirWhatsApp intenta compartir el archivo), sin pedir confirmación. En cualquier
+    // otro caso (desktop, o táctil sin soporte de Web Share) se pide confirmación antes de copiar
+    // la imagen al portapapeles y abrir WhatsApp Web.
+    if (soportaCompartirArchivos) {
+      await ejecutarEnvio();
+      return;
     }
-
-    // Desktop: los deep links de WhatsApp Web SOLO precargan texto, no pueden adjuntar archivos.
-    // Para dejar la imagen "lista para enviar", se copia el PNG al portapapeles y se abre el chat SIN
-    // texto; el usuario pega la imagen en el chat con Ctrl+V. Si el portapapeles no está disponible,
-    // se abre con el resumen de texto (comportamiento previo).
-    const copiarImagenAlPortapapeles = async () => {
-      if (esDispositivoTactil || typeof navigator === 'undefined' || !navigator.clipboard || !navigator.clipboard.write) {
-        return false;
-      }
-      try {
-        const archivo = await generarArchivoCompartir();
-        if (!archivo) return false;
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': archivo })]);
-        return true;
-      } catch (error) {
-        return false; // API no disponible o permiso denegado → fallback a texto
-      }
-    };
-
-    const construirUrl = (conTexto) => {
-      // En mobile: usar api.whatsapp.com que invoca el deep link a la app nativa de WhatsApp.
-      // En desktop: usar web.whatsapp.com/send que navega directamente al chat si hay sesión abierta.
-      // wa.me redirige con pantallas intermedias, y en mobile a veces no abre la app.
-      if (esDispositivoTactil) {
-        const base = telefono
-          ? `https://api.whatsapp.com/send?phone=${telefono}`
-          : 'https://api.whatsapp.com/send';
-        if (!conTexto) return base;
-        return `${base}${telefono ? '&' : '?'}text=${encodeURIComponent(resumen)}`;
-      }
-      // Desktop
-      const base = telefono
-        ? `https://web.whatsapp.com/send?phone=${telefono}`
-        : 'https://wa.me/';
-      if (!conTexto) return base;
-      return `${base}${telefono ? '&' : '?'}text=${encodeURIComponent(resumen)}`;
-    };
 
     askConfirm({
       title: 'Enviar por WhatsApp',
-      message: esDispositivoTactil
-        ? 'Se abrirá WhatsApp con el resumen del remito precargado. ¿Deseás continuar?'
-        : 'La imagen del remito se copiará y se abrirá el chat de WhatsApp listo para pegar (Ctrl+V). ¿Deseás continuar?',
+      message: 'La imagen del remito se copiará y se abrirá el chat de WhatsApp listo para pegar (Ctrl+V). ¿Deseás continuar?',
       variant: 'warning',
       confirmLabel: 'Abrir WhatsApp',
       cancelLabel: 'Cancelar',
-      onConfirm: async () => {
-        try {
-          const imagenCopiada = await copiarImagenAlPortapapeles();
-          const url = construirUrl(!imagenCopiada);
-          // Reutilización de la MISMA pestaña de WhatsApp (mecanismo fiable):
-          // - Guardamos la referencia DIRECTA de la ventana que abrimos (variable de módulo, sobrevive
-          //   al cierre del modal). El nombre de ventana se pierde cuando WhatsApp redirige cross-origin,
-          //   así que no se usa window.open('', NOMBRE) para recuperarla.
-          // - Si la referencia sigue viva: navegamos la misma pestaña con location.href (permitido
-          //   cross-origin para una ventana abierta por este script) y la enfocamos.
-          // - Si no existe o fue cerrada: recién ahí creamos una con window.open(url, NOMBRE).
-          let ventana = ventanaWhatsAppAbierta;
-          if (ventana && !ventana.closed) {
-            try {
-              ventana.location.href = url;
-            } catch (ignored) {
-              // Navegación de la ventana existente bloqueada (muy raro): se recrea con nombre fijo.
-              ventana = window.open(url, NOMBRE_VENTANA_WHATSAPP);
-              ventanaWhatsAppAbierta = ventana;
-            }
-            ventana.focus();
-          } else {
-            ventana = window.open(url, NOMBRE_VENTANA_WHATSAPP);
-            ventanaWhatsAppAbierta = ventana;
-          }
-          if (!ventana) {
-            pushToast('error', 'No se pudo abrir WhatsApp. Verificá el bloqueo de ventanas emergentes.');
-            return;
-          }
-          pushToast(
-            'success',
-            imagenCopiada
-              ? 'WhatsApp abierto. Pegá la imagen del remito con Ctrl+V.'
-              : 'WhatsApp abierto con el resumen de la venta.',
-          );
-        } catch (error) {
-          pushToast('error', 'No se pudo abrir WhatsApp en este dispositivo.');
-        }
-      },
+      onConfirm: ejecutarEnvio,
     });
   };
 
@@ -414,19 +341,29 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
 
         <div className="overflow-y-auto flex-1 bg-canvas p-6">
           {/* force-light-export (switch-tema-claro-oscuro, fix de regresión): mismo bug que ya se
-              corrigió en FacturaCliente.jsx — el fondo del PNG en generarPngDePreview() ya es
+              corrigió en FacturaCliente.jsx — el fondo del PNG en generarPngDeNodo() ya es
               blanco (#ffffff), pero el contenido clonado heredaba los tokens de [data-theme="dark"]
               cuando la app estaba en oscuro, dejando texto claro sobre fondo blanco (ilegible).
               cloneNode(true) copia el className tal cual, así que esta clase viaja con el clon sin
-              tocar generarPngDePreview. */}
+              tocar generarPngDeNodo. */}
           <div
             ref={previewRef}
             className="force-light-export bg-paper rounded-panel border border-line p-6 mx-auto max-w-lg"
           >
             <div className="flex justify-between items-start border-b-2 border-accent pb-4">
               <div>
-                <p className="text-xl font-bold text-accent-ink">{NOMBRE_VIVERO}</p>
-                <p className="text-sm text-muted tracking-wide">REMITO DE VENTA</p>
+                {marca.logo ? (
+                  marca.placaHex ? (
+                    <div className="inline-flex items-center rounded-base px-3 py-2" style={{ backgroundColor: marca.placaHex }}>
+                      <img src={marca.logo} alt={marca.nombre} className="h-12 w-auto object-contain" />
+                    </div>
+                  ) : (
+                    <img src={marca.logo} alt={marca.nombre} className="h-24 w-auto object-contain" />
+                  )
+                ) : (
+                  <p className="text-xl font-bold" style={{ color: paletaClara.accentInk }}>{marca.nombre}</p>
+                )}
+                <p className="text-sm text-muted tracking-wide mt-1">REMITO DE VENTA</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-ink">Nº {venta.id}</p>
@@ -441,13 +378,22 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
                 {venta.clienteTelefono && (
                   <p className="text-sm text-muted mt-0.5">{venta.clienteTelefono}</p>
                 )}
+                {venta.clienteDni && (
+                  <p className="text-sm text-muted mt-0.5">DNI: {venta.clienteDni}</p>
+                )}
+                {venta.clienteCuil && (
+                  <p className="text-sm text-muted mt-0.5">CUIL: {venta.clienteCuil}</p>
+                )}
               </div>
             </div>
 
             <div className="overflow-x-auto w-full">
               <table className="w-full mt-5 text-sm min-w-[350px]">
                 <thead>
-                  <tr className="bg-accent-soft text-left text-xs uppercase tracking-wider text-accent-ink">
+                  <tr
+                    className="text-left text-xs uppercase tracking-wider"
+                    style={{ backgroundColor: paletaClara.accentSoft, color: paletaClara.accentInk }}
+                  >
                     <th className="py-2 pr-2 font-semibold">Producto</th>
                     <th className="py-2 px-2 text-right font-semibold">Cant.</th>
                     <th className="py-2 px-2 text-right font-semibold">P. Unitario</th>
