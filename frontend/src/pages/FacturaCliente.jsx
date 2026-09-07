@@ -216,6 +216,9 @@ const FacturaCliente = () => {
     e.preventDefault();
     if (!factura) return;
     if (!pagoMonto) return;
+    if (pagoMetodo === 'CHEQUE' && pagoNumeroSerie.length !== 8) {
+      return pushToast('error', 'El número de cheque debe tener exactamente 8 dígitos.');
+    }
 
     try {
       const updatedFactura = await registrarPagoFactura(factura.id, {
@@ -890,6 +893,7 @@ const FacturaCliente = () => {
                     required
                     value={conceptoMonto}
                     onChange={setConceptoMonto}
+                    decimales={0}
                     className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                     placeholder="0"
                   />
@@ -929,6 +933,7 @@ const FacturaCliente = () => {
                     required
                     value={pagoMonto}
                     onChange={setPagoMonto}
+                    decimales={0}
                     className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                     placeholder="0"
                   />
@@ -959,12 +964,13 @@ const FacturaCliente = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-body mb-1">Número de Serie</label>
+                      <label className="block text-sm font-medium text-body mb-1">Número de Serie (8 dígitos)</label>
                       <input
                         type="text"
+                        inputMode="numeric"
                         required
                         value={pagoNumeroSerie}
-                        onChange={e => setPagoNumeroSerie(e.target.value)}
+                        onChange={e => setPagoNumeroSerie(e.target.value.replace(/\D/g, '').slice(0, 8))}
                         className="w-full border-line rounded-base focus:border-accent focus:ring-accent bg-paper px-3 py-2 border"
                       />
                     </div>

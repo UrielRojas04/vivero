@@ -23,9 +23,16 @@ const PALETA_CLARA_VIVERO = getPaletaClaraUnidad('1');
 const ACCENT_VIVERO_RGB = [53, 104, 47];
 
 const UNIDAD_LABEL = {
-  SEMILLAS: 'semillas',
-  SOBRES: 'sobres',
-  GRAMOS: 'gramos',
+  SEMILLAS: { singular: 'semilla', plural: 'semillas' },
+  SOBRES: { singular: 'sobre', plural: 'sobres' },
+  GRAMOS: { singular: 'gramo', plural: 'gramos' },
+};
+
+// Pedido del dueño 2026-09-06: "1 sobre", no "1 sobres" -- singular/plural según la cantidad.
+const etiquetaUnidad = (clave, cantidad) => {
+  const info = UNIDAD_LABEL[clave];
+  if (!info) return '';
+  return Number(cantidad) === 1 ? info.singular : info.plural;
 };
 
 const formatearFecha = (fecha) => {
@@ -43,7 +50,7 @@ const formatearFecha = (fecha) => {
 const formatearCantidad = (cantidad, unidad) => {
   const numero = Number(cantidad);
   const cantidadFmt = Number.isFinite(numero) ? numero.toLocaleString('es-AR') : cantidad;
-  return `${cantidadFmt} ${UNIDAD_LABEL[unidad] || ''}`.trim();
+  return `${cantidadFmt} ${etiquetaUnidad(unidad, cantidad)}`.trim();
 };
 
 // Texto de la fila "Total" (pedido del dueño 2026-09-05, GRAMOS -> semillas vía

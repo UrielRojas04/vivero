@@ -783,6 +783,7 @@ const PedidoNuevo = () => {
               <FormattedNumberInput
                 value={cotizacionDolar}
                 onChange={(val) => { setCotizacionDolar(val); setCotizacionTocada(true); }}
+                decimales={0}
                 placeholder="Ej: 1460"
                 className={`w-full sm:w-48 px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
                   errors.cotizacionDolar ? 'border-danger-line' : 'border-warn-line'
@@ -806,7 +807,7 @@ const PedidoNuevo = () => {
             <div>
               <h2 className="text-sm font-semibold text-ink">Ítems del pedido</h2>
               <p className="text-xs text-faint mt-0.5">
-                {items.length} {items.length === 1 ? 'ítem' : 'ítems'} · Total: <span className="font-semibold text-body font-mono tabular-nums">${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                {items.length} {items.length === 1 ? 'ítem' : 'ítems'} · Total: <span className="font-semibold text-body font-mono tabular-nums">${total.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
               </p>
             </div>
             <button
@@ -939,7 +940,7 @@ const PedidoNuevo = () => {
 
         <div className="flex items-center justify-between gap-3 bg-paper rounded-panel border border-line p-4 sm:p-5">
           <div className="text-sm text-muted">
-            Total: <span className="text-lg font-bold text-ink font-mono tabular-nums">${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+            Total: <span className="text-lg font-bold text-ink font-mono tabular-nums">${total.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
           </div>
           <div className="flex gap-3">
             <button

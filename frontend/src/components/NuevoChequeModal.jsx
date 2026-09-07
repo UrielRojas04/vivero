@@ -82,6 +82,9 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
     if (!formData.monto || parseFloat(formData.monto) <= 0) {
       return pushToast('error', 'El monto debe ser mayor a 0');
     }
+    if (formData.numeroSerie && formData.numeroSerie.length !== 8) {
+      return pushToast('error', 'El número de cheque debe tener exactamente 8 dígitos.');
+    }
 
     const payload = {
       ...formData,
@@ -228,9 +231,17 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-body mb-1">N° de Serie</label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   name="numeroSerie"
                   value={formData.numeroSerie}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    // Pedido del dueño 2026-09-06: "a veces hay cheques truchos que tienen más o
+                    // menos dígitos" -- 8 dígitos exactos, filtrando cualquier cosa que no sea
+                    // número a medida que se tipea (mismo criterio que ya se usa en otros campos
+                    // numéricos de esta app), en vez de sólo validar recién al guardar.
+                    const soloDigitos = e.target.value.replace(/\D/g, '').slice(0, 8);
+                    setFormData(prev => ({ ...prev, numeroSerie: soloDigitos }));
+                  }}
                   placeholder="Ej: 12345678"
                   className="w-full px-4 py-2.5 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                 />
@@ -273,6 +284,7 @@ const NuevoChequeModal = ({ isOpen, onClose }) => {
                   required
                   value={formData.monto}
                   onChange={(val) => setFormData(prev => ({ ...prev, monto: val }))}
+                  decimales={0}
                   className="w-full pl-8 pr-4 py-2.5 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all font-mono tabular-nums"
                   placeholder="Ej: 150000"
                 />

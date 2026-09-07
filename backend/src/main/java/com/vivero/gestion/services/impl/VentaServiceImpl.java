@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -168,13 +169,16 @@ public class VentaServiceImpl implements VentaService {
             boolean esAbono = venta.getUnidadNegocio() != null && "Abono".equals(venta.getUnidadNegocio().getNombre());
 
             if (esAbono) {
+                // Precio efectivo resuelto ANTES de tocar stock: si viene informado y es inválido
+                // (negativo), la venta se rechaza sin descontar nada (Decisiones 2-4 de design.md).
+                BigDecimal precioHist = resolverPrecioUnitario(detReq, producto);
+
                 // Bifurcación para Abono: descontar de StockAbono
                 stockAbonoService.registrarVenta(producto.getId(), detReq.getCantidad(), venta.getCuentaAbono(), null);
-                
+
                 VentaDetalle detalle = new VentaDetalle();
                 detalle.setProducto(producto);
                 detalle.setCantidad(detReq.getCantidad());
-                BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
                 detalle.setPrecioUnitarioHistorico(precioHist);
                 detalle.setCostoUnitarioHistorico(BigDecimal.ZERO);
                 detalle.setCostoBaseHistorico(BigDecimal.ZERO);
@@ -187,6 +191,10 @@ public class VentaServiceImpl implements VentaService {
                 subtotal = subtotal.add(subtotalLine);
             } else {
                 // Ruta original para Vivero y Herramientas
+                // 0. Resolver el precio efectivo primero: si viene informado y es inválido
+                // (negativo), rechazar antes de tocar stock o registrar movimiento alguno.
+                BigDecimal precioHist = resolverPrecioUnitario(detReq, producto);
+
                 // 1. Validar y descontar stock global
                 if (detReq.getCantidad() <= 0) {
                     throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
@@ -202,11 +210,10 @@ public class VentaServiceImpl implements VentaService {
                 // 2. Crear movimiento de stock para la traza (con costo congelado)
                 MovimientoStock mov = movimientoStockService.registrarMovimiento(producto, detReq.getCantidad(), TipoMovimientoStock.VENTA, usuario);
 
-                // 3. Crear detalle de venta (precio y costo histórico copiados)
+                // 3. Crear detalle de venta (precio efectivo y costo histórico copiados)
                 VentaDetalle detalle = new VentaDetalle();
                 detalle.setProducto(producto);
                 detalle.setCantidad(detReq.getCantidad());
-                BigDecimal precioHist = producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
                 detalle.setPrecioUnitarioHistorico(precioHist);
                 detalle.setCostoUnitarioHistorico(mov.getCostoUnitario());
                 detalle.setCostoBaseHistorico(mov.getCostoBase());
@@ -245,6 +252,7 @@ public class VentaServiceImpl implements VentaService {
                 totalPagado = totalPagado.add(pReq.getMonto());
 
                 if ("CHEQUE".equalsIgnoreCase(pReq.getMetodoPago())) {
+                    Cheque.validarNumeroSerie(pReq.getNumeroSerie());
                     Cheque cheque = new Cheque();
                     LocalDate fechaRec = pReq.getFechaRecepcion() != null ? 
                             pReq.getFechaRecepcion() : 
@@ -543,6 +551,24 @@ public class VentaServiceImpl implements VentaService {
             dto.setPagos(new ArrayList<>());
         }
         return dto;
+    }
+
+    // Único punto de resolución del precio por unidad efectivo de una línea de venta (Decisión 4
+    // de design.md de precio-editable-confirmacion-venta): llamado desde AMBAS ramas de
+    // crearVenta (Abono y Vivero/Herramientas) para que sea estructuralmente imposible que una
+    // quede afuera del ajuste de precio. null => cae al precio de lista del producto (idéntico al
+    // comportamiento anterior a este change). Informado y negativo => rechaza la operación antes
+    // de tocar stock (Decisión 3). Informado y válido => normalizado a 2 decimales, porque la
+    // columna es numeric(...,2) y el valor llega desde aritmética de punto flotante de JS.
+    private BigDecimal resolverPrecioUnitario(VentaDetalleRequestDTO detReq, Producto producto) {
+        BigDecimal precioInformado = detReq.getPrecioUnitario();
+        if (precioInformado == null) {
+            return producto.getPrecio() != null ? producto.getPrecio() : BigDecimal.ZERO;
+        }
+        if (precioInformado.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("El precio unitario no puede ser negativo");
+        }
+        return precioInformado.setScale(2, RoundingMode.HALF_UP);
     }
 
     // Consolida la resolución del documento ad-hoc de una venta (tarea 2.9 de tasks.md): parsea

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { registroSemillasApi } from '../api/registroSemillas.api';
 import RegistroSemillaForm from '../components/RegistroSemillaForm';
 import ComprobanteSemillaModal from '../components/ComprobanteSemillaModal';
@@ -7,12 +8,19 @@ import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { describirEstadoRegistroSemilla } from '../utils/registroSemillaDisplay';
 import { calcularRangoQuincena, calcularRangoProximoMes, fechaStringDentroDeRango } from '../utils/quincenas';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, Receipt, PackageCheck, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, Receipt, PackageCheck, CheckCircle2, ChevronDown, ChevronUp, Calendar, MessageSquare } from 'lucide-react';
 
 const UNIDAD_LABEL = {
-  SEMILLAS: 'semillas',
-  SOBRES: 'sobres',
-  GRAMOS: 'gramos',
+  SEMILLAS: { singular: 'semilla', plural: 'semillas' },
+  SOBRES: { singular: 'sobre', plural: 'sobres' },
+  GRAMOS: { singular: 'gramo', plural: 'gramos' },
+};
+
+// Pedido del dueño 2026-09-06: "1 sobre", no "1 sobres" -- singular/plural según la cantidad.
+const etiquetaUnidad = (clave, cantidad) => {
+  const info = UNIDAD_LABEL[clave];
+  if (!info) return '';
+  return Number(cantidad) === 1 ? info.singular : info.plural;
 };
 
 const formatearFecha = (fecha) => {
@@ -28,11 +36,12 @@ const formatearFecha = (fecha) => {
 const formatearCantidad = (registro) => {
   const numero = Number(registro.cantidad);
   const cantidadFmt = Number.isFinite(numero) ? numero.toLocaleString('es-AR') : registro.cantidad;
-  const unidad = UNIDAD_LABEL[registro.unidadCantidad] || '';
+  const unidad = etiquetaUnidad(registro.unidadCantidad, registro.cantidad);
   return `${cantidadFmt} ${unidad}`.trim();
 };
 
 const RegistroSemillas = () => {
+  const queryClient = useQueryClient();
   const { pushToast, denyAccess, askConfirm } = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,8 +62,10 @@ const RegistroSemillas = () => {
   };
   // null | 'QUINCENA_ACTUAL' | 'QUINCENA_PROXIMA' | 'PROXIMO_MES' | 'CONSUMIDAS' -- un solo
   // filtro activo a la vez (pedido del dueño 2026-09-05: sumó "Próximo mes" y "Consumidas" a
-  // los dos de quincena que ya existían).
-  const [filtroActivo, setFiltroActivo] = useState(null);
+  // los dos de quincena que ya existían). Arranca en 'QUINCENA_ACTUAL' (pedido del dueño
+  // 2026-09-06): al entrar a la pantalla, lo relevante es lo que hay que sembrar YA, no toda la
+  // agenda histórica -- el usuario puede sacarlo con un click si necesita ver todo.
+  const [filtroActivo, setFiltroActivo] = useState('QUINCENA_ACTUAL');
   // Resalta la tarjeta al llegar desde la notificación de la campana (pedido del dueño
   // 2026-09-05): id de un solo uso, se limpia solo a los pocos segundos.
   const [registroResaltado, setRegistroResaltado] = useState(null);
@@ -122,6 +133,7 @@ const RegistroSemillas = () => {
       setIsFormOpen(false);
       setSelectedRegistro(null);
       fetchRegistros();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
       pushToast('success', 'Registro de semilla guardado correctamente.');
     } catch (err) {
       console.error(err);
@@ -137,6 +149,7 @@ const RegistroSemillas = () => {
     try {
       await registroSemillasApi.delete(id);
       fetchRegistros();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
       pushToast('success', 'Registro de semilla eliminado.');
     } catch (err) {
       console.error(err);
@@ -152,6 +165,7 @@ const RegistroSemillas = () => {
     try {
       await registroSemillasApi.consumir(id);
       fetchRegistros();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
       pushToast('success', 'Registro marcado como consumido.');
     } catch (err) {
       console.error(err);
@@ -197,11 +211,21 @@ const RegistroSemillas = () => {
 
   // Las consumidas se agrupan al final (pedido del dueño 2026-09-05): sin filtro activo, antes
   // aparecían mezcladas con el resto por orden de creación -- una consumida podía salir arriba de
-  // todo, tapando los registros realmente pendientes. Sort estable (garantizado desde ES2019): a
-  // igual "consumida o no", se preserva el orden que ya traía la lista.
-  const registrosOrdenados = [...filteredRegistros].sort(
-    (a, b) => (a.estado === 'CONSUMIDA' ? 1 : 0) - (b.estado === 'CONSUMIDA' ? 1 : 0)
-  );
+  // todo, tapando los registros realmente pendientes.
+  //
+  // Dentro de cada grupo, orden por fecha de siembra programada ascendente (pedido del dueño
+  // 2026-09-06): lo que hay que sembrar primero va arriba de todo, para que quede claro en el
+  // celular de los empleados. Se aplica siempre por defecto -- también con los filtros de
+  // quincena/próximo mes activos, porque el sort corre DESPUÉS del filtro, sobre el resultado ya
+  // filtrado. Sin fecha cargada, el registro se manda al final de su grupo (no hay forma de saber
+  // qué tan urgente es).
+  const registrosOrdenados = [...filteredRegistros].sort((a, b) => {
+    const consumidaDiff = (a.estado === 'CONSUMIDA' ? 1 : 0) - (b.estado === 'CONSUMIDA' ? 1 : 0);
+    if (consumidaDiff !== 0) return consumidaDiff;
+    const fechaA = a.fechaSiembraProgramada ? new Date(a.fechaSiembraProgramada).getTime() : Infinity;
+    const fechaB = b.fechaSiembraProgramada ? new Date(b.fechaSiembraProgramada).getTime() : Infinity;
+    return fechaA - fechaB;
+  });
 
   return (
     <div className="space-y-6">
@@ -340,6 +364,17 @@ const RegistroSemillas = () => {
                       {estadoInfo.etiqueta}
                     </span>
                   </div>
+
+                  {/* Fecha de siembra visible sin abrir la tarjeta (pedido del dueño 2026-09-06):
+                      los empleados necesitan saber rápido qué toca sembrar, sin tener que
+                      expandir el detalle de cada registro uno por uno. */}
+                  {registro.fechaSiembraProgramada && (
+                    <div className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                      <Calendar className="w-4 h-4 text-accent shrink-0" />
+                      A sembrar: <span className="font-mono tabular-nums">{formatearFecha(registro.fechaSiembraProgramada)}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-8 h-8 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center shrink-0">
@@ -365,18 +400,30 @@ const RegistroSemillas = () => {
                       <div>
                         <span className="text-muted block text-xs mb-0.5">Cantidad</span>
                         <span className="font-medium text-ink font-mono tabular-nums">{formatearCantidad(registro)}</span>
+                        {registro.unidadCantidad === 'SOBRES' && registro.contenidoPorSobre != null && (
+                          <span className="block text-xs text-muted font-mono tabular-nums">
+                            {/* Registros cargados antes de que existiera contenidoPorSobreUnidad quedaron
+                                con el dato en blanco en la base -- se trata como SEMILLAS (bug real
+                                2026-09-06: sin este default, esos registros mostraban el número sin
+                                ninguna unidad al lado, no sólo los que de verdad eran en gramos). */}
+                            {Number(registro.contenidoPorSobre).toLocaleString('es-AR')} {etiquetaUnidad(registro.contenidoPorSobreUnidad || 'SEMILLAS', registro.contenidoPorSobre)} c/u
+                          </span>
+                        )}
                         {registro.totalSemillas != null && (
                           <span className="block text-xs text-accent-ink font-mono tabular-nums">= {Number(registro.totalSemillas).toLocaleString('es-AR')} semillas</span>
                         )}
                       </div>
                     </div>
 
+                    {/* "A sembrar" ya se muestra arriba, en el header colapsado de la tarjeta
+                        (siempre visible) -- acá sólo queda la fecha de entrega, para no
+                        duplicarla. */}
                     <p className="text-xs text-muted">Entrega: <span className="font-mono tabular-nums">{formatearFecha(registro.fechaEntrega)}</span></p>
-                    {registro.fechaSiembraProgramada && (
-                      <p className="text-xs text-muted -mt-2">A sembrar: <span className="font-mono tabular-nums">{formatearFecha(registro.fechaSiembraProgramada)}</span></p>
-                    )}
                     {registro.observaciones && (
-                      <p className="text-xs text-muted">{registro.observaciones}</p>
+                      <div className="flex items-start gap-2 bg-warn-bg border border-warn-line rounded-base p-2.5">
+                        <MessageSquare className="w-4 h-4 text-warn-ink shrink-0 mt-0.5" />
+                        <p className="text-sm font-semibold text-warn-ink">{registro.observaciones}</p>
+                      </div>
                     )}
 
                     {/* Rediseño mobile (2026-09-05, reportado por el dueño): con 5 botones
@@ -458,8 +505,8 @@ const RegistroSemillas = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-thead border-b border-line">
-                    <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Entrega</th>
                     <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">A Sembrar</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Entrega</th>
                     <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Lote</th>
                     <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Quién trajo</th>
                     <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Semilla</th>
@@ -480,10 +527,10 @@ const RegistroSemillas = () => {
                       }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-body font-mono tabular-nums">
-                        {formatearFecha(registro.fechaEntrega)}
+                        {formatearFecha(registro.fechaSiembraProgramada)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-body font-mono tabular-nums">
-                        {formatearFecha(registro.fechaSiembraProgramada)}
+                        {formatearFecha(registro.fechaEntrega)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-bold font-mono tabular-nums bg-accent-soft text-accent-ink border border-accent">
@@ -504,6 +551,11 @@ const RegistroSemillas = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-body font-mono tabular-nums">
                         {formatearCantidad(registro)}
+                        {registro.unidadCantidad === 'SOBRES' && registro.contenidoPorSobre != null && (
+                          <div className="text-xs text-muted">
+                            {Number(registro.contenidoPorSobre).toLocaleString('es-AR')} {etiquetaUnidad(registro.contenidoPorSobreUnidad || 'SEMILLAS', registro.contenidoPorSobre)} c/u
+                          </div>
+                        )}
                         {registro.totalSemillas != null && (
                           <div className="text-xs text-accent-ink">= {Number(registro.totalSemillas).toLocaleString('es-AR')} semillas</div>
                         )}

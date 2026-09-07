@@ -256,8 +256,13 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
     // registro de semilla también pase el dueño, sea cliente o no"). Mismo patrón "buscar o
     // escribir libre" que ya usa este mismo campo (ver seleccionarDueno/onChange más abajo).
     if (registro.nombreQuienTrajo) {
-      setTipoDueno('cliente');
-      setBusquedaDueno(registro.nombreQuienTrajo);
+      if (registro.nombreQuienTrajo === 'Jefe / Vivero propio') {
+        setTipoDueno('jefe');
+        setBusquedaDueno('');
+      } else {
+        setTipoDueno('cliente');
+        setBusquedaDueno(registro.nombreQuienTrajo);
+      }
     }
 
     setFormData(prev => {

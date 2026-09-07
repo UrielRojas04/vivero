@@ -47,7 +47,7 @@ const ProductoEncontradoModal = ({ isOpen, onClose, producto, codigoBuscado, isC
                 <div className="bg-canvas border border-line rounded-base p-3">
                   <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-1">Precio</p>
                   <p className="text-lg font-bold text-ink font-mono tabular-nums">
-                    ${Number(producto.precio ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    ${Number(producto.precio ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </p>
                 </div>
                 <div className="bg-canvas border border-line rounded-base p-3">

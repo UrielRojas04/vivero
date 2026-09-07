@@ -129,7 +129,7 @@ const FilaItemPedido = ({
   const errorDescuentos = errors[`descuentos-${linea.lineaId}`];
 
   const costoFormateado = desglose
-    ? `$${costoFinal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? `$${costoFinal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
     : '—';
   // Nota en dólares: mismo criterio que el peso de arriba — total de la línea (costo pactado ×
   // cantidad), no el costo unitario suelto, para no mezclar un total en pesos con un unitario en
@@ -140,7 +140,7 @@ const FilaItemPedido = ({
 
   const avisoAutoRatchet = disparaAjuste ? (
     <p className="text-[11px] text-warn">
-      ⚠️ Este costo es mayor al de la ficha (${costoBaseFicha.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) — al
+      ⚠️ Este costo es mayor al de la ficha (${costoBaseFicha.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}) — al
       confirmar, el costo y el precio de venta del producto se van a actualizar solos hacia este valor.
     </p>
   ) : null;
@@ -487,6 +487,7 @@ const FilaItemPedido = ({
           <FormattedNumberInput
             value={linea.costoUnitarioPactado}
             onChange={(val) => onActualizarCampo('costoUnitarioPactado', val)}
+            decimales={0}
             placeholder="0"
             className={inputClassGrid()}
             disabled={disabled}
@@ -599,6 +600,7 @@ const FilaItemPedido = ({
             <FormattedNumberInput
               value={linea.costoUnitarioPactado}
               onChange={(val) => onActualizarCampo('costoUnitarioPactado', val)}
+              decimales={0}
               placeholder="0"
               className={`${inputClassCard(!!errorCosto)} font-mono tabular-nums`}
               disabled={disabled}

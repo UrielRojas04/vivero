@@ -100,6 +100,7 @@ const PaseStockModal = ({ isOpen, siembra, onClose, onConfirm }) => {
               <FormattedNumberInput
                 value={precio}
                 onChange={setPrecio}
+                decimales={0}
                 placeholder="Ej. 1500"
                 className={`w-full px-4 py-2 border rounded-base outline-none focus:ring-2 focus:ring-accent/20 transition-all font-mono tabular-nums ${
                   errors.precio ? 'border-danger-line focus:border-danger' : 'border-line focus:border-accent'

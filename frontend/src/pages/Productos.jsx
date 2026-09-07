@@ -37,6 +37,8 @@ const Productos = () => {
   // Filtro de la sección Productos (grupo 10 de tasks.md de config-costeo-por-proveedor, OQ7):
   // reemplaza al filtro por marca — un solo filtro, por proveedor, no dos equivalentes conviviendo.
   const [selectedProveedor, setSelectedProveedor] = useState('Todos');
+  // Filtro por categoría (sólo Abono) — mismo patrón visual que el filtro por proveedor de Herramientas.
+  const [selectedCategoria, setSelectedCategoria] = useState('Todas');
   const [searchMode, setSearchMode] = useState('TODO');
   const [expandedMobileId, setExpandedMobileId] = useState(null);
   const [viewTab, setViewTab] = useState('CATALOGO'); // CATALOGO | HISTORIAL
@@ -180,6 +182,12 @@ const Productos = () => {
       .map(p => p.proveedorNombre.trim().toUpperCase())
   )).sort();
 
+  const categoriasDisponibles = Array.from(new Set(
+    productos
+      .filter(p => p.categoriaAbonoNombre && p.categoriaAbonoNombre.trim() !== '')
+      .map(p => p.categoriaAbonoNombre.trim())
+  )).sort();
+
   const filteredProductos = productos.filter((p) => {
     let matchSearch = false;
     if (searchMode === 'NUMERO_SIEMBRA') {
@@ -194,6 +202,11 @@ const Productos = () => {
     if (unidadNegocioActiva === '2' && selectedProveedor !== 'Todos') {
       const pProveedor = p.proveedorNombre ? p.proveedorNombre.trim().toUpperCase() : '';
       return matchSearch && pProveedor === selectedProveedor;
+    }
+
+    if (unidadNegocioActiva === '3' && selectedCategoria !== 'Todas') {
+      const pCategoria = p.categoriaAbonoNombre ? p.categoriaAbonoNombre.trim() : '';
+      return matchSearch && pCategoria === selectedCategoria;
     }
 
     return matchSearch;
@@ -340,6 +353,35 @@ const Productos = () => {
         </div>
       )}
 
+      {/* Categorías Tabs (solo Abono) — mismo patrón visual que el filtro por proveedor de Herramientas */}
+      {unidadNegocioActiva === '3' && categoriasDisponibles.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          <button
+            onClick={() => setSelectedCategoria('Todas')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+              selectedCategoria === 'Todas'
+                ? 'bg-accent text-paper'
+                : 'bg-paper text-body border border-line hover:bg-canvas hover:text-ink'
+            }`}
+          >
+            Todas las Categorías
+          </button>
+          {categoriasDisponibles.map(categoria => (
+            <button
+              key={categoria}
+              onClick={() => setSelectedCategoria(categoria)}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+                selectedCategoria === categoria
+                  ? 'bg-accent text-paper'
+                  : 'bg-paper text-body border border-line hover:bg-canvas hover:text-ink'
+              }`}
+            >
+              {categoria}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Main Content Area */}
       {error && (
         <div className="bg-danger-bg border border-danger-line rounded-panel p-4 flex items-start gap-3">
@@ -409,7 +451,7 @@ const Productos = () => {
                       </h3>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-sm font-semibold text-ink font-mono tabular-nums">
-                          ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                          ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-base text-[10px] font-bold ${
                           (unidadNegocioActiva === '3' ? (useAuthStore.getState().user?.username === 'Sergio' ? producto.stockInvernadero : producto.stockColega) : producto.stock) === 0
@@ -458,7 +500,7 @@ const Productos = () => {
 
                     {unidadNegocioActiva === '2' ? (
                       <div className="flex flex-wrap gap-2 text-xs text-body bg-canvas p-2.5 rounded-base border border-line">
-                        <span className="font-semibold font-mono tabular-nums">Costo: ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                        <span className="font-semibold font-mono tabular-nums">Costo: ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}</span>
                         <span>•</span>
                         <span className="font-semibold text-ink">Ganancia: {producto.porcentajeGanancia ? `${producto.porcentajeGanancia}%` : '-'}</span>
                       </div>
@@ -594,7 +636,7 @@ const Productos = () => {
                         <td className="px-4 py-4">
                           <div className="flex flex-col items-start gap-1">
                             <span className="text-sm font-semibold text-ink font-mono tabular-nums whitespace-nowrap">
-                              ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '0.00'}
+                              ${(producto.costoUnitarioHistorico ?? producto.costoProducto) ? (producto.costoUnitarioHistorico ?? producto.costoProducto).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
                             </span>
                             {(() => {
                               const margen = estadoMargen(producto);
@@ -650,7 +692,7 @@ const Productos = () => {
                     )}
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-ink font-mono tabular-nums">
-                        ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${producto.precio.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">

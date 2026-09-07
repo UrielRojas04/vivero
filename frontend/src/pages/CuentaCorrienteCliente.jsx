@@ -882,6 +882,7 @@ const CuentaCorrienteCliente = () => {
                     <FormattedNumberInput
                       value={montoPago}
                       onChange={setMontoPago}
+                      decimales={0}
                       placeholder="Monto"
                       className="flex-1 min-w-[100px] px-2 py-1.5 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent outline-none"
                     />

@@ -10,20 +10,20 @@
  * con `chequeDisplay.js` y `bandejasDisplay.js`.
  */
 
-// SIN_SEMBRAR -> neutral (todavía no pasó nada). SEMBRADAS -> ok (ya se usó, en curso; sigue
-// pudiendo reusarse en otra siembra). CONSUMIDA -> warn (pedido del dueño 2026-09-05: quería
-// que se distinguiera con color, no que se confundiera con el gris neutral de SIN_SEMBRAR --
-// mismo tono ámbar que ya usa el resto de la app para "terminado, prestá atención").
+// SIN_SEMBRAR -> danger sólido (pedido del dueño 2026-09-06: los empleados necesitan ver de un
+// vistazo, incluso desde el celular, qué falta sembrar primero -- el tono neutral pasaba
+// desapercibido). SEMBRADAS -> ok sólido, con la misma fuerza visual que SIN_SEMBRAR (mismo
+// pedido: "al igual que la de sembrado"), para que ambos estados operativos destaquen igual de
+// claro y sólo se diferencien por el color. CONSUMIDA -> warn (sin cambios, no fue parte de este
+// pedido: mismo tono ámbar que ya usa el resto de la app para "terminado, prestá atención").
 //
-// Bug real corregido (2026-09-05, reportado por el dueño): en modo claro los fondos "-bg" son
-// muy pálidos y casi no se distinguen del fondo blanco/crema de la página -- sobre todo
-// SIN_SEMBRAR, que usaba bg-thead (pensado para franjas de encabezado de tabla, no para chips).
-// Se agrega un borde sólido en el tono correspondiente a cada estado (mismo recurso que ya usa
-// la etiqueta de "Lote" en esta misma pantalla: border-accent sobre bg-accent-soft) para que el
-// chip tenga un borde marcado incluso cuando el relleno es pálido.
+// A diferencia del resto de los chips de la app (que usan "-bg", un relleno pálido), acá se usa
+// el color sólido (bg-danger / bg-ok, no bg-danger-bg / bg-ok-bg) a propósito: es la combinación
+// de mayor contraste disponible en la paleta de 3 tonos, pensada para que se lea de reojo en la
+// pantalla chica de un celular en el invernadero.
 const TONOS_ESTADO = {
-  SIN_SEMBRAR: { chip: 'bg-thead text-body border border-line-strong', texto: 'text-muted' },
-  SEMBRADAS: { chip: 'bg-ok-bg text-ok-ink border border-ok-line', texto: 'text-ok-ink' },
+  SIN_SEMBRAR: { chip: 'bg-danger text-paper border border-danger', texto: 'text-danger-ink' },
+  SEMBRADAS: { chip: 'bg-ok text-paper border border-ok', texto: 'text-ok-ink' },
   CONSUMIDA: { chip: 'bg-warn-bg text-warn-ink border border-warn-line', texto: 'text-warn-ink' },
 };
 

@@ -138,10 +138,11 @@ const InsumoForm = ({ insumo, onSave, onCancel, isOpen }) => {
                   id="precio"
                   value={precio}
                   onChange={(val) => setPrecio(val)}
+                  decimales={0}
                   className={`w-full px-4 py-3 sm:py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all text-base ${
                     errors.precio ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                   }`}
-                  placeholder="0.00"
+                  placeholder="0"
                 />
                 {errors.precio && (
                   <p className="mt-1 text-xs text-danger font-medium">{errors.precio}</p>

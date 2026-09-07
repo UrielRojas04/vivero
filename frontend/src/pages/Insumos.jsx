@@ -185,7 +185,7 @@ const Insumos = () => {
                     <div>
                       <h3 className="font-semibold text-ink text-base leading-tight">{insumo.nombre}</h3>
                       <p className="text-sm font-semibold text-ink mt-0.5 font-mono tabular-nums">
-                        ${insumo.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${insumo.precio.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
                     </div>
                   </div>
@@ -266,7 +266,7 @@ const Insumos = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-ink font-mono tabular-nums">
-                          ${insumo.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                          ${insumo.precio.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

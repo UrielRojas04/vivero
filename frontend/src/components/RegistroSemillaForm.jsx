@@ -23,6 +23,7 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [creandoCliente, setCreandoCliente] = useState(false);
+  const [tipoDueno, setTipoDueno] = useState('cliente');
   const [busquedaVariedad, setBusquedaVariedad] = useState('');
   const [showVariedadDropdown, setShowVariedadDropdown] = useState(false);
   // Guard de un solo sentido (pedido del dueño 2026-09-05, mismo patrón que
@@ -106,6 +107,7 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
           observaciones: registro.observaciones || '',
         });
         setBusquedaCliente(registro.nombreQuienTrajo || '');
+        setTipoDueno((registro.nombreQuienTrajo && registro.nombreQuienTrajo !== 'Jefe / Vivero propio') ? 'cliente' : 'jefe');
         setBusquedaVariedad(registro.descripcionSemilla || '');
       } else {
         setFormData({
@@ -127,6 +129,7 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
           observaciones: '',
         });
         setBusquedaCliente('');
+        setTipoDueno('cliente');
         setBusquedaVariedad('');
       }
       setShowClienteDropdown(false);
@@ -477,8 +480,28 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
               <label className="block text-sm font-medium text-body mb-1">
                 Quién trajo la semilla *
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <select
+                value={tipoDueno}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTipoDueno(val);
+                  if (val === 'jefe') {
+                    setBusquedaCliente('');
+                    setFormData({ ...formData, nombreQuienTrajo: 'Jefe / Vivero propio', clienteId: '' });
+                  } else {
+                    setBusquedaCliente('');
+                    setFormData({ ...formData, nombreQuienTrajo: '', clienteId: '' });
+                  }
+                }}
+                className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors bg-paper mb-2"
+              >
+                <option value="cliente">Cliente</option>
+                <option value="jefe">Jefe / Vivero propio</option>
+              </select>
+
+              {tipoDueno === 'cliente' && (
+                <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-faint" />
                 </div>
                 <input
@@ -529,9 +552,10 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
                     )}
                   </div>
                 )}
-              </div>
-              {formData.clienteId && (
-                <p className="mt-1 text-xs text-accent-ink">Vinculado a cliente existente</p>
+                {tipoDueno === 'cliente' && formData.clienteId && (
+                  <p className="mt-1 text-xs text-accent-ink">Vinculado a cliente existente</p>
+                )}
+                </div>
               )}
             </div>
 
@@ -539,26 +563,28 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
                 teléfono recién autocompletado al elegir un cliente en seleccionarCliente).
                 Sigue editable aunque venga autocompletado, por si el teléfono del cliente
                 está desactualizado para esta entrega puntual. */}
-            <div>
-              <label className="block text-sm font-medium text-body mb-1">
-                Teléfono de contacto
-              </label>
-              <input
-                type="tel"
-                inputMode="tel"
-                placeholder="Opcional"
-                value={formData.telefonoContacto}
-                onChange={(e) => {
-                  // Bug real corregido (2026-09-05, reportado por el dueño): type="tel" es sólo
-                  // semántico (teclado numérico en mobile), el navegador no bloquea letras. Ahora
-                  // que este campo se usa para crear un Cliente real (ver crearClienteRapido),
-                  // filtramos a mano lo que no sea dígito o separador típico de teléfono.
-                  const filtrado = e.target.value.replace(/[^\d+\-() ]/g, '');
-                  setFormData({ ...formData, telefonoContacto: filtrado });
-                }}
-                className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
-              />
-            </div>
+            {tipoDueno === 'cliente' && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="block text-sm font-medium text-body mb-1">
+                  Teléfono de contacto
+                </label>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="Opcional"
+                  value={formData.telefonoContacto}
+                  onChange={(e) => {
+                    // Bug real corregido (2026-09-05, reportado por el dueño): type="tel" es sólo
+                    // semántico (teclado numérico en mobile), el navegador no bloquea letras. Ahora
+                    // que este campo se usa para crear un Cliente real (ver crearClienteRapido),
+                    // filtramos a mano lo que no sea dígito o separador típico de teléfono.
+                    const filtrado = e.target.value.replace(/[^\d+\-() ]/g, '');
+                    setFormData({ ...formData, telefonoContacto: filtrado });
+                  }}
+                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>

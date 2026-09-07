@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { siembrasApi } from '../api/siembras.api';
 import SiembraForm from '../components/SiembraForm';
 import FinalizarSiembraModal from '../components/FinalizarSiembraModal';
@@ -8,9 +9,10 @@ import ConversorBandejas from '../components/ConversorBandejas';
 import { useUIStore } from '../store/useUIStore';
 import { getErrorMessage } from '../utils/errorMessage';
 import { parsearFechaLocal, formatearFechaLocal } from '../utils/fechaLocal';
-import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader2, AlertCircle, Inbox, Sprout, CheckCircle2, PackagePlus, ChevronDown, ChevronUp, Calendar, MessageSquare } from 'lucide-react';
 
 const Siembras = () => {
+  const queryClient = useQueryClient();
   const { pushToast, denyAccess, askConfirm } = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,6 +110,7 @@ const Siembras = () => {
       setSelectedSiembra(null);
       setRegistroSemillaParaSembrar(null);
       fetchSiembras();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
       pushToast('success', 'Siembra guardada correctamente.');
     } catch (err) {
       console.error(err);
@@ -119,6 +122,7 @@ const Siembras = () => {
     try {
       await siembrasApi.delete(id);
       fetchSiembras();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
       pushToast('success', 'Siembra eliminada.');
     } catch (err) {
       console.error(err);
@@ -133,6 +137,8 @@ const Siembras = () => {
       setIsFinalizarOpen(false);
       setSiembraToFinalizar(null);
       fetchSiembras();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
+      queryClient.invalidateQueries({ queryKey: ['productos'] });
       pushToast('success', 'Siembra finalizada y stock agregado al catálogo.');
     } catch (err) {
       console.error(err);
@@ -147,6 +153,8 @@ const Siembras = () => {
       setIsPaseStockOpen(false);
       setSiembraToPaseStock(null);
       fetchSiembras();
+      queryClient.invalidateQueries({ queryKey: ['bandejas-disponibles'] });
+      queryClient.invalidateQueries({ queryKey: ['productos'] });
       pushToast('success', 'Siembra convertida en producto e ingresada al stock.');
     } catch (err) {
       console.error(err);
@@ -169,6 +177,15 @@ const Siembras = () => {
       (s.dueno && s.dueno.toLowerCase().includes(term)) ||
       (s.codigoLote && s.codigoLote.toLowerCase().includes(term)) ||
       (s.numeroSiembra && s.numeroSiembra.toLowerCase().includes(term));
+  });
+
+  // Orden por defecto por fecha de siembra ascendente (pedido del dueño 2026-09-06, mismo
+  // criterio que ya se aplicó en Registro de Semillas): las sembradas más antiguas quedan
+  // arriba. Sin fecha de inicio cargada (siembras viejas), el registro se manda al final.
+  const siembrasOrdenadas = [...filteredSiembras].sort((a, b) => {
+    const fechaA = a.fechaSiembraInicio ? parsearFechaLocal(a.fechaSiembraInicio).getTime() : Infinity;
+    const fechaB = b.fechaSiembraInicio ? parsearFechaLocal(b.fechaSiembraInicio).getTime() : Infinity;
+    return fechaA - fechaB;
   });
 
   const formatOrigen = (tipoOrigen) => {
@@ -373,7 +390,7 @@ const Siembras = () => {
         <>
           {/* MOBILE VIEW: Cards Layout */}
           <div className="grid grid-cols-1 gap-4 sm:hidden">
-            {filteredSiembras.map((siembra) => {
+            {siembrasOrdenadas.map((siembra) => {
               const est = parsearFechaLocal(siembra.fechaEstimada);
               const { progress, diffDays, colorClass } = calcularProgresoSiembra(siembra);
 
@@ -406,6 +423,15 @@ const Siembras = () => {
                       {getStatusBadge(siembra.estado)}
                     </div>
 
+                    {/* Fecha de siembra visible sin abrir la tarjeta (pedido del dueño
+                        2026-09-06, mismo criterio que Registro de Semillas). */}
+                    {formatPeriodoSiembra(siembra) && (
+                      <div className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                        <Calendar className="w-4 h-4 text-accent shrink-0" />
+                        Sembrado: <span className="font-mono tabular-nums">{formatPeriodoSiembra(siembra)}</span>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-8 h-8 bg-accent-soft text-accent-ink rounded-base flex items-center justify-center shrink-0">
@@ -423,14 +449,11 @@ const Siembras = () => {
 
                   {isExpanded && (
                     <div className="px-4 pb-4 flex flex-col gap-3 border-t border-line pt-3">
+                      {/* Tipo de bandeja ya se muestra al lado de "Cant. Inicial" más abajo, no
+                          duplicarlo acá (pedido del dueño 2026-09-06). */}
                       <p className="text-xs text-muted">
-                        {formatOrigen(siembra.tipoOrigen)} • Bandeja: {siembra.variedadBandeja?.nombre || '-'}
+                        {formatOrigen(siembra.tipoOrigen)}
                       </p>
-                      {formatPeriodoSiembra(siembra) && (
-                        <p className="text-xs text-muted">
-                          Sembrado: {formatPeriodoSiembra(siembra)}
-                        </p>
-                      )}
 
                       <div className="grid grid-cols-2 gap-2 text-sm bg-canvas rounded-base p-3 border border-line">
                         <div>
@@ -439,12 +462,16 @@ const Siembras = () => {
                         </div>
                         <div>
                           <span className="text-muted block text-xs mb-0.5">Cant. Inicial</span>
-                          <span className="font-medium text-ink font-mono tabular-nums">{siembra.cantidad} u.</span>
+                          <span className="font-medium text-ink font-mono tabular-nums">{siembra.cantidad} u</span>
+                          <span className="font-medium text-ink">&nbsp;&nbsp;x&nbsp;&nbsp;{siembra.variedadBandeja?.nombre || '-'}</span>
                         </div>
                       </div>
 
                       {siembra.observaciones && (
-                        <p className="text-xs text-muted">{siembra.observaciones}</p>
+                        <div className="flex items-start gap-2 bg-warn-bg border border-warn-line rounded-base p-2.5">
+                          <MessageSquare className="w-4 h-4 text-warn-ink shrink-0 mt-0.5" />
+                          <p className="text-sm font-semibold text-warn-ink">{siembra.observaciones}</p>
+                        </div>
                       )}
 
                       {est && (
@@ -519,7 +546,7 @@ const Siembras = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {filteredSiembras.map((siembra) => (
+                {siembrasOrdenadas.map((siembra) => (
                   <tr
                     key={siembra.id}
                     id={`siembra-${siembra.id}`}

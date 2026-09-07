@@ -31,6 +31,11 @@ export const useCartStore = create(
           d.productoId === productoId ? { ...d, cantidad } : d
         ),
       })),
+      updateDetallePrecio: (productoId, precio) => set((state) => ({
+        detalles: state.detalles.map((d) =>
+          d.productoId === productoId ? { ...d, precio } : d
+        ),
+      })),
       setDescuento: (descuento) => set({ descuento }),
       setBandejasEntregadas: (bandejasEntregadas) => set({ bandejasEntregadas }),
       setMetodoPago: (metodoPago) => set({ metodoPago }),

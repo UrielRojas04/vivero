@@ -58,6 +58,7 @@ public class ChequeServiceImpl implements ChequeService {
     @Override
     @Transactional
     public ChequeDTO crearCheque(ChequeDTO dto) {
+        Cheque.validarNumeroSerie(dto.getNumeroSerie());
         Cheque cheque = new Cheque();
         cheque.setFechaRecepcion(dto.getFechaRecepcion() != null ? dto.getFechaRecepcion() : LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
         cheque.setMonto(dto.getMonto());

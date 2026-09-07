@@ -69,6 +69,28 @@ public class Cheque {
     @Column(columnDefinition = "boolean default false")
     private Boolean esEmisionPropia = false;
 
+    // Regex de numeroSerie compilado una sola vez, reusado por validarNumeroSerie().
+    private static final java.util.regex.Pattern NUMERO_SERIE_VALIDO = java.util.regex.Pattern.compile("^\\d{8}$");
+
+    /**
+     * Valida que numeroSerie, si viene cargado, tenga exactamente 8 dígitos (pedido del dueño
+     * 2026-09-06: "a veces hay cheques truchos que tienen más o menos dígitos"). El campo sigue
+     * siendo opcional -- null o vacío no rompe nada, sólo se exige el formato cuando SÍ se
+     * carga un valor. Método estático (no validación en el setter): un cheque se construye desde
+     * 3 servicios distintos (ChequeServiceImpl, VentaServiceImpl, FacturaClienteServiceImpl) sin
+     * una dependencia compartida entre ellos -- cada uno llama esto explícitamente antes de
+     * persistir, en vez de duplicar el regex tres veces o forzar una inyección nueva sólo para
+     * esta validación.
+     */
+    public static void validarNumeroSerie(String numeroSerie) {
+        if (numeroSerie == null || numeroSerie.isBlank()) {
+            return;
+        }
+        if (!NUMERO_SERIE_VALIDO.matcher(numeroSerie.trim()).matches()) {
+            throw new RuntimeException("El número de cheque debe tener exactamente 8 dígitos.");
+        }
+    }
+
     // Getters and Setters
 
     public Long getId() {

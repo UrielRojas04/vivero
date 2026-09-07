@@ -44,7 +44,7 @@ const availableYears = Array.from(
 );
 
 const formatMoney = (value) =>
-  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const Finanzas = () => {
   const { pushToast, denyAccess } = useUIStore();

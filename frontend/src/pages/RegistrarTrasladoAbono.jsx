@@ -91,7 +91,8 @@ const RegistrarTrasladoAbono = () => {
   };
 
   const filteredProductos = productosQuery.data?.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.categoriaAbonoNombre && p.categoriaAbonoNombre.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
 
   const isSaving = trasladoMutation.isPending;
@@ -148,7 +149,7 @@ const RegistrarTrasladoAbono = () => {
                     }}
                     onFocus={() => setIsDropdownOpen(true)}
                     onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                    placeholder="Buscar producto..."
+                    placeholder="Buscar producto o categoría..."
                     className="w-full pl-9 pr-3 py-2 text-sm border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent bg-transparent"
                   />
                 </div>
@@ -157,14 +158,19 @@ const RegistrarTrasladoAbono = () => {
                     {filteredProductos.map(p => (
                       <div
                         key={p.id}
-                        className="px-3 py-2 text-sm cursor-pointer hover:bg-canvas text-ink"
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-canvas text-ink flex items-center justify-between gap-2"
                         onClick={() => {
                           setFormData({ ...formData, productoId: p.id });
                           setSearchTerm(p.nombre);
                           setIsDropdownOpen(false);
                         }}
                       >
-                        {p.nombre}
+                        <span className="truncate">{p.nombre}</span>
+                        {p.categoriaAbonoNombre && (
+                          <span className="shrink-0 text-[11px] font-semibold text-accent-ink bg-accent-soft px-2 py-0.5 rounded-full">
+                            {p.categoriaAbonoNombre}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>

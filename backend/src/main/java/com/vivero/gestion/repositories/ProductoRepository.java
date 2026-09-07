@@ -27,6 +27,15 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query(value = "SELECT COALESCE(SUM(p.stock * COALESCE((SELECT m.costo_unitario FROM movimientos_stock m WHERE m.producto_id = p.id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1), 0)), 0) FROM productos p WHERE p.unidad_negocio_id = :unidadId AND p.deleted = false", nativeQuery = true)
     BigDecimal sumarCostoInventario(@Param("unidadId") Long unidadId);
 
+    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false")
+    List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockPorNegocio(@Param("unidadId") Long unidadId);
+
+    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false AND (p.dueno IS NULL OR LOWER(p.dueno) LIKE '%jefe%')")
+    List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockFisicoDisponible(@Param("unidadId") Long unidadId);
+
+    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.deleted = false ORDER BY p.stock ASC")
+    List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockCritico(@Param("unidadId") Long unidadId, org.springframework.data.domain.Pageable pageable);
+
     // Productos asociados a un proveedor, con su costo actual (tarea 3.6 de
     // config-costeo-por-proveedor): alimenta la vista previa del grupo 11 ("reaplicar a sus
     // productos"), que no se implementa en este grupo. ⚠️ Depende de la columna

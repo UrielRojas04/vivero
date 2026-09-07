@@ -6,7 +6,7 @@ import { useUIStore } from '../store/useUIStore';
 import FormattedNumberInput from '../components/FormattedNumberInput';
 
 const formatMoney = (value) =>
-  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const RendicionColega = () => {
   const { pushToast } = useUIStore();
@@ -133,6 +133,7 @@ const RendicionColega = () => {
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" />
                   <FormattedNumberInput
+                    decimales={0}
                     id="monto-rendir"
                     value={formData.monto}
                     onChange={val => setFormData({ ...formData, monto: val })}

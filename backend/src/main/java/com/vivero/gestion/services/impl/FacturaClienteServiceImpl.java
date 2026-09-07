@@ -159,6 +159,7 @@ public class FacturaClienteServiceImpl implements FacturaClienteService {
         pago = pagoRepository.save(pago);
 
         if ("CHEQUE".equalsIgnoreCase(request.getMetodoPago())) {
+            Cheque.validarNumeroSerie(request.getNumeroSerie());
             Cheque cheque = new Cheque();
             cheque.setCliente(factura.getCliente());
             cheque.setUnidadNegocio(factura.getUnidadNegocio());

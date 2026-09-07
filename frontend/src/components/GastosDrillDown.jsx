@@ -17,7 +17,7 @@ import { getErrorMessage } from '../utils/errorMessage';
 import FormattedNumberInput from '../components/FormattedNumberInput';
 
 const formatMoney = (value) =>
-  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const GastosDrillDown = ({ isModeloInsumos = false, onClose, desde, hasta }) => {
   const { pushToast, askConfirm } = useUIStore();
@@ -155,6 +155,7 @@ const GastosDrillDown = ({ isModeloInsumos = false, onClose, desde, hasta }) => 
               className="w-full border border-line rounded-base pl-7 pr-3 py-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-paper"
               value={nuevoGasto.monto}
               onChange={val => setNuevoGasto({ ...nuevoGasto, monto: val })}
+              decimales={0}
               required
             />
           </div>

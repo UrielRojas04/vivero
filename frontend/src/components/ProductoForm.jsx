@@ -403,7 +403,7 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen, codigoBarraInicial }
   };
 
   const formatearMonto = (n) =>
-    n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    n.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -612,10 +612,11 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen, codigoBarraInicial }
                   id="precio"
                   value={precio}
                   onChange={(val) => setPrecio(val)}
+                  decimales={0}
                   className={`w-full px-4 py-2.5 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all font-mono tabular-nums ${
                     errors.precio ? 'border-danger-line focus:ring-danger' : 'border-line focus:border-accent'
                   }`}
-                  placeholder="0.00"
+                  placeholder="0"
                 />
                 {errors.precio && (
                   <p className="mt-1 text-xs text-danger font-medium">{errors.precio}</p>
@@ -687,8 +688,9 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen, codigoBarraInicial }
                       id="costoProducto"
                       value={costoProducto}
                       onChange={handleCostoChange}
+                      decimales={0}
                       className="w-full px-4 py-2 rounded-base border bg-paper focus:outline-none focus:ring-2 focus:ring-accent transition-all border-line focus:border-accent font-mono tabular-nums"
-                      placeholder="0.00"
+                      placeholder="0"
                     />
                   </div>
                   <div>
@@ -827,28 +829,28 @@ const ProductoForm = ({ producto, onSave, onCancel, isOpen, codigoBarraInicial }
                   {filasDescuento.map((f, index) => (
                     <div key={index} className="flex justify-between items-center text-muted gap-2">
                       <span className="truncate">{f.nombre || 'Descuento'} (<span className="font-semibold">{f.porcentaje}%</span>):</span>
-                      <strong className="shrink-0 font-mono tabular-nums">-${f.monto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                      <strong className="shrink-0 font-mono tabular-nums">-${f.monto.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
                     </div>
                   ))}
                   <div className="flex justify-between items-center text-muted border-t border-line pt-2">
                     <span>IVA (<span className="font-semibold">{ivaEfectivo}%</span>):</span>
-                    <strong className="font-mono tabular-nums">+${desglose.montoIva.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="font-mono tabular-nums">+${desglose.montoIva.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
                   </div>
                   <div className="text-body flex justify-between items-center">
                     <span>Envío (<span className="font-semibold">{envioEfectivo}%</span>):</span>
-                    <strong className="font-mono tabular-nums">+${desglose.montoEnvio.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="font-mono tabular-nums">+${desglose.montoEnvio.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
                   </div>
                   <div className="flex justify-between items-center border-t border-line pt-2">
                     <span>C. Final:</span>
-                    <strong className="text-ink font-mono tabular-nums">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="text-ink font-mono tabular-nums">${costoFinalCalc.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
                   </div>
                   <div className="text-ink flex justify-between items-center">
                     <span className="font-semibold uppercase tracking-wider text-xs">Precio Venta:</span>
-                    <strong className="text-lg font-mono tabular-nums">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="text-lg font-mono tabular-nums">${pVenta.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
                   </div>
                   <div className="text-body flex justify-between items-center text-xs">
                     <span>Ganancia Neta:</span>
-                    <strong className="font-mono tabular-nums">+${gananciaMonto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>
+                    <strong className="font-mono tabular-nums">+${gananciaMonto.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
                   </div>
                 </div>
 

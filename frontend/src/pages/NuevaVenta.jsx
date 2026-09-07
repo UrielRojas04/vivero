@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Trash2, Search, ArrowRight, Clock, UserCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, Plus, Trash2, Search, ArrowRight, Clock, UserCheck, RotateCcw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '../api/clientes.api';
 import { productosApi } from '../api/productos.api';
@@ -20,7 +20,7 @@ const addRecent = (key, id) => {
   localStorage.setItem(key, JSON.stringify(recents));
 };
 
-const formatCurrency = (value) => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatCurrency = (value) => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 // crypto.randomUUID() requiere un contexto seguro (HTTPS o localhost).
 // Al probar desde el celular por IP de LAN (http://192.168.x.x) no está disponible y explota.
@@ -63,6 +63,7 @@ export default function NuevaVenta() {
   const addDetalle = useCartStore(state => state.addDetalle);
   const removeDetalle = useCartStore(state => state.removeDetalle);
   const updateDetalleCantidad = useCartStore(state => state.updateDetalleCantidad);
+  const updateDetallePrecio = useCartStore(state => state.updateDetallePrecio);
   const setDescuento = useCartStore(state => state.setDescuento);
   const setBandejasEntregadas = useCartStore(state => state.setBandejasEntregadas);
   const clearCart = useCartStore(state => state.clearCart);
@@ -165,8 +166,16 @@ export default function NuevaVenta() {
   const clientesRecientes = clientesRecientesIds.map(id => clientes.find(c => c.id === id)).filter(Boolean);
 
   // ---- Filtros Producto ----
+  // Busca por nombre y también por categoría (categoriaAbonoNombre sólo existe en productos de
+  // Abono; en las demás unidades queda undefined y simplemente no matchea, sin ramas por unidad).
   const productosFiltrados = busquedaProducto
-    ? productos.filter(p => p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())).slice(0, 5)
+    ? productos.filter(p => {
+        const q = busquedaProducto.toLowerCase();
+        return (
+          p.nombre.toLowerCase().includes(q) ||
+          (p.categoriaAbonoNombre && p.categoriaAbonoNombre.toLowerCase().includes(q))
+        );
+      }).slice(0, 5)
     : [];
 
   const productosRecientes = productosRecientesIds.map(id => productos.find(p => p.id === id)).filter(Boolean);
@@ -203,6 +212,10 @@ export default function NuevaVenta() {
         productoId: producto.id,
         nombre: producto.nombre,
         precio: producto.precio,
+        // Snapshot del precio de lista al momento de agregar al carrito (Decisión 7 de
+        // design.md de precio-editable-confirmacion-venta). `precio` sigue siendo el efectivo
+        // editable; `precioLista` es sólo referencia para mostrar y para el botón de restaurar.
+        precioLista: producto.precio,
         cantidad: 1,
         stock: producto.stock
       });
@@ -236,10 +249,50 @@ export default function NuevaVenta() {
     removeDetalle(productoId);
   };
 
+  // Precio por unidad editable de una línea, al confirmar la venta (Decisiones 3 y 7 de
+  // design.md de precio-editable-confirmacion-venta). '' se admite mientras el usuario borra
+  // el campo para volver a tipear; un negativo se rechaza con feedback, nunca con alert/confirm.
+  const modificarPrecio = (productoId, valor) => {
+    if (valor === '' || valor === null || valor === undefined) {
+      updateDetallePrecio(productoId, '');
+      return;
+    }
+
+    const precio = parseFloat(valor);
+    if (isNaN(precio)) {
+      return;
+    }
+    if (precio < 0) {
+      pushToast('error', 'El precio por unidad no puede ser negativo.');
+      return;
+    }
+
+    updateDetallePrecio(productoId, precio);
+  };
+
+  // Restaura el precio de lista original de la línea (referencia guardada en agregarProducto).
+  const restaurarPrecioLista = (productoId) => {
+    const d = detalles.find(x => x.productoId === productoId);
+    if (!d) return;
+    updateDetallePrecio(productoId, d.precioLista ?? d.precio);
+  };
+
   const totalCalculado = detalles.reduce((acc, curr) => {
     const cantidadFinal = parseInt(curr.cantidad) || 0;
     return acc + (curr.precio * cantidadFinal);
   }, 0);
+
+  // Pedido del dueño 2026-09-06: no reemplaza al Descuento manual (sigue siendo una palanca
+  // aparte, independiente) -- es un indicador automático de cuánto se le está "perdonando" al
+  // cliente bajando precios por línea, comparando el total al precio de lista contra el total
+  // real con los precios ajustados. Sólo cuenta rebajas (Math.max 0): subir un precio no debe
+  // mostrarse acá como un perdón negativo.
+  const totalListaCalculado = detalles.reduce((acc, curr) => {
+    const cantidadFinal = parseInt(curr.cantidad) || 0;
+    const precioListaLinea = curr.precioLista ?? curr.precio;
+    return acc + (precioListaLinea * cantidadFinal);
+  }, 0);
+  const perdonadoPorAjustePrecio = Math.max(0, totalListaCalculado - totalCalculado);
 
   const descuentoVal = parseFloat(descuento) || 0;
   const descuentoMonto = totalCalculado * (descuentoVal / 100);
@@ -260,6 +313,25 @@ export default function NuevaVenta() {
       }]);
     }
   }, [isModalOpen, pagosLineas.length, totalFinal]);
+
+  // Re-sincronización del pago auto-completado al ajustar un precio (Decisión 8 de design.md de
+  // precio-editable-confirmacion-venta): si hay UNA sola línea de pago y su monto seguía siendo
+  // el auto-completado (el usuario no lo tocó a mano), la actualizamos al nuevo total. Si hay
+  // varias líneas, o el monto fue editado, no tocamos nada -- un pago parcial deliberado es
+  // un caso válido y pisarlo sería peor que el saldo residual que evita este efecto.
+  const totalFinalAnteriorRef = useRef(totalFinal);
+  useEffect(() => {
+    const totalAnterior = totalFinalAnteriorRef.current;
+    totalFinalAnteriorRef.current = totalFinal;
+
+    if (!isModalOpen || pagosLineas.length !== 1) return;
+
+    const montoActual = parseFloat(pagosLineas[0].monto);
+    const siguioAlAutocompletado = !isNaN(montoActual) && Math.abs(montoActual - totalAnterior) < 0.005;
+    if (siguioAlAutocompletado && Math.abs(totalFinal - totalAnterior) >= 0.005) {
+      updateLineaPago(pagosLineas[0].id, 'monto', totalFinal > 0 ? totalFinal : '');
+    }
+  }, [totalFinal]);
 
   const addLineaPago = () => {
     setPagosLineas(prev => [...prev, {
@@ -285,6 +357,16 @@ export default function NuevaVenta() {
     if (isClienteExpress && !clienteExpressData.nombre.trim()) return pushToast('error', 'Ingresá el nombre del cliente express');
     if (detalles.length === 0) return pushToast('error', 'Agregá al menos un producto a la venta');
 
+    // Precio por unidad ajustado (Decisión 3 de design.md de precio-editable-confirmacion-venta):
+    // no se confirma la venta con una línea con precio vacío o negativo.
+    const lineaPrecioInvalido = detalles.find(d => {
+      const precio = d.precio === '' || d.precio === null || d.precio === undefined ? NaN : Number(d.precio);
+      return isNaN(precio) || precio < 0;
+    });
+    if (lineaPrecioInvalido) {
+      return pushToast('error', `El precio de "${lineaPrecioInvalido.nombre}" no puede estar vacío ni ser negativo.`);
+    }
+
     const pagosASubir = pagosLineas
       .filter(p => {
         const amt = parseFloat(p.monto);
@@ -300,6 +382,10 @@ export default function NuevaVenta() {
         }
         return payloadPago;
       });
+
+    if (pagosASubir.some(p => p.metodoPago === 'CHEQUE' && p.numeroSerie && p.numeroSerie.length !== 8)) {
+      return pushToast('error', 'El número de cheque debe tener exactamente 8 dígitos.');
+    }
 
     // El documento sólo se adjunta si hay tipo Y valor no vacío -- un tipo elegido sin valor
     // cargado se omite entero, en vez de mandar un tipo sin valor (spec de ventas-cliente-express).
@@ -320,7 +406,10 @@ export default function NuevaVenta() {
       bandejasEntregadas: parseInt(bandejasEntregadas) || 0,
       detalles: detalles.map(d => ({
         productoId: d.productoId,
-        cantidad: parseInt(d.cantidad) || 1
+        cantidad: parseInt(d.cantidad) || 1,
+        // Precio efectivo de la línea (Decisión 1 de design.md): el precio de lista del
+        // Producto NUNCA se toca, este valor se persiste sólo en el historial de la venta.
+        precioUnitario: Number(d.precio)
       })),
       pagos: pagosASubir
     };
@@ -552,7 +641,14 @@ export default function NuevaVenta() {
                       className="flex justify-between items-center p-3 hover:bg-canvas rounded-base border border-line transition-colors cursor-pointer"
                     >
                       <div>
-                        <p className="font-medium text-ink">{prod.nombre}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-ink">{prod.nombre}</p>
+                          {prod.categoriaAbonoNombre && (
+                            <span className="shrink-0 text-[11px] font-semibold text-accent-ink bg-accent-soft px-2 py-0.5 rounded-full">
+                              {prod.categoriaAbonoNombre}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-muted">Stock: {prod.stock} | Precio: ${prod.precio}</p>
                       </div>
                       <span className="p-2 text-accent rounded-base">
@@ -575,7 +671,14 @@ export default function NuevaVenta() {
                       className="flex justify-between items-center p-3 bg-canvas hover:bg-thead rounded-base border border-line mb-2 transition-colors cursor-pointer"
                     >
                       <div>
-                        <p className="font-medium text-ink text-sm">{prod.nombre}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-ink text-sm">{prod.nombre}</p>
+                          {prod.categoriaAbonoNombre && (
+                            <span className="shrink-0 text-[11px] font-semibold text-accent-ink bg-accent-soft px-2 py-0.5 rounded-full">
+                              {prod.categoriaAbonoNombre}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted">Stock: {prod.stock} | ${prod.precio}</p>
                       </div>
                       <span className="p-1.5 text-muted rounded-base">
@@ -700,11 +803,65 @@ export default function NuevaVenta() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
               <div className="space-y-4">
+                {/* Precio por unidad editable de cada línea (Decisión 7 de design.md de
+                    precio-editable-confirmacion-venta): el modal no listaba las líneas -- se
+                    agrega acá, arriba del bloque de totales, que es donde el dueño pidió poder
+                    ajustar el precio al momento de cerrar la venta. */}
+                <div className="bg-canvas p-4 rounded-panel border border-line space-y-3 max-h-64 overflow-y-auto">
+                  <h3 className="font-semibold text-ink text-sm">Productos</h3>
+                  {detalles.map(d => {
+                    const precioListaRef = d.precioLista ?? d.precio;
+                    const esAjustado = Number(d.precio) !== Number(precioListaRef);
+                    const cantidadFinal = parseInt(d.cantidad) || 0;
+                    return (
+                      <div key={d.productoId} className="flex flex-col sm:flex-row sm:items-center gap-2 pb-3 border-b border-line last:border-b-0 last:pb-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-ink truncate">{d.nombre}</p>
+                          <p className="text-xs text-muted">
+                            x{cantidadFinal}
+                            {esAjustado && (
+                              <span className="ml-2 text-accent-ink">Lista: ${formatCurrency(precioListaRef)}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <FormattedNumberInput
+                            id={`precio-detalle-${d.productoId}`}
+                            value={d.precio}
+                            onChange={val => modificarPrecio(d.productoId, val)}
+                            decimales={0}
+                            className="w-24 px-2 py-1 text-right border border-line rounded-base focus:ring-2 focus:ring-accent font-mono tabular-nums"
+                          />
+                          {esAjustado && (
+                            <button
+                              type="button"
+                              onClick={() => restaurarPrecioLista(d.productoId)}
+                              className="text-muted hover:text-accent-ink cursor-pointer p-1"
+                              title="Restaurar precio de lista"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                          <span className="w-20 text-right font-semibold text-ink font-mono tabular-nums text-sm">
+                            ${formatCurrency((Number(d.precio) || 0) * cantidadFinal)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <div className="bg-canvas p-4 rounded-panel border border-line">
                   <div className="flex justify-between mb-2">
                     <span className="text-muted">Subtotal</span>
                     <span className="font-semibold text-ink font-mono tabular-nums">${formatCurrency(totalCalculado)}</span>
                   </div>
+                  {perdonadoPorAjustePrecio > 0 && (
+                    <div className="flex justify-between mb-2">
+                      <span className="text-muted">Perdonado por ajuste de precio</span>
+                      <span className="font-semibold text-warn-ink font-mono tabular-nums">-${formatCurrency(perdonadoPorAjustePrecio)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-muted">Descuento (%)</span>
                     <div className="flex items-center gap-2">
@@ -717,22 +874,6 @@ export default function NuevaVenta() {
                       />
                     </div>
                   </div>
-
-              {unidadNegocioActiva !== '2' && (
-                <div className="pt-4 border-t border-line flex justify-between items-center">
-                  <span className="text-muted font-medium">Bandejas prestadas (opcional)</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted font-medium">Cant:</span>
-                    <FormattedNumberInput
-                      id="bandejasEntregadas"
-                      placeholder="0"
-                      value={bandejasEntregadas}
-                      onChange={(val) => setBandejasEntregadas(val)}
-                      className="w-24 px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none text-right font-semibold font-mono tabular-nums"
-                    />
-                  </div>
-                </div>
-              )}
 
               <div className="pt-4 border-t border-line flex justify-between items-center text-lg">
                 <span className="font-bold text-ink">Total a Pagar</span>
@@ -766,6 +907,7 @@ export default function NuevaVenta() {
                             placeholder="Monto"
                             value={linea.monto}
                             onChange={val => updateLineaPago(linea.id, 'monto', val)}
+                            decimales={0}
                             className="flex-1 w-full sm:w-auto px-3 py-2 border border-line rounded-base focus:ring-accent font-semibold font-mono tabular-nums"
                           />
                           <select
@@ -790,7 +932,14 @@ export default function NuevaVenta() {
                         {linea.metodoPago === 'CHEQUE' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-3 pl-2 sm:border-l-2 sm:border-accent border-t-2 sm:border-t-0 pt-2 sm:pt-0 border-line">
                             <input type="text" placeholder="Banco" value={linea.banco} onChange={e => updateLineaPago(linea.id, 'banco', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />
-                            <input type="text" placeholder="N° Serie" value={linea.numeroSerie} onChange={e => updateLineaPago(linea.id, 'numeroSerie', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="N° Serie (8 dígitos)"
+                              value={linea.numeroSerie}
+                              onChange={e => updateLineaPago(linea.id, 'numeroSerie', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                              className="px-2 py-1.5 border border-line rounded focus:ring-accent"
+                            />
                             <div className="flex flex-col">
                               <label className="text-[10px] text-muted font-semibold mb-0.5 ml-1">Fecha Emisión/Recepción</label>
                               <input type="date" value={linea.fechaRecepcion} onChange={e => updateLineaPago(linea.id, 'fechaRecepcion', e.target.value)} className="px-2 py-1.5 border border-line rounded focus:ring-accent" />

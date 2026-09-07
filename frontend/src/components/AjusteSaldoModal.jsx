@@ -132,6 +132,7 @@ const AjusteSaldoModal = ({ isOpen, onClose, cliente }) => {
                   required
                   value={monto}
                   onChange={(val) => setMonto(val)}
+                  decimales={0}
                   className="w-full pl-8 pr-4 py-2 bg-paper border border-line rounded-base focus:ring-2 focus:ring-accent outline-none transition-all font-mono tabular-nums"
                   placeholder="Ej: 5000"
                 />

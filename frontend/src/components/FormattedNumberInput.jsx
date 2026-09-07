@@ -14,7 +14,8 @@ const FormattedNumberInput = ({
   placeholder = '',
   disabled = false,
   id = '',
-  required = false
+  required = false,
+  decimales = 2
 }) => {
   // Estado local para mostrar el string formateado en el input
   const [displayValue, setDisplayValue] = useState('');
@@ -24,7 +25,9 @@ const FormattedNumberInput = ({
     if (val === null || val === undefined || val === '') return '';
 
     // Si viene como string que termina en coma o punto (ej. "15,"), permitimos que siga editando sin borrar la coma
-    if (typeof val === 'string' && (val.endsWith(',') || val.endsWith('.'))) {
+    // -- salvo con decimales=0 (campos de dinero sin centavos), donde no tiene sentido dejar
+    // tipear una coma que nunca se va a poder completar.
+    if (decimales > 0 && typeof val === 'string' && (val.endsWith(',') || val.endsWith('.'))) {
       return val;
     }
 
@@ -32,7 +35,7 @@ const FormattedNumberInput = ({
     if (isNaN(numberValue)) return '';
 
     return new Intl.NumberFormat('es-AR', {
-      maximumFractionDigits: 2,
+      maximumFractionDigits: decimales,
     }).format(numberValue);
   };
 

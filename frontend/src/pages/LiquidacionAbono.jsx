@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import GastosDrillDown from '../components/GastosDrillDown';
 
 const formatMoney = (value) =>
-  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const currentYear = new Date().getFullYear();
 // Mismo criterio que Finanzas.jsx (pedido del dueño 2026-09-04): el sistema arrancó en 2026, así

@@ -18,11 +18,9 @@ import com.vivero.gestion.dto.ChequeDTO;
 import com.vivero.gestion.repositories.ClienteRepository;
 import com.vivero.gestion.repositories.UnidadNegocioRepository;
 import com.vivero.gestion.security.UnidadNegocioContextHolder;
-import com.vivero.gestion.security.CuentaAbonoContextHolder;
 import com.vivero.gestion.services.ChequeService;
 import com.vivero.gestion.services.ClienteService;
 import com.vivero.gestion.services.VentaService;
-import com.vivero.gestion.models.CuentaAbono;
 
 import lombok.RequiredArgsConstructor;
 
@@ -41,12 +39,7 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         List<Cliente> clientes;
         if (unidadId != null) {
-            CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            if (unidadId == 3L && cuentaAbono != null) {
-                clientes = clienteRepository.findAllByUnidadNegocioIdAndCuentaAbono(unidadId, cuentaAbono);
-            } else {
-                clientes = clienteRepository.findAllByUnidadNegocioId(unidadId);
-            }
+            clientes = clienteRepository.findAllByUnidadNegocioId(unidadId);
         } else {
             clientes = clienteRepository.findAll();
         }
@@ -61,14 +54,8 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         Cliente cliente;
         if (unidadId != null) {
-            CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            if (unidadId == 3L && cuentaAbono != null) {
-                cliente = clienteRepository.findByIdAndUnidadNegocioIdAndCuentaAbono(id, unidadId, cuentaAbono)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a tu cuenta."));
-            } else {
-                cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
-            }
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
         } else {
             cliente = clienteRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
@@ -88,12 +75,6 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         if (unidadId != null) {
             cliente.setUnidadNegocio(unidadNegocioRepository.getReferenceById(unidadId));
-            if (unidadId == 3L) {
-                CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-                if (cuentaAbono != null) {
-                    cliente.setCuentaAbono(cuentaAbono);
-                }
-            }
         }
         
         CuentaCorrienteDinero ctaDinero = new CuentaCorrienteDinero();
@@ -116,14 +97,8 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         Cliente cliente;
         if (unidadId != null) {
-            CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            if (unidadId == 3L && cuentaAbono != null) {
-                cliente = clienteRepository.findByIdAndUnidadNegocioIdAndCuentaAbono(id, unidadId, cuentaAbono)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a tu cuenta."));
-            } else {
-                cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
-            }
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
         } else {
             cliente = clienteRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
@@ -144,14 +119,8 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         Cliente cliente;
         if (unidadId != null) {
-            CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            if (unidadId == 3L && cuentaAbono != null) {
-                cliente = clienteRepository.findByIdAndUnidadNegocioIdAndCuentaAbono(id, unidadId, cuentaAbono)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a tu cuenta."));
-            } else {
-                cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
-            }
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
         } else {
             cliente = clienteRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
@@ -166,14 +135,8 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         Cliente cliente;
         if (unidadId != null) {
-            CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            if (unidadId == 3L && cuentaAbono != null) {
-                cliente = clienteRepository.findByIdAndUnidadNegocioIdAndCuentaAbono(id, unidadId, cuentaAbono)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a tu cuenta."));
-            } else {
-                cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
-            }
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
         } else {
             cliente = clienteRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
@@ -198,14 +161,8 @@ public class ClienteServiceImpl implements ClienteService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         Cliente cliente;
         if (unidadId != null) {
-            CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            if (unidadId == 3L && cuentaAbono != null) {
-                cliente = clienteRepository.findByIdAndUnidadNegocioIdAndCuentaAbono(id, unidadId, cuentaAbono)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a tu cuenta."));
-            } else {
-                cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
-                        .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
-            }
+            cliente = clienteRepository.findByIdAndUnidadNegocioId(id, unidadId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o no pertenece a la unidad."));
         } else {
             cliente = clienteRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id " + id));
