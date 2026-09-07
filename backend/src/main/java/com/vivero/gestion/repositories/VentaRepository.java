@@ -86,4 +86,14 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query("SELECT COALESCE(SUM(v.totalFinal), 0) FROM Venta v WHERE v.cuentaAbono = :cuenta AND v.fecha BETWEEN :desde AND :hasta")
     BigDecimal sumarTotalVentasPorCuentaYPeriodo(@Param("cuenta") com.vivero.gestion.models.CuentaAbono cuenta, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    /**
+     * Una venta puntual con sus "detalles" (items) precargados, para el botón "ver remito" del
+     * historial de cobros de Abono. No filtra por cuenta a propósito -- es una vista global igual
+     * que el historial que la llama (Decisión 4 de design.md de historial-cobros-abono). Los
+     * "pagos" se completan aparte con completarPagos(...), mismo motivo que
+     * findByClienteIdAndUnidadNegocioIdOrderByFechaDesc (MultipleBagFetchException).
+     */
+    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.detalles WHERE v.id = :id")
+    java.util.Optional<Venta> findByIdWithDetalles(@Param("id") Long id);
 }

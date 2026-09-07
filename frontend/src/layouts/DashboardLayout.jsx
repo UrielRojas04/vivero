@@ -9,7 +9,7 @@ import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import ThemeToggle from '../components/ThemeToggle';
 import { siembrasApi } from '../api/siembras.api';
 import { registroSemillasApi } from '../api/registroSemillas.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory, PackagePlus } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory, PackagePlus, Wallet } from 'lucide-react';
 import logoVivero from '../assets/logo-vivero.png';
 import logoHerramientas from '../assets/logo-herramientas.png';
 
@@ -80,6 +80,7 @@ export const navGroups = [
       // (pedido del dueño 2026-09-04) -- es conceptualmente lo mismo que el ítem "Finanzas" de
       // arriba, sólo que Abono tiene su propia ruta/pantalla en vez de reusar /finanzas.
       { to: '/abono/liquidacion', label: 'Finanzas', icon: TrendingUp, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
+      { to: '/abono/cobros', label: 'Historial de Cobros', icon: Wallet, permission: 'LEER_FINANZAS', unidades: ['abono'] },
       { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas', 'abono'] },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB', unidades: ['vivero', 'herramientas', 'abono'] },
     ]

@@ -46,4 +46,13 @@ public class VentaController {
     public ResponseEntity<VentaResponseDTO> registrarPago(@PathVariable Long id, @RequestBody PagoRequestDTO request) {
         return ResponseEntity.ok(ventaService.registrarPago(id, request));
     }
+
+    // Botón "ver remito" del historial de cobros de Abono: LEER_FINANZAS (el permiso que ya
+    // protege esa pantalla), no ESCRIBIR_VENTAS -- no se amplía a quién puede ver una venta
+    // puntual en general, sólo se habilita lo que esa pantalla necesita.
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
+    public ResponseEntity<VentaResponseDTO> obtenerPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(ventaService.obtenerPorId(id));
+    }
 }

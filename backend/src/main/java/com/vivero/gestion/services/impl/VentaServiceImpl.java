@@ -434,6 +434,24 @@ public class VentaServiceImpl implements VentaService {
         return mapearAVentaResponseDTO(ventaGuardada);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public VentaResponseDTO obtenerPorId(Long id) {
+        Venta venta = ventaRepository.findByIdWithDetalles(id)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + id));
+
+        // Sólo restringe por unidad de negocio activa (mismo guard que registrarPago), NUNCA por
+        // cuenta -- ver Javadoc de la interfaz.
+        Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
+        if (unidadId != null && venta.getUnidadNegocio() != null
+                && !unidadId.equals(venta.getUnidadNegocio().getId())) {
+            throw new RuntimeException("La venta no pertenece a la unidad de negocio activa.");
+        }
+
+        ventaRepository.completarPagos(List.of(venta));
+        return mapearAVentaResponseDTO(venta);
+    }
+
     private VentaResponseDTO mapearAVentaResponseDTO(Venta venta) {
         VentaResponseDTO dto = new VentaResponseDTO();
         dto.setId(venta.getId());

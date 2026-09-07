@@ -1,6 +1,5 @@
 package com.vivero.gestion.security;
 
-import com.vivero.gestion.models.CuentaAbono;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,9 +12,6 @@ import java.io.IOException;
 @Component
 public class CuentaAbonoFilter extends OncePerRequestFilter {
 
-    private static final String USERNAME_COLEGA = "Pablo";
-    private static final String USERNAME_JEFE = "Sergio";
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -23,11 +19,11 @@ public class CuentaAbonoFilter extends OncePerRequestFilter {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             String username = auth.getName();
-            if (USERNAME_COLEGA.equals(username)) {
-                CuentaAbonoContextHolder.setCuentaAbono(CuentaAbono.COLEGA);
-            } else if (USERNAME_JEFE.equals(username)) {
-                CuentaAbonoContextHolder.setCuentaAbono(CuentaAbono.JEFE);
-            }
+            // Delegado a CuentaAbonoNombres.cuentaDe(...) (Decisión 1 de design.md de
+            // historial-cobros-abono): antes las constantes USERNAME_JEFE/USERNAME_COLEGA y el
+            // if/else vivían acá, duplicando el mapeo con el que necesitaba la dirección inversa
+            // ("cuenta -> nombre visible"). Mismo comportamiento, un solo lugar.
+            CuentaAbonoNombres.cuentaDe(username).ifPresent(CuentaAbonoContextHolder::setCuentaAbono);
             // Cualquier otro usuario autenticado (un tercer empleado futuro, por ejemplo) NO cae
             // en JEFE por defecto: el contexto queda vacío. Atribuirle silenciosamente sus
             // operaciones de Abono al jefe sería peor que dejarlas sin atribución de cuenta

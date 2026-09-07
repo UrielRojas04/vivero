@@ -26,4 +26,12 @@ public interface VentaService {
      * balance global sin quedar asociado a ninguna venta ni actualizar su estado.
      */
     VentaResponseDTO registrarPago(Long ventaId, PagoRequestDTO request);
+
+    /**
+     * Una venta puntual con sus items, para el botón "ver remito" (pedido puntual del dueño,
+     * historial de cobros de Abono). Deliberadamente NO se filtra por CuentaAbonoContextHolder:
+     * el jefe tiene que poder ver el remito de una venta cobrada por el colega y viceversa, mismo
+     * criterio de vista global que ya sostiene el historial de cobros que la llama.
+     */
+    VentaResponseDTO obtenerPorId(Long id);
 }

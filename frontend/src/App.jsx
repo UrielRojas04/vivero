@@ -29,6 +29,7 @@ import RegistrarTrasladoAbono from './pages/RegistrarTrasladoAbono';
 import StockUbicacionAbono from './pages/StockUbicacionAbono';
 import RendicionColega from './pages/RendicionColega';
 import LiquidacionAbono from './pages/LiquidacionAbono';
+import HistorialCobrosAbono from './pages/HistorialCobrosAbono';
 import ProtectedRoute from './components/ProtectedRoute';
 import DefaultRedirect from './components/DefaultRedirect';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -148,6 +149,9 @@ function App() {
             <Route element={<ProtectedRoute requiredPermission="ESCRIBIR_VENTAS" />}>
               <Route path="/abono/rendiciones" element={<RendicionColega />} />
               <Route path="/abono/liquidacion" element={<LiquidacionAbono />} />
+            </Route>
+            <Route element={<ProtectedRoute requiredPermission="LEER_FINANZAS" />}>
+              <Route path="/abono/cobros" element={<HistorialCobrosAbono />} />
             </Route>
           </Route>
         </Route>

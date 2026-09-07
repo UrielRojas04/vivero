@@ -23,6 +23,17 @@ export const abonoApi = {
     axios.post('/abono/stock/traslados', data),
 
   // Ajustar stock (correcciones o mermas)
-  registrarAjuste: (data) => 
+  registrarAjuste: (data) =>
     axios.post('/abono/stock/ajustes', data),
+
+  // Historial global de cobros de Abono (change historial-cobros-abono): ambas cuentas juntas,
+  // paginado, filtrable por rango de fechas y por cliente. Sólo se envían los parámetros
+  // presentes (mismo estilo que getHistorial).
+  getHistorialCobros: ({ page = 0, size = 20, desde, hasta, q } = {}) => {
+    const params = { page, size };
+    if (desde) params.desde = desde;
+    if (hasta) params.hasta = hasta;
+    if (q) params.q = q;
+    return axios.get('/abono/cobros', { params });
+  },
 };
