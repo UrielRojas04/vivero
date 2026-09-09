@@ -40,8 +40,15 @@ public class ProductoController {
     // producto en NuevaVenta.jsx (productosApi.getAll()) lo necesita, ya que la sección "Ventas"
     // del modal de roles ya NO empaqueta LEER_STOCK (para que un rol de sólo Ventas no vea la
     // sección completa de Productos en el menú).
+    // Ampliado de nuevo (change entregas-pendientes-confirmacion-vivero): se suma
+    // ESCRIBIR_ENTREGAS -- mismo criterio, el buscador de producto en Entregas.jsx lo necesita
+    // para un rol que sólo tiene la sección "Entregas" tildada.
+    // Ampliado de nuevo (2026-09-09, pedido del dueño): se suma ESCRIBIR_BANDEJAS -- el buscador
+    // de producto de RegistrarDevolucionProductoModal.jsx (dentro de la sección Devoluciones)
+    // llama a este mismo endpoint (productosApi.getAll()) para elegir qué producto sobrante se
+    // devuelve, y un rol de sólo Devoluciones lo necesita igual que Ventas/Producción/Entregas.
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('LEER_STOCK', 'ESCRIBIR_PRODUCCION', 'ESCRIBIR_VENTAS')")
+    @PreAuthorize("hasAnyAuthority('LEER_STOCK', 'ESCRIBIR_PRODUCCION', 'ESCRIBIR_VENTAS', 'ESCRIBIR_ENTREGAS', 'ESCRIBIR_BANDEJAS')")
     public ResponseEntity<List<ProductoDTO>> obtenerTodosLosProductos() {
         List<ProductoDTO> dtos = productoService.obtenerTodosLosProductos();
         return ResponseEntity.ok(dtos);

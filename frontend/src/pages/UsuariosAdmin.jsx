@@ -74,6 +74,11 @@ export default function UsuariosAdmin() {
         ESCRIBIR_PRODUCCION: ['abono'],
         LEER_FINANZAS: [], // oculto siempre, ver comentario arriba
         LEER_CONFIGURACION: ['vivero', 'abono'],
+        // Change entregas-pendientes-confirmacion-vivero (tarea 16.3): sin esto el permiso existe
+        // en el enum pero es inasignable desde acá -- bug real ya cometido antes con otros
+        // permisos nuevos (ver comentario de LEER_CONFIGURACION en DataInitializer).
+        LEER_ENTREGAS: ['vivero'],
+        ESCRIBIR_ENTREGAS: ['vivero'],
     };
     const permisosVisiblesAvanzado = permisos.filter(p => (PERMISO_UNIDAD_MAP[p.nombre] || []).includes(unidadSlug));
 
@@ -113,7 +118,18 @@ export default function UsuariosAdmin() {
         { id: 'traslados-abono', name: 'Traslados', permNames: ['ESCRIBIR_STOCK'], unidades: ['abono'] },
         { id: 'rendiciones-abono', name: 'Rendiciones', permNames: ['ESCRIBIR_VENTAS'], unidades: ['abono'] },
         { id: 'clientes', name: 'Clientes', permNames: ['LEER_CLIENTES', 'ESCRIBIR_CLIENTES'], unidades: ['vivero', 'herramientas', 'abono'] },
-        { id: 'bandejas', name: 'Devolución de Bandejas', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'], unidades: ['vivero'] },
+        // Renombrado de "Devolución de Bandejas" a "Devoluciones" (pedido del dueño, 2026-09-09):
+        // la sección Devoluciones.jsx ya cubre bandejas Y productos sobrantes en una sola pantalla
+        // con dos pestañas, y ambos backends (BandejasController, DevolucionController) están
+        // gateados por este mismo par de permisos -- no hace falta un permiso nuevo, sólo
+        // reflejar en el nombre que la casilla ya maneja la sección entera.
+        { id: 'bandejas', name: 'Devoluciones', permNames: ['LEER_BANDEJAS', 'ESCRIBIR_BANDEJAS'], unidades: ['vivero'] },
+        // Change entregas-pendientes-confirmacion-vivero (tarea 16.4, Decisión 8 de design.md):
+        // la casilla reparte SÓLO ESCRIBIR_ENTREGAS (registrar), el permiso del empleado.
+        // LEER_ENTREGAS (supervisar/confirmar/rechazar) queda deliberadamente fuera de acá, igual
+        // que Finanzas/Cheques más abajo -- es el permiso del dueño, sólo tildable a mano desde
+        // "Avanzado", nunca repartido junto con una sección de empleado.
+        { id: 'entregas', name: 'Entregas', permNames: ['ESCRIBIR_ENTREGAS'], unidades: ['vivero'] },
         { id: 'pedidos', name: 'Pedidos', permNames: ['LEER_PEDIDOS', 'ESCRIBIR_PEDIDOS'], unidades: ['herramientas'] },
         // Finanzas y Cheques NO tienen casilla acá -- ausencia deliberada, no un olvido. El acceso
         // financiero queda reservado a los administradores de cada unidad (JEFE en Vivero; JEFE y

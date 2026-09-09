@@ -6,12 +6,13 @@ import Productos from './pages/Productos';
 import Insumos from './pages/Insumos';
 import Clientes from './pages/Clientes';
 import CuentaCorrienteCliente from './pages/CuentaCorrienteCliente';
-import DevolucionBandejas from './pages/DevolucionBandejas';
+import Devoluciones from './pages/Devoluciones';
 import UsuariosAdmin from './pages/UsuariosAdmin';
 import Finanzas from './pages/Finanzas';
 import Cheques from './pages/Cheques';
 import Siembras from './pages/Siembras';
 import RegistroSemillas from './pages/RegistroSemillas';
+import Entregas from './pages/Entregas';
 import VariedadesPlantas from './pages/VariedadesPlantas';
 import VariedadesBandejas from './pages/VariedadesBandejas';
 import Configuracion from './pages/Configuracion';
@@ -73,17 +74,22 @@ function App() {
               <Route path="/insumos" element={<Insumos />} />
             </Route>
 
+            {/* Change entregas-pendientes-confirmacion-vivero (tarea 16.2): exclusivo de Vivero
+                (Decisión 9 de design.md) -- el gating por unidad lo hace el guard de
+                DashboardLayout, acá sólo se exige el permiso de escritura del empleado. */}
+            <Route element={<ProtectedRoute requiredPermission="ESCRIBIR_ENTREGAS" />}>
+              <Route path="/entregas" element={<Entregas />} />
+            </Route>
+
             <Route element={<ProtectedRoute requiredPermission="LEER_CLIENTES" />}>
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/clientes/:id/cuenta-corriente" element={<CuentaCorrienteCliente />} />
             </Route>
 
-            {/* Devolución de Bandejas: alcanzable con LEER_CLIENTES (jefe, como siempre) O con el
-                permiso acotado LEER_BANDEJAS (empleado al que se le otorgó sólo esto). No va dentro
-                del grupo de arriba porque ese exige LEER_CLIENTES a secas y dejaría afuera al
-                empleado con el permiso acotado — es justamente el caso que resuelve este change. */}
+            {/* Devoluciones: alcanzable con LEER_CLIENTES (jefe, como siempre) O con el
+                permiso acotado LEER_BANDEJAS (empleado al que se le otorgó sólo esto). */}
             <Route element={<ProtectedRoute requiredPermission={['LEER_CLIENTES', 'LEER_BANDEJAS']} />}>
-              <Route path="/bandejas" element={<DevolucionBandejas />} />
+              <Route path="/bandejas" element={<Devoluciones />} />
             </Route>
 
             {/* Módulo de Ventas con sus subsecciones */}
@@ -91,6 +97,13 @@ function App() {
               <Route element={<VentasLayout />}>
                 <Route path="nueva" element={<NuevaVenta />} />
                 <Route path="historial" element={<HistorialVentas />} />
+                {/* Historial de Cobros (Abono): pedido del dueño 2026-09-09, se movió de ruta
+                    propia (/abono/cobros) a pestaña dentro de Ventas. Sigue exigiendo
+                    LEER_FINANZAS además de ESCRIBIR_VENTAS (el gate del padre) -- mismo permiso
+                    que ya tenía como ruta independiente, ahora en un ProtectedRoute anidado. */}
+                <Route element={<ProtectedRoute requiredPermission="LEER_FINANZAS" />}>
+                  <Route path="cobros" element={<HistorialCobrosAbono />} />
+                </Route>
                 {/* Redirección por defecto */}
                 <Route index element={<Navigate to="nueva" replace />} />
               </Route>
@@ -149,9 +162,6 @@ function App() {
             <Route element={<ProtectedRoute requiredPermission="ESCRIBIR_VENTAS" />}>
               <Route path="/abono/rendiciones" element={<RendicionColega />} />
               <Route path="/abono/liquidacion" element={<LiquidacionAbono />} />
-            </Route>
-            <Route element={<ProtectedRoute requiredPermission="LEER_FINANZAS" />}>
-              <Route path="/abono/cobros" element={<HistorialCobrosAbono />} />
             </Route>
           </Route>
         </Route>

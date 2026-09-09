@@ -28,7 +28,11 @@ public class ClienteController {
     // que sin esto un rol de sólo Ventas no podría buscar clientes al cargar una venta). Ninguno
     // de esos formularios muestra el saldo, así que no hay exposición visual de datos financieros
     // pese a que ClienteDTO trae el balance completo en la respuesta.
-    @PreAuthorize("hasAnyAuthority('LEER_CLIENTES', 'LEER_SIEMBRAS', 'LEER_REGISTRO_SEMILLAS', 'ESCRIBIR_VENTAS')")
+    // Ampliado de nuevo (change entregas-pendientes-confirmacion-vivero): se suma
+    // ESCRIBIR_ENTREGAS -- el buscador de cliente de Entregas.jsx es el mismo patrón, y un rol de
+    // sólo Entregas (el caso típico: un empleado que NO tiene ESCRIBIR_VENTAS ni ningún otro
+    // permiso de este OR) necesita poder buscar clientes igual que los demás.
+    @PreAuthorize("hasAnyAuthority('LEER_CLIENTES', 'LEER_SIEMBRAS', 'LEER_REGISTRO_SEMILLAS', 'ESCRIBIR_VENTAS', 'ESCRIBIR_ENTREGAS')")
     @GetMapping
     public ResponseEntity<List<ClienteDTO>> getAll() {
         return ResponseEntity.ok(clienteService.getAll());
@@ -50,7 +54,11 @@ public class ClienteController {
     // de sólo Ventas necesita poder darlo de alta sin depender de otro rol (el GET de acá arriba
     // ya incluía ESCRIBIR_VENTAS: Ventas podía leer la agenda pero no crear -- esto cierra esa
     // asimetría). No se crea ningún permiso nuevo, DataInitializer no se toca.
-    @PreAuthorize("hasAnyAuthority('ESCRIBIR_CLIENTES', 'ESCRIBIR_SIEMBRAS', 'ESCRIBIR_REGISTRO_SEMILLAS', 'ESCRIBIR_VENTAS')")
+    // Ampliado de nuevo (change entregas-pendientes-confirmacion-vivero): se suma
+    // ESCRIBIR_ENTREGAS -- CrearClienteRapido en Entregas.jsx necesita poder crear al vuelo igual
+    // que los demás buscadores (Decisión 7 de design.md: una entrega pendiente siempre es a un
+    // cliente real de la agenda, nunca casual, así que el alta rápida es imprescindible acá).
+    @PreAuthorize("hasAnyAuthority('ESCRIBIR_CLIENTES', 'ESCRIBIR_SIEMBRAS', 'ESCRIBIR_REGISTRO_SEMILLAS', 'ESCRIBIR_VENTAS', 'ESCRIBIR_ENTREGAS')")
     @PostMapping
     public ResponseEntity<ClienteDTO> create(@RequestBody ClienteDTO clienteDTO) {
         return new ResponseEntity<>(clienteService.create(clienteDTO), HttpStatus.CREATED);

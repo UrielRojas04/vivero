@@ -73,6 +73,61 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional
     public VentaResponseDTO crearVenta(VentaRequestDTO request, String username) {
+        // Delegado sin cambio de comportamiento (change entregas-pendientes-confirmacion-vivero,
+        // Decisión 4 de design.md, tarea 8.2): movimientosPorLinea == null es EXACTAMENTE el
+        // camino de siempre, línea por línea -- contrato de no-regresión verificado por la red de
+        // seguridad de venta (tarea 8.1/8.2), que debe seguir pasando sin modificarse.
+        return crearVentaInterna(request, username, null);
+    }
+
+    @Override
+    @Transactional
+    public VentaResponseDTO crearVentaConStockYaDescontado(VentaRequestDTO request, String username,
+                                                             List<MovimientoStock> movimientosPorLinea) {
+        // Este camino existe específicamente para "el stock ya salió" (confirmación de una
+        // EntregaPendiente, tarea 9 de tasks.md) -- movimientosPorLinea nulo acá sería un llamador
+        // confundido, no el contrato normal de venta (para eso está crearVenta). El resto de la
+        // validación (tamaño, elementos null, unidad Abono) vive en crearVentaInterna porque
+        // aplica a cualquier invocación con movimientosPorLinea no nulo, no sólo a esta entrada
+        // pública (tarea 8.4/8.5/8.6 de tasks.md).
+        if (movimientosPorLinea == null) {
+            throw new IllegalArgumentException(
+                    "crearVentaConStockYaDescontado requiere los movimientos de stock ya generados");
+        }
+        return crearVentaInterna(request, username, movimientosPorLinea);
+    }
+
+    // movimientosPorLinea, cuando no es null, viene ÍNDICE-ALINEADO con request.getDetalles()
+    // (misma longitud, misma posición -- NUNCA un Map: se rompería si la entrega repite el mismo
+    // producto en dos líneas). Lo usa la confirmación de una EntregaPendiente (grupo 9): el stock
+    // ya salió al registrarse la entrega, así que la rama Vivero/Herramientas de acá abajo se
+    // saltea su bloque de stock y toma el MovimientoStock ya existente de esa línea -- el costo
+    // congelado sale de ahí, no de un movimiento nuevo (Decisión 3 de design.md).
+    @Transactional
+    public VentaResponseDTO crearVentaInterna(VentaRequestDTO request, String username,
+                                               List<MovimientoStock> movimientosPorLinea) {
+        if (movimientosPorLinea != null) {
+            if (request.getDetalles() == null || movimientosPorLinea.size() != request.getDetalles().size()) {
+                throw new IllegalArgumentException(
+                        "La cantidad de movimientos de stock no coincide con la cantidad de líneas de la venta");
+            }
+            for (MovimientoStock m : movimientosPorLinea) {
+                if (m == null) {
+                    throw new IllegalArgumentException("Ningún movimiento de stock puede ser null");
+                }
+            }
+            // Tarea 8.6: la rama de StockAbono no participa de este flujo -- se valida temprano,
+            // antes de tocar cliente/factura/stock, leyendo la unidad activa directo del contexto
+            // (todavía no existe `venta.getUnidadNegocio()` en este punto del método).
+            Long unidadIdCheck = UnidadNegocioContextHolder.getUnidadNegocioId();
+            UnidadNegocio unidadCheck = unidadIdCheck != null
+                    ? unidadNegocioRepository.findById(unidadIdCheck).orElse(null) : null;
+            if (unidadCheck != null && "Abono".equals(unidadCheck.getNombre())) {
+                throw new IllegalArgumentException(
+                        "La confirmación de entregas pendientes no está disponible para la unidad Abono");
+            }
+        }
+
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
                 
@@ -162,7 +217,9 @@ public class VentaServiceImpl implements VentaService {
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        for (VentaDetalleRequestDTO detReq : request.getDetalles()) {
+        List<VentaDetalleRequestDTO> detallesReq = request.getDetalles();
+        for (int i = 0; i < detallesReq.size(); i++) {
+            VentaDetalleRequestDTO detReq = detallesReq.get(i);
             Producto producto = productoRepository.findById(detReq.getProductoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detReq.getProductoId()));
 
@@ -195,20 +252,29 @@ public class VentaServiceImpl implements VentaService {
                 // (negativo), rechazar antes de tocar stock o registrar movimiento alguno.
                 BigDecimal precioHist = resolverPrecioUnitario(detReq, producto);
 
-                // 1. Validar y descontar stock global
+                // 1. Validar y descontar stock global -- salvo que el stock ya haya salido antes
+                // (confirmación de una EntregaPendiente, Decisión 4 de design.md de
+                // entregas-pendientes-confirmacion-vivero, tarea 8.4): en ese caso se reutiliza el
+                // MovimientoStock ya existente de esa línea, índice-alineado, sin volver a validar
+                // ni descontar stock ni crear un movimiento nuevo.
                 if (detReq.getCantidad() <= 0) {
                     throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
                 }
-                int stockActual = producto.getStock() == null ? 0 : producto.getStock();
-                if (detReq.getCantidad() > stockActual) {
-                    throw new IllegalArgumentException("No hay stock suficiente para el producto: " + producto.getNombre());
-                }
-                producto.setStock(stockActual - detReq.getCantidad());
-                productoRepository.save(producto); // actualiza stock
-                sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(producto.getId(), producto.getStock()));
+                MovimientoStock mov;
+                if (movimientosPorLinea != null) {
+                    mov = movimientosPorLinea.get(i);
+                } else {
+                    int stockActual = producto.getStock() == null ? 0 : producto.getStock();
+                    if (detReq.getCantidad() > stockActual) {
+                        throw new IllegalArgumentException("No hay stock suficiente para el producto: " + producto.getNombre());
+                    }
+                    producto.setStock(stockActual - detReq.getCantidad());
+                    productoRepository.save(producto); // actualiza stock
+                    sseService.emitStockUpdate(new com.vivero.gestion.dto.StockUpdateEvent(producto.getId(), producto.getStock()));
 
-                // 2. Crear movimiento de stock para la traza (con costo congelado)
-                MovimientoStock mov = movimientoStockService.registrarMovimiento(producto, detReq.getCantidad(), TipoMovimientoStock.VENTA, usuario);
+                    // 2. Crear movimiento de stock para la traza (con costo congelado)
+                    mov = movimientoStockService.registrarMovimiento(producto, detReq.getCantidad(), TipoMovimientoStock.VENTA, usuario);
+                }
 
                 // 3. Crear detalle de venta (precio efectivo y costo histórico copiados)
                 VentaDetalle detalle = new VentaDetalle();
@@ -327,24 +393,7 @@ public class VentaServiceImpl implements VentaService {
         Long unidadId = UnidadNegocioContextHolder.getUnidadNegocioId();
         List<Venta> ventas;
         if (unidadId != null) {
-            com.vivero.gestion.models.CuentaAbono cuentaAbono = CuentaAbonoContextHolder.getCuentaAbono();
-            // Antes: `unidadId == 3L` (literal frágil, mismo anti-patrón que FinanzasServiceImpl
-            // ya eliminó vía ModeloCostoUnidad). CuentaAbonoContextHolder se completa para
-            // CUALQUIER usuario autenticado (jefe/colega), sin importar la unidad que esté
-            // consultando, así que `cuentaAbono != null` por sí solo NO alcanza para distinguir
-            // "estoy mirando Abono": filtrar Vivero/Herramientas por cuentaAbono rompería su
-            // listado (esas ventas tienen `cuenta_abono` NULL en la base, así que el filtro
-            // devolvería vacío). Se reemplaza por una resolución por nombre de unidad, igual al
-            // patrón ya usado en RendicionColegaServiceImpl (`findByNombre("Abono")`), en vez de
-            // asumir que el id de la unidad Abono es 3.
-            boolean esUnidadAbono = unidadNegocioRepository.findById(unidadId)
-                    .map(u -> "Abono".equals(u.getNombre()))
-                    .orElse(false);
-            if (esUnidadAbono && cuentaAbono != null) {
-                ventas = ventaRepository.findAllByUnidadNegocioIdAndCuentaAbonoOrderByFechaDesc(unidadId, cuentaAbono);
-            } else {
-                ventas = ventaRepository.findAllByUnidadNegocioIdOrderByFechaDesc(unidadId);
-            }
+            ventas = ventaRepository.findAllByUnidadNegocioIdOrderByFechaDesc(unidadId);
         } else {
             ventas = ventaRepository.findAllByOrderByFechaDesc();
         }
@@ -517,6 +566,9 @@ public class VentaServiceImpl implements VentaService {
                     if (d.getProducto() != null) {
                         dDto.setProductoId(d.getProducto().getId());
                         dDto.setProductoNombre(d.getProducto().getNombre());
+                        if (d.getProducto().getCategoriaAbono() != null) {
+                            dDto.setCategoriaAbonoNombre(d.getProducto().getCategoriaAbono().getNombre());
+                        }
                     } else {
                         dDto.setProductoNombre("(eliminado)");
                     }

@@ -28,7 +28,14 @@ public enum PermisoEnum {
     ESCRIBIR_PRODUCCION(18L),
     LEER_REGISTRO_SEMILLAS(19L),
     ESCRIBIR_REGISTRO_SEMILLAS(20L),
-    LEER_CONFIGURACION(21L);
+    LEER_CONFIGURACION(21L),
+    // Change entregas-pendientes-confirmacion-vivero, Decisión 8 de design.md: agregados AL
+    // FINAL, sin reordenar. LEER_ENTREGAS es el permiso del DUEÑO (supervisar: ver todas las
+    // entregas de la unidad, ver la firma, confirmar y rechazar -- mismo precedente que
+    // LEER_FINANZAS, un nombre de "lectura" que gatea escrituras). ESCRIBIR_ENTREGAS es el
+    // permiso del EMPLEADO (registrar una entrega y ver las propias).
+    LEER_ENTREGAS(22L),
+    ESCRIBIR_ENTREGAS(23L);
 
     private final Long id;
 

@@ -4,9 +4,10 @@ import { getIconoUnidad } from '../utils/unidadIconos';
 import StockPieChart from '../components/StockPieChart';
 import AlertaStock from '../components/AlertaStock';
 import BandejasDisponiblesList from '../components/BandejasDisponiblesList';
+import EntregasPendientesList from '../components/EntregasPendientesList';
 
 const Dashboard = () => {
-  const { unidadNegocioActiva } = useAuthStore();
+  const { unidadNegocioActiva, hasPermission } = useAuthStore();
   const IconoUnidad = getIconoUnidad(unidadNegocioActiva);
 
   return (
@@ -37,6 +38,12 @@ const Dashboard = () => {
         {unidadNegocioActiva === '1' && (
           <div className="col-span-1">
             <BandejasDisponiblesList />
+          </div>
+        )}
+
+        {unidadNegocioActiva === '1' && hasPermission('LEER_ENTREGAS') && (
+          <div className="col-span-1">
+            <EntregasPendientesList />
           </div>
         )}
       </div>

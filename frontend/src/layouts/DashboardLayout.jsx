@@ -9,7 +9,7 @@ import PermissionDeniedModal from '../components/PermissionDeniedModal';
 import ThemeToggle from '../components/ThemeToggle';
 import { siembrasApi } from '../api/siembras.api';
 import { registroSemillasApi } from '../api/registroSemillas.api';
-import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory, PackagePlus, Wallet } from 'lucide-react';
+import { LogOut, Leaf, LayoutDashboard, Package, Wrench, Users, Shield, ShoppingCart, ListChecks, PieChart, Briefcase, CreditCard, Sprout, Settings, ChevronDown, ChevronUp, X, Bell, Clock, Building2, Menu, PackageMinus, ClipboardList, TrendingUp, HandCoins, Truck, Factory, PackagePlus, PackageCheck } from 'lucide-react';
 import logoVivero from '../assets/logo-vivero.png';
 import logoHerramientas from '../assets/logo-herramientas.png';
 
@@ -40,7 +40,12 @@ export const navGroups = [
   {
     title: 'Principal',
     items: [
-      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, unidades: ['vivero', 'herramientas', 'abono'], onlyJefe: true },
+      // Whitelist por username (mismo criterio hardcodeado que ya usa el resto del repo para
+      // Sergio -- ver CuentaAbonoFilter/UsuarioServiceImpl): Hernán agregado 2026-09-09 (pedido
+      // del dueño) para que vea el Dashboard sólo en Herramientas -- no hace falta acotarlo acá
+      // por unidad además, porque la cuenta de Hernán sólo tiene asignada la unidad Herramientas
+      // (usuario_unidad_negocio), así que nunca puede pararse en Vivero/Abono para verlo ahí.
+      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, unidades: ['vivero', 'herramientas', 'abono'], usernamesPermitidos: ['Sergio', 'Hernan'] },
     ]
   },
   {
@@ -48,6 +53,10 @@ export const navGroups = [
     items: [
       { to: '/ventas/nueva', label: 'Ventas', icon: ShoppingCart, permission: 'ESCRIBIR_VENTAS', unidades: ['vivero', 'herramientas', 'abono'] },
       { to: '/facturas', label: 'Facturación', icon: ListChecks, permission: 'LEER_FACTURACION', unidades: ['vivero', 'herramientas', 'abono'] },
+      // Change entregas-pendientes-confirmacion-vivero (tarea 16.1): exclusivo de Vivero (Decisión
+      // 9 de design.md) -- una sola entrada cubre toda la sección (registro + "Mis entregas"),
+      // porque el guard de unidad de DashboardLayout matchea por startsWith(item.to).
+      { to: '/entregas', label: 'Entregas', icon: PackageCheck, permission: 'ESCRIBIR_ENTREGAS', unidades: ['vivero'] },
     ]
   },
   {
@@ -74,13 +83,14 @@ export const navGroups = [
     title: 'Gestión',
     items: [
       { to: '/clientes', label: 'Clientes', icon: Users, permission: 'LEER_CLIENTES', unidades: ['vivero', 'herramientas', 'abono'] },
-      { to: '/bandejas', label: 'Devolución de Bandejas', icon: PackageMinus, permission: ['LEER_CLIENTES', 'LEER_BANDEJAS'], unidades: ['vivero'] },
+      { to: '/bandejas', label: 'Devoluciones', icon: PackageMinus, permission: ['LEER_CLIENTES', 'LEER_BANDEJAS'], unidades: ['vivero'] },
       { to: '/finanzas', label: 'Finanzas', icon: Briefcase, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas'] },
       // Misma pantalla que antes (/abono/liquidacion), renombrada "Finanzas" y movida a Gestión
       // (pedido del dueño 2026-09-04) -- es conceptualmente lo mismo que el ítem "Finanzas" de
       // arriba, sólo que Abono tiene su propia ruta/pantalla en vez de reusar /finanzas.
       { to: '/abono/liquidacion', label: 'Finanzas', icon: TrendingUp, permission: 'ESCRIBIR_VENTAS', unidades: ['abono'] },
-      { to: '/abono/cobros', label: 'Historial de Cobros', icon: Wallet, permission: 'LEER_FINANZAS', unidades: ['abono'] },
+      // Historial de Cobros (Abono): pedido del dueño 2026-09-09 -- se movió de acá a una pestaña
+      // dentro de "Ventas" (ver VentasLayout.jsx), ya no es un ítem de menú propio.
       { to: '/cheques', label: 'Cheques', icon: CreditCard, permission: 'LEER_FINANZAS', unidades: ['vivero', 'herramientas', 'abono'] },
       { to: '/admin/usuarios', label: 'Usuarios (Admin)', icon: Shield, permission: 'ADMIN_DB', unidades: ['vivero', 'herramientas', 'abono'] },
     ]
@@ -281,7 +291,7 @@ const DashboardLayout = () => {
             // Filtrar los items del grupo según permisos
 
             const visibleItems = group.items.filter((item) => {
-              if (item.onlyJefe && user?.username !== 'Sergio') return false;
+              if (item.usernamesPermitidos && !item.usernamesPermitidos.includes(user?.username)) return false;
 
               if (item.permission) {
                 const permisos = Array.isArray(item.permission) ? item.permission : [item.permission];
