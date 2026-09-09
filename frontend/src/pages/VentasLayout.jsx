@@ -1,9 +1,16 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { ShoppingCart, ListChecks } from 'lucide-react';
+import { ShoppingCart, ListChecks, Wallet } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function VentasLayout() {
   const location = useLocation();
+  // Historial de Cobros (pedido del dueño 2026-09-09): pestaña exclusiva de Abono -- antes era
+  // /abono/cobros, ítem de menú propio, con el mismo permiso LEER_FINANZAS que sigue exigiendo
+  // acá (ver el ProtectedRoute anidado en App.jsx). Se oculta la pestaña si no corresponde en vez
+  // de sólo confiar en el guard de ruta, para no mostrar un link roto.
+  const { unidadNegocioActiva, hasPermission } = useAuthStore();
+  const mostrarCobros = unidadNegocioActiva === '3' && hasPermission('LEER_FINANZAS');
 
   // Esconder las tabs si no estamos directamente en las rutas base (opcional, pero acá queremos que siempre se vean)
   return (
@@ -38,6 +45,22 @@ export default function VentasLayout() {
             <ListChecks className={`w-5 h-5 mr-2 ${location.pathname === '/ventas/historial' ? 'text-accent' : 'text-faint group-hover:text-muted'}`} />
             Historial de Ventas
           </NavLink>
+
+          {mostrarCobros && (
+            <NavLink
+              to="/ventas/cobros"
+              className={({ isActive }) =>
+                `group inline-flex items-center py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                  isActive
+                    ? 'border-accent text-accent-ink'
+                    : 'border-transparent text-muted hover:text-body hover:border-line-strong'
+                }`
+              }
+            >
+              <Wallet className={`w-5 h-5 mr-2 ${location.pathname === '/ventas/cobros' ? 'text-accent' : 'text-faint group-hover:text-muted'}`} />
+              Historial de Cobros
+            </NavLink>
+          )}
         </nav>
       </div>
 

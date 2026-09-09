@@ -4,6 +4,7 @@ import { HandCoins, Calendar, DollarSign, Wallet } from 'lucide-react';
 import { rendicionesApi } from '../api/rendiciones.api';
 import { useUIStore } from '../store/useUIStore';
 import FormattedNumberInput from '../components/FormattedNumberInput';
+import RetiroGananciaTab from '../components/RetiroGananciaTab';
 
 const formatMoney = (value) =>
   `$${(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -11,7 +12,11 @@ const formatMoney = (value) =>
 const RendicionColega = () => {
   const { pushToast } = useUIStore();
   const queryClient = useQueryClient();
-  
+
+  // Change retiro-ganancia-abono, Decisión 8 de design.md: pestaña nueva "Retiro de Ganancia"
+  // dentro de esta misma pantalla, junto a "Rendiciones" (que sigue sin cambios de comportamiento).
+  const [tab, setTab] = useState('rendiciones');
+
   const [page, setPage] = useState(0);
   const size = 10;
   
@@ -21,10 +26,16 @@ const RendicionColega = () => {
     cuentaDestino: 'EFECTIVO'
   });
 
-  const currentDate = new Date();
+  // Bug real corregido (2026-09-09, reportado por el dueño): esta pestaña mostraba el "saldo en
+  // caja" del mes actual, sin restar los retiros de ganancia (que no tienen fecha de corte) --
+  // dos pantallas con la misma etiqueta ("saldo en caja") mostrando números completamente
+  // distintos para la misma persona es la fuente exacta de la confusión que reportó. Ahora usa la
+  // misma query acumulada que ya usa "Finanzas" (LiquidacionAbono.jsx) -- misma clave de caché
+  // (`['abono', 'liquidacion-acumulada']`), así las dos pantallas SIEMPRE muestran el mismo
+  // número, sin duplicar el fetch.
   const liquidacionQuery = useQuery({
-    queryKey: ['abono', 'liquidacion', currentDate.getMonth() + 1, currentDate.getFullYear()],
-    queryFn: () => rendicionesApi.getLiquidacion(currentDate.getMonth() + 1, currentDate.getFullYear()).then(res => res.data),
+    queryKey: ['abono', 'liquidacion-acumulada'],
+    queryFn: () => rendicionesApi.getLiquidacionAcumulada().then(res => res.data),
   });
 
   const rendicionesQuery = useQuery({
@@ -38,7 +49,9 @@ const RendicionColega = () => {
       pushToast('success', 'Rendición registrada con éxito');
       setFormData({ ...formData, monto: '' });
       queryClient.invalidateQueries({ queryKey: ['abono', 'rendiciones'] });
-      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion'] });
+      // Misma clave que usa esta pestaña y "Finanzas" (LiquidacionAbono.jsx) -- una rendición
+      // cambia rendicionesEntregadas y saldoCajaColega en las dos pantallas por igual.
+      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion-acumulada'] });
     },
     onError: (error) => {
       const msg = error.response?.data?.message || error.response?.data || 'Error al registrar rendición';
@@ -72,6 +85,32 @@ const RendicionColega = () => {
         <p className="text-muted mt-1">Gestión de rendiciones entre el Colega y el Jefe</p>
       </div>
 
+      <div className="flex gap-2 mb-6 border-b border-line">
+        <button
+          type="button"
+          onClick={() => setTab('rendiciones')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+            tab === 'rendiciones'
+              ? 'border-accent text-accent-ink'
+              : 'border-transparent text-muted hover:text-body'
+          }`}
+        >
+          Rendiciones
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('retiro-ganancia')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+            tab === 'retiro-ganancia'
+              ? 'border-accent text-accent-ink'
+              : 'border-transparent text-muted hover:text-body'
+          }`}
+        >
+          Retiro de Ganancia
+        </button>
+      </div>
+
+      {tab === 'rendiciones' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Formulario y Tarjeta */}
         <div className="lg:col-span-1 space-y-6">
@@ -91,7 +130,7 @@ const RendicionColega = () => {
                 </p>
                 <p className="text-xs text-muted mt-2">
                   Dinero recaudado por ventas del colega, neto de las rendiciones (en cualquier
-                  dirección) de este mes.
+                  dirección) y de lo que ya retiró como ganancia personal — acumulado histórico.
                 </p>
               </div>
             )}
@@ -111,11 +150,15 @@ const RendicionColega = () => {
             ) : (
               <div>
                 <p className="text-3xl font-bold text-ink font-mono tabular-nums">
-                  {formatMoney((liquidacionQuery.data?.ingresosJefe ?? 0) + (liquidacionQuery.data?.rendicionesEntregadas ?? 0))}
+                  {formatMoney(
+                    (liquidacionQuery.data?.ingresosJefe ?? 0)
+                    + (liquidacionQuery.data?.rendicionesEntregadas ?? 0)
+                    - (liquidacionQuery.data?.retirosAcumuladosJefe ?? 0)
+                  )}
                 </p>
                 <p className="text-xs text-muted mt-2">
                   Dinero recaudado por ventas del jefe, más lo que recibió (o menos lo que entregó)
-                  por rendiciones este mes.
+                  por rendiciones, menos lo que ya retiró como ganancia personal — acumulado histórico.
                 </p>
               </div>
             )}
@@ -250,6 +293,9 @@ const RendicionColega = () => {
           </div>
         </div>
       </div>
+      )}
+
+      {tab === 'retiro-ganancia' && <RetiroGananciaTab />}
     </div>
   );
 };

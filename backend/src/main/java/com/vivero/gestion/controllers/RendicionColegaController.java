@@ -10,6 +10,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import com.vivero.gestion.dto.RendicionRequestDTO;
 import com.vivero.gestion.dto.RendicionColegaDTO;
+import com.vivero.gestion.dto.GananciaDisponibleAbonoDTO;
+import com.vivero.gestion.dto.RetiroGananciaDTO;
+import com.vivero.gestion.dto.RetiroGananciaRequestDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -64,5 +67,40 @@ public class RendicionColegaController {
         LocalDateTime hasta = LocalDateTime.parse(hastaStr, formatter);
         
         return ResponseEntity.ok(rendicionService.obtenerLiquidacion(desde, hasta));
+    }
+
+    // Versión sin filtro de fecha de /liquidacion: pedido del dueño (chat) para que la pantalla
+    // "Finanzas" de Abono muestre ganancias/gastos acumulados sin depender de un mes/año elegido.
+    // Mismo permiso que /liquidacion (misma naturaleza de información financiera).
+    @GetMapping("/liquidacion-acumulada")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
+    public ResponseEntity<LiquidacionAbonoDTO> obtenerLiquidacionAcumulada() {
+        return ResponseEntity.ok(rendicionService.obtenerLiquidacionAcumulada());
+    }
+
+    // Retiro de ganancia personal (change retiro-ganancia-abono): el jefe o el colega sacan
+    // plata de SU PROPIA ganancia ya generada, para uso personal. Concepto independiente de
+    // registrarRendicion (esa es plata operativa moviéndose ENTRE las dos cuentas). LEER_FINANZAS
+    // en vez de ESCRIBIR_VENTAS: es más sensible que anotar una rendición, es plata personal ya
+    // retirada (Decisión 5 de design.md).
+    @PostMapping("/retiros-ganancia")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
+    public ResponseEntity<Void> registrarRetiroGanancia(@RequestBody RetiroGananciaRequestDTO request) {
+        rendicionService.registrarRetiroGanancia(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/retiros-ganancia")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
+    public ResponseEntity<Page<RetiroGananciaDTO>> obtenerHistorialRetirosGanancia(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(rendicionService.obtenerHistorialRetirosGanancia(PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/ganancia-disponible")
+    @PreAuthorize("hasAuthority('LEER_FINANZAS')")
+    public ResponseEntity<GananciaDisponibleAbonoDTO> obtenerGananciaDisponible() {
+        return ResponseEntity.ok(rendicionService.obtenerGananciaDisponible());
     }
 }

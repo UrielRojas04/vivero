@@ -101,6 +101,26 @@ class RendicionColegaControllerPermisoTest {
         });
     }
 
+    // --- /liquidacion-acumulada: mismo permiso que /liquidacion (misma naturaleza financiera) ---
+
+    @Test
+    void liquidacionAcumuladaRechazaUsuarioSinPermisoFinanciero() {
+        autenticarCon("ESCRIBIR_VENTAS");
+
+        assertThatThrownBy(() -> controller.obtenerLiquidacionAcumulada())
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void liquidacionAcumuladaPermiteUsuarioConPermisoFinanciero() {
+        autenticarCon("ESCRIBIR_VENTAS", "LEER_FINANZAS");
+
+        assertDoesNotThrow(() -> {
+            var response = controller.obtenerLiquidacionAcumulada();
+            assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        });
+    }
+
     @Test
     void registrarRendicionSigueFuncionandoSoloConEscribirVentas() {
         // El endpoint operativo (anotar que el colega entregó plata) no requiere el permiso
