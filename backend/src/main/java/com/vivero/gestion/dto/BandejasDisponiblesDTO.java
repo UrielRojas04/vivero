@@ -13,4 +13,6 @@ public class BandejasDisponiblesDTO {
     private int encargadas;
     private int disponible;
     private Integer diasParaCosecha; // null si ya hay stock físico, o número de días si solo hay siembra
+    private String duenoAnterior;
+    private boolean esDevolucion;
 }

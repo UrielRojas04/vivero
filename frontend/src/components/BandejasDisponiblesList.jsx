@@ -86,8 +86,13 @@ const BandejasDisponiblesList = () => {
                   <td className="py-3 pr-8">
                     <div className="flex flex-col">
                       <p className="text-sm font-medium text-ink truncate max-w-[250px]" title={item.variedad}>
-                        {item.variedad}
+                        {item.variedad} {item.esDevolucion && <span title={`Devolución de ${item.duenoAnterior}`} className="text-primary ml-1 cursor-help">♻️</span>}
                       </p>
+                      {item.esDevolucion && item.duenoAnterior && (
+                        <span className="text-xs text-primary/80 font-medium">
+                          De: {item.duenoAnterior}
+                        </span>
+                      )}
                       {item.diasParaCosecha !== undefined && item.diasParaCosecha !== null && (
                         <span className="text-xs text-muted">
                           En siembra (Faltan {item.diasParaCosecha} día{item.diasParaCosecha !== 1 ? 's' : ''})
@@ -96,7 +101,7 @@ const BandejasDisponiblesList = () => {
                     </div>
                   </td>
                   <td className="py-3 text-right">
-                    <span className={`text-sm font-bold ${item.disponible < 0 ? 'text-error' : 'text-success'}`}>
+                    <span className={`text-sm font-bold ${item.disponible <= 0 ? 'text-error' : 'text-success'}`}>
                       {item.disponible}
                     </span>
                   </td>
