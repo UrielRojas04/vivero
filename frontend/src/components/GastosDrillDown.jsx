@@ -49,19 +49,30 @@ const GastosDrillDown = ({ isModeloInsumos = false, onClose, desde, hasta }) => 
     enabled: isModeloInsumos,
   });
 
-  // Invalida las dos claves de resumen posibles: 'finanzas/resumen' (Finanzas.jsx, Vivero/
-  // Herramientas) y 'abono/liquidacion' (LiquidacionAbono.jsx) -- este componente se reusa en
-  // ambas pantallas (bug real 2026-09-04: al reciclar el componente en Abono, sólo invalidaba la
-  // clave de Finanzas.jsx, así que el número de "Gastos" de la Liquidación de Abono quedaba
-  // desactualizado después de cargar/borrar un gasto manual). invalidateQueries matchea por
-  // prefijo, así que ['abono','liquidacion'] alcanza a la query real
-  // ['abono','liquidacion',selectedMonth,selectedYear] sin que este componente necesite conocer
-  // el mes/año seleccionados. Invalidar una clave que no existe en la pantalla actual es un no-op,
-  // así que no hay costo en pedir las dos siempre.
+  // Invalida las claves de resumen posibles: 'finanzas/resumen' (Finanzas.jsx, Vivero/
+  // Herramientas), 'abono/liquidacion' (usada hoy sólo por la pestaña "Rendiciones" de
+  // RendicionColega.jsx, con mes/año en la clave) y 'abono/liquidacion-acumulada'
+  // (LiquidacionAbono.jsx, pantalla "Finanzas" de Abono, sin mes/año) -- este componente se reusa
+  // en varias pantallas (bug real 2026-09-04: al reciclar el componente en Abono, sólo invalidaba
+  // la clave de Finanzas.jsx, así que el número de "Gastos" quedaba desactualizado después de
+  // cargar/borrar un gasto manual). invalidateQueries matchea por prefijo, así que
+  // ['abono','liquidacion'] alcanza a la query real ['abono','liquidacion',mes,año] sin que este
+  // componente necesite conocer el mes/año seleccionados; 'liquidacion-acumulada' es una clave
+  // hermana (no un prefijo) y necesita su propia invalidación explícita. Invalidar una clave que
+  // no existe en la pantalla actual es un no-op, así que no hay costo en pedir todas siempre.
   const invalidarResumenes = () => {
     queryClient.invalidateQueries(['finanzas', 'gastos']);
     queryClient.invalidateQueries(['finanzas', 'resumen']);
     queryClient.invalidateQueries(['abono', 'liquidacion']);
+    // 'abono','liquidacion-acumulada' es una clave hermana, no un prefijo de 'abono','liquidacion'
+    // (invalidateQueries matchea por prefijo exacto de los elementos del array) -- necesita su
+    // propia invalidación para que la pantalla "Finanzas" de Abono (LiquidacionAbono.jsx, ahora
+    // acumulada) se refresque al cargar/borrar un gasto manual desde este mismo drill-down.
+    queryClient.invalidateQueries(['abono', 'liquidacion-acumulada']);
+    // Bug real corregido (2026-09-09, reportado por el dueño, "no quiero cabos sueltos"): un gasto
+    // manual también cambia la ganancia teórica acumulada de "Retiro de Ganancia" -- faltaba esta
+    // invalidación, así que esa pestaña quedaba con el número viejo hasta recargar a mano.
+    queryClient.invalidateQueries(['abono', 'ganancia-disponible']);
   };
 
   const createGastoMutation = useMutation({

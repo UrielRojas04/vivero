@@ -52,6 +52,13 @@ const Insumos = () => {
       setSelectedInsumo(null);
       fetchInsumos();
       queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion'] });
+      // Clave hermana, no prefijo de la anterior -- necesita su propia invalidación para que
+      // "Finanzas" de Abono (ahora acumulada, LiquidacionAbono.jsx) refleje el cambio de insumos.
+      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion-acumulada'] });
+      // Bug real corregido (2026-09-09, reportado por el dueño, "no quiero cabos sueltos"): un
+      // insumo también cambia la ganancia teórica acumulada de "Retiro de Ganancia" -- faltaba
+      // esta invalidación.
+      queryClient.invalidateQueries({ queryKey: ['abono', 'ganancia-disponible'] });
       pushToast('success', 'Insumo guardado correctamente.');
     } catch (err) {
       console.error(err);
@@ -68,6 +75,13 @@ const Insumos = () => {
       await api.delete(`/insumos/${id}`);
       fetchInsumos();
       queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion'] });
+      // Clave hermana, no prefijo de la anterior -- necesita su propia invalidación para que
+      // "Finanzas" de Abono (ahora acumulada, LiquidacionAbono.jsx) refleje el cambio de insumos.
+      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion-acumulada'] });
+      // Bug real corregido (2026-09-09, reportado por el dueño, "no quiero cabos sueltos"): un
+      // insumo también cambia la ganancia teórica acumulada de "Retiro de Ganancia" -- faltaba
+      // esta invalidación.
+      queryClient.invalidateQueries({ queryKey: ['abono', 'ganancia-disponible'] });
       pushToast('success', 'Insumo eliminado.');
     } catch (err) {
       console.error(err);

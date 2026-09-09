@@ -44,21 +44,21 @@ public class EstadisticasServiceImpl implements EstadisticasService {
     public List<BandejasDisponiblesDTO> obtenerBandejasDisponibles() {
         try {
             // 1. Obtenemos el stock físico total DISPONIBLE de la unidad Vivero (id=1)
-            // (excluyendo productos físicos que ya tienen dueño asignado distinto a 'Jefe')
             List<StockPorNegocioDTO> stockVivero = productoRepository.findStockFisicoDisponible(1L);
-            Map<String, Integer> mapFisico = stockVivero.stream()
-                    .collect(Collectors.toMap(StockPorNegocioDTO::getProductoNombre, StockPorNegocioDTO::getCantidad));
 
-            // 2. Obtenemos las siembras en proceso que ya casi están listas (<= 7 días)
-            List<Object[]> siembrasProximas = siembraRepository.sumBandejasEnProcesoProximas(java.time.LocalDate.now().plusDays(7));
+            // 2. Obtenemos las siembras en proceso próximas a salir (dueño JEFE)
+            java.time.LocalDate hoy = java.time.LocalDate.now();
+            java.time.LocalDate limite = hoy.plusDays(7);
+            List<Object[]> siembrasProximas = siembraRepository.sumBandejasEnProcesoProximas(limite);
+            
+            // mapSiembrasProximas agrupa solo por variedad
             Map<String, Integer> mapSiembrasProximas = new java.util.HashMap<>();
             Map<String, Integer> mapDiasCosecha = new java.util.HashMap<>();
-            java.time.LocalDate hoy = java.time.LocalDate.now();
-            
-            for (Object[] obj : siembrasProximas) {
-                if (obj[0] != null) {
+            if (siembrasProximas != null) {
+                for (Object[] obj : siembrasProximas) {
+                    if (obj[0] == null || obj[1] == null) continue;
                     String variedad = (String) obj[0];
-                    mapSiembrasProximas.put(variedad, obj[1] != null ? ((Number) obj[1]).intValue() : 0);
+                    mapSiembrasProximas.put(variedad, ((Number) obj[1]).intValue());
                     
                     if (obj[2] != null) {
                         java.time.LocalDate fechaEstimada = null;
@@ -70,42 +70,51 @@ public class EstadisticasServiceImpl implements EstadisticasService {
                         
                         if (fechaEstimada != null) {
                             int dias = (int) java.time.temporal.ChronoUnit.DAYS.between(hoy, fechaEstimada);
-                            if (dias < 0) dias = 0; // Si ya pasó la fecha
+                            if (dias < 0) dias = 0;
                             mapDiasCosecha.put(variedad, dias);
                         }
                     }
                 }
             }
 
-            // 3. Obtenemos las bandejas encargadas (RegistroSemilla activos)
-            List<Object[]> encargadasPorVariedad = registroSemillaRepository.sumBandejasEncargadasPorVariedad();
-            Map<String, Integer> mapEncargadas = new java.util.HashMap<>();
-            for (Object[] obj : encargadasPorVariedad) {
-                if (obj[0] != null) {
-                    mapEncargadas.put((String) obj[0], obj[1] != null ? ((Number) obj[1]).intValue() : 0);
-                }
-            }
+            // 3. Generamos los DTOs agrupando stock físico por (variedad, esDevolucion, duenoAnterior)
+            List<BandejasDisponiblesDTO> resultado = new java.util.ArrayList<>();
+            java.util.Set<String> variedadesConFisicoNormal = new java.util.HashSet<>();
 
-            // 4. Cruzamos los datos y calculamos lo disponible (Fisico + Siembras - Encargadas)
-            java.util.Set<String> todasLasVariedades = new java.util.HashSet<>();
+            // Agrupar stock físico
+            Map<String, Integer> mapFisicoAgrupado = new java.util.HashMap<>();
             for (StockPorNegocioDTO s : stockVivero) {
-                if (s.getProductoNombre() != null) todasLasVariedades.add(s.getProductoNombre());
+                if (s.getProductoNombre() == null) continue;
+                String key = s.getProductoNombre() + "|" + s.isEsDevolucion() + "|" + (s.getDuenoAnterior() != null ? s.getDuenoAnterior() : "");
+                mapFisicoAgrupado.put(key, mapFisicoAgrupado.getOrDefault(key, 0) + s.getCantidad());
             }
-            todasLasVariedades.addAll(mapSiembrasProximas.keySet());
 
-            return todasLasVariedades.stream().map(nombre -> {
-                int stockFisico = mapFisico.getOrDefault(nombre, 0);
-                int siembras = mapSiembrasProximas.getOrDefault(nombre, 0);
-                int fisicoYProximo = stockFisico + siembras;
-                int encargadas = mapEncargadas.getOrDefault(nombre, 0);
-                
-                Integer diasCosecha = null;
-                if (stockFisico == 0 && siembras > 0) {
-                    diasCosecha = mapDiasCosecha.get(nombre);
+            // Convertir agrupaciones a DTOs
+            for (StockPorNegocioDTO s : stockVivero) {
+                if (s.getProductoNombre() == null) continue;
+                String key = s.getProductoNombre() + "|" + s.isEsDevolucion() + "|" + (s.getDuenoAnterior() != null ? s.getDuenoAnterior() : "");
+                if (mapFisicoAgrupado.containsKey(key)) {
+                    int cantidad = mapFisicoAgrupado.remove(key);
+                    
+                    if (!s.isEsDevolucion()) {
+                        variedadesConFisicoNormal.add(s.getProductoNombre());
+                        // Sumamos las siembras a las bandejas normales
+                        int siembras = mapSiembrasProximas.getOrDefault(s.getProductoNombre(), 0);
+                        resultado.add(new BandejasDisponiblesDTO(s.getProductoNombre(), cantidad + siembras, 0, cantidad + siembras, null, s.getDuenoAnterior(), s.isEsDevolucion()));
+                    } else {
+                        resultado.add(new BandejasDisponiblesDTO(s.getProductoNombre(), cantidad, 0, cantidad, null, s.getDuenoAnterior(), s.isEsDevolucion()));
+                    }
                 }
-                
-                return new BandejasDisponiblesDTO(nombre, fisicoYProximo, encargadas, fisicoYProximo - encargadas, diasCosecha);
-            }).collect(Collectors.toList());
+            }
+
+            // Añadir siembras próximas para variedades que NO tuvieron stock físico normal
+            for (Map.Entry<String, Integer> entry : mapSiembrasProximas.entrySet()) {
+                if (!variedadesConFisicoNormal.contains(entry.getKey())) {
+                    resultado.add(new BandejasDisponiblesDTO(entry.getKey(), entry.getValue(), 0, entry.getValue(), mapDiasCosecha.get(entry.getKey()), null, false));
+                }
+            }
+
+            return resultado;
         } catch (Exception e) {
             System.err.println("CRITICAL ERROR IN BANDEJAS DISPONIBLES: " + e.getMessage());
             e.printStackTrace();

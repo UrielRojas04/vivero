@@ -6,6 +6,7 @@ public class VentaDetalleResponseDTO {
     private Long id;
     private Long productoId;
     private String productoNombre;
+    private String categoriaAbonoNombre;
     private Integer cantidad;
     private BigDecimal precioUnitarioHistorico;
     private BigDecimal costoUnitarioHistorico;
@@ -22,6 +23,8 @@ public class VentaDetalleResponseDTO {
     public void setProductoId(Long productoId) { this.productoId = productoId; }
     public String getProductoNombre() { return productoNombre; }
     public void setProductoNombre(String productoNombre) { this.productoNombre = productoNombre; }
+    public String getCategoriaAbonoNombre() { return categoriaAbonoNombre; }
+    public void setCategoriaAbonoNombre(String categoriaAbonoNombre) { this.categoriaAbonoNombre = categoriaAbonoNombre; }
     public Integer getCantidad() { return cantidad; }
     public void setCantidad(Integer cantidad) { this.cantidad = cantidad; }
     public BigDecimal getPrecioUnitarioHistorico() { return precioUnitarioHistorico; }

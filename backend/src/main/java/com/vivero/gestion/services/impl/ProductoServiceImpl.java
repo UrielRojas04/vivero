@@ -178,7 +178,16 @@ public class ProductoServiceImpl implements ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-        boolean stockChanged = dto.getStock() != null && !dto.getStock().equals(producto.getStock());
+        // El stock de Abono se maneja exclusivamente vía StockAbonoService (producción, traslado,
+        // venta, ajuste) -- el formulario de edición de producto NUNCA debe tocarlo. Bug real
+        // corregido (2026-09-08, reportado por el dueño): "Stock (Unidades)" está oculto en el
+        // formulario para Abono, pero el payload igual mandaba `stock: 0` -- cualquier edición
+        // (precio, categoría, lo que fuera) pisaba producto.stock con cero y encima generaba un
+        // MovimientoStock falso en `movimientos_stock` (la tabla de Vivero/Herramientas; Abono usa
+        // `movimientos_stock_abono`), rompiendo el total real que ya mantenía StockAbonoService.
+        boolean esAbono = producto.getUnidadNegocio() != null && "Abono".equals(producto.getUnidadNegocio().getNombre());
+
+        boolean stockChanged = !esAbono && dto.getStock() != null && !dto.getStock().equals(producto.getStock());
         boolean costChanged = dto.getCostoProducto() != null && !dto.getCostoProducto().equals(producto.getCostoProducto());
         boolean discountChanged = dto.getDescuentoProveedor() != null && !dto.getDescuentoProveedor().equals(producto.getDescuentoProveedor());
         // Extensión de la detección de cambios (Decisión 9, tarea 7.3): IVA propio, envío propio
@@ -231,7 +240,7 @@ public class ProductoServiceImpl implements ProductoService {
         reemplazarDescuentos(producto, dto.getDescuentos());
 
         int oldStock = producto.getStock() == null ? 0 : producto.getStock();
-        int newStock = dto.getStock() != null ? dto.getStock() : oldStock;
+        int newStock = esAbono ? oldStock : (dto.getStock() != null ? dto.getStock() : oldStock);
         int diff = newStock - oldStock;
         producto.setStock(newStock);
 

@@ -243,7 +243,12 @@ const RegistrarTrasladoAbono = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-semibold text-ink text-sm">{mov.productoNombre}</h3>
-                            <p className="text-xs text-muted">{new Date(mov.fecha).toLocaleDateString('es-AR')}</p>
+                            {mov.categoriaAbonoNombre && (
+                              <span className="inline-block mt-0.5 text-[11px] font-semibold text-accent-ink bg-accent-soft px-2 py-0.5 rounded-full">
+                                {mov.categoriaAbonoNombre}
+                              </span>
+                            )}
+                            <p className="text-xs text-muted mt-0.5">{new Date(mov.fecha).toLocaleDateString('es-AR')}</p>
                           </div>
                           <span className="font-mono tabular-nums font-semibold text-sm bg-accent/10 text-accent-ink px-2 py-0.5 rounded">
                             {mov.cantidad}
@@ -271,6 +276,7 @@ const RegistrarTrasladoAbono = () => {
                       <tr className="bg-thead border-b border-line">
                         <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Fecha</th>
                         <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Producto</th>
+                        <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Categoría</th>
                         <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider text-right">Cantidad</th>
                         <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Motivo</th>
                         <th className="px-4 py-3 font-semibold text-muted text-xs uppercase tracking-wider">Ruta</th>
@@ -287,6 +293,13 @@ const RegistrarTrasladoAbono = () => {
                               {new Date(mov.fecha).toLocaleDateString('es-AR')}
                             </td>
                             <td className="px-4 py-3 text-sm font-medium text-ink">{mov.productoNombre}</td>
+                            <td className="px-4 py-3 text-sm text-body">
+                              {mov.categoriaAbonoNombre ? (
+                                <span className="text-[11px] font-semibold text-accent-ink bg-accent-soft px-2 py-0.5 rounded-full">
+                                  {mov.categoriaAbonoNombre}
+                                </span>
+                              ) : '-'}
+                            </td>
                             <td className="px-4 py-3 text-sm text-right font-mono tabular-nums font-medium text-body">
                               {mov.cantidad}
                             </td>

@@ -219,6 +219,8 @@ public class StockAbonoServiceImpl implements StockAbonoService {
         return page.map(m -> new MovimientoStockAbonoDTO(
                         m.getId(),
                         m.getProducto() != null ? m.getProducto().getNombre() : "Producto Eliminado",
+                        m.getProducto() != null && m.getProducto().getCategoriaAbono() != null
+                                ? m.getProducto().getCategoriaAbono().getNombre() : null,
                         m.getUbicacion().name(),
                         m.getCantidad(),
                         m.getTipoMovimiento().name(),

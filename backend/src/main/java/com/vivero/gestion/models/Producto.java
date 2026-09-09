@@ -69,6 +69,12 @@ public class Producto {
     @Column(length = 100)
     private String dueno;
 
+    @Column(length = 100)
+    private String duenoAnterior;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean esDevolucion = false;
+
     @Column(precision = 10, scale = 2)
     private BigDecimal costoProducto;
 
@@ -177,6 +183,12 @@ public class Producto {
 
     public String getDueno() { return dueno; }
     public void setDueno(String dueno) { this.dueno = dueno; }
+
+    public String getDuenoAnterior() { return duenoAnterior; }
+    public void setDuenoAnterior(String duenoAnterior) { this.duenoAnterior = duenoAnterior; }
+
+    public boolean isEsDevolucion() { return esDevolucion; }
+    public void setEsDevolucion(boolean esDevolucion) { this.esDevolucion = esDevolucion; }
     
     public BigDecimal getCostoProducto() { return costoProducto; }
     public void setCostoProducto(BigDecimal costoProducto) { this.costoProducto = costoProducto; }

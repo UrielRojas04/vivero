@@ -232,3 +232,13 @@ select option {
   background-color: var(--color-line-strong);
   border-radius: 999px;
 }
+
+/* Quitar flechitas (spinners) a los inputs numéricos (Pedido del dueño 2026-09-08) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}

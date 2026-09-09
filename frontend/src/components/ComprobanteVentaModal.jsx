@@ -169,13 +169,23 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
           doc.addPage();
           y = 20;
         }
+        // Fila de alto variable cuando hay categoría (pedido del dueño 2026-09-08): rowH fijo
+        // (8mm) no deja lugar para una segunda línea sin pisar la fila de abajo.
+        const filaAltura = detalle.categoriaAbonoNombre ? rowH + 3 : rowH;
         doc.text(truncarTexto(detalle.productoNombre, 40), colProducto, y + 5.5);
         doc.text(String(detalle.cantidad), colCant, y + 5.5, { align: 'right' });
         doc.text(formatearDinero(detalle.precioUnitarioHistorico), colPu, y + 5.5, { align: 'right' });
         doc.setFont('helvetica', 'bold');
         doc.text(formatearDinero(detalle.subtotal), colSub, y + 5.5, { align: 'right' });
         doc.setFont('helvetica', 'normal');
-        y += rowH;
+        if (detalle.categoriaAbonoNombre) {
+          doc.setFontSize(7.5);
+          doc.setTextColor(107, 114, 128);
+          doc.text(truncarTexto(detalle.categoriaAbonoNombre, 40), colProducto, y + 9.5);
+          doc.setFontSize(10);
+          doc.setTextColor(31, 41, 55);
+        }
+        y += filaAltura;
       });
 
       if (detalles.length === 0) {
@@ -403,7 +413,12 @@ const ComprobanteVentaModal = ({ isOpen, onClose, venta }) => {
                 <tbody className="divide-y divide-line">
                   {detalles.map((detalle) => (
                     <tr key={detalle.id || detalle.productoId}>
-                      <td className="py-2.5 pr-2 text-ink break-words max-w-[150px]">{detalle.productoNombre || '-'}</td>
+                      <td className="py-2.5 pr-2 text-ink break-words max-w-[150px]">
+                        {detalle.productoNombre || '-'}
+                        {detalle.categoriaAbonoNombre && (
+                          <span className="block text-[11px] font-medium text-muted mt-0.5">{detalle.categoriaAbonoNombre}</span>
+                        )}
+                      </td>
                       <td className="py-2.5 px-2 text-right text-muted font-mono tabular-nums">{detalle.cantidad}</td>
                       <td className="py-2.5 px-2 text-right text-muted font-mono tabular-nums">{formatearDinero(detalle.precioUnitarioHistorico)}</td>
                       <td className="py-2.5 pl-2 text-right font-semibold text-ink font-mono tabular-nums">{formatearDinero(detalle.subtotal)}</td>

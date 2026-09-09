@@ -22,15 +22,20 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Hallazgo #2 de la auditoría de negocio-abono: `VentaServiceImpl.listarVentas()` decidía si
- * filtrar por cuenta con el literal `unidadId == 3L`. Se reemplazó por una resolución dinámica
- * de la unidad "Abono" por nombre. Es una refactorización de igual comportamiento (el id real de
- * Abono en esta base sigue siendo 3), así que el "safety net" de abajo NO es RED/GREEN clásico
- * de una conducta nueva: es la red de regresión exigida por el propio módulo TDD para cambios
- * sobre archivos existentes (paso 0), más el caso concreto que la refactorización naive
- * ("dejar sólo cuentaAbono != null") habría roto: CuentaAbonoContextHolder se completa para
- * CUALQUIER usuario autenticado sin importar la unidad, así que sin el gate por unidad, listar
- * Vivero con un jefe autenticado habría empezado a filtrar (mal) por cuentaAbono también.
+ * Change historial-ventas-compartido-abono: `VentaServiceImpl.listarVentas()` deja de
+ * particionar el historial de Abono por `CuentaAbono` — Sergio (JEFE) y Pablo (COLEGA) ven el
+ * mismo historial completo, sin importar cuál de las dos cuentas esté activa en el contexto de
+ * la petición. El primer test de este archivo afirmaba antes lo contrario (partición por
+ * cuenta); se reescribió (nombre incluido) para afirmar el comportamiento nuevo, cubriendo las
+ * dos direcciones (JEFE activo y COLEGA activo), igual que hizo `ClienteAgendaCompartidaAbonoTest`
+ * con la agenda de clientes.
+ *
+ * El segundo test (`unidadViveroNoFiltraPorCuentaAbonoAunConContextoResidual`) es una guarda de
+ * regresión NO relacionada con este change y no se toca: protege a Vivero de quedar filtrado por
+ * `cuentaAbono` cuando hay una cuenta residual en el contexto (`CuentaAbonoContextHolder` se
+ * completa para cualquier usuario autenticado, sin importar la unidad que esté consultando). Ese
+ * gate por unidad de negocio sigue vigente después de este change: lo único que cambió es que,
+ * estando en Abono, ya no se vuelve a filtrar por cuenta.
  */
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -73,7 +78,7 @@ class VentaServiceListarVentasAbonoTest {
     }
 
     @Test
-    void unidadAbonoConCuentaJefeSoloDevuelveVentasDeJefe() {
+    void unidadAbonoDevuelveVentasDeAmbasCuentasConCualquieraActiva() {
         UnidadNegocio abono = unidadNegocioRepository.findByNombre("Abono")
                 .orElseThrow(() -> new IllegalStateException("Falta unidad Abono sembrada"));
 
@@ -83,10 +88,17 @@ class VentaServiceListarVentasAbonoTest {
         UnidadNegocioContextHolder.setUnidadNegocioId(abono.getId());
         CuentaAbonoContextHolder.setCuentaAbono(CuentaAbono.JEFE);
 
-        List<Long> ids = ventaService.listarVentas().stream().map(VentaResponseDTO::getId).toList();
+        List<Long> idsConJefeActivo = ventaService.listarVentas().stream().map(VentaResponseDTO::getId).toList();
 
-        assertThat(ids).contains(ventaAbonoJefeId);
-        assertThat(ids).doesNotContain(ventaAbonoColegaId);
+        assertThat(idsConJefeActivo).contains(ventaAbonoJefeId, ventaAbonoColegaId);
+
+        // Triangulación (1.2): la dirección inversa también trae las dos ventas — el historial
+        // no depende de cuál cuenta esté activa.
+        CuentaAbonoContextHolder.setCuentaAbono(CuentaAbono.COLEGA);
+
+        List<Long> idsConColegaActivo = ventaService.listarVentas().stream().map(VentaResponseDTO::getId).toList();
+
+        assertThat(idsConColegaActivo).contains(ventaAbonoJefeId, ventaAbonoColegaId);
     }
 
     @Test

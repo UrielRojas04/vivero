@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public class MovimientoStockAbonoDTO {
     private Long id;
     private String productoNombre;
+    private String categoriaAbonoNombre;
     private String ubicacion;
     private Integer cantidad;
     private String tipoMovimiento;
@@ -12,9 +13,10 @@ public class MovimientoStockAbonoDTO {
     private LocalDateTime fecha;
     private String usuarioNombre;
 
-    public MovimientoStockAbonoDTO(Long id, String productoNombre, String ubicacion, Integer cantidad, String tipoMovimiento, String cuenta, LocalDateTime fecha, String usuarioNombre) {
+    public MovimientoStockAbonoDTO(Long id, String productoNombre, String categoriaAbonoNombre, String ubicacion, Integer cantidad, String tipoMovimiento, String cuenta, LocalDateTime fecha, String usuarioNombre) {
         this.id = id;
         this.productoNombre = productoNombre;
+        this.categoriaAbonoNombre = categoriaAbonoNombre;
         this.ubicacion = ubicacion;
         this.cantidad = cantidad;
         this.tipoMovimiento = tipoMovimiento;
@@ -27,6 +29,8 @@ public class MovimientoStockAbonoDTO {
     public void setId(Long id) { this.id = id; }
     public String getProductoNombre() { return productoNombre; }
     public void setProductoNombre(String productoNombre) { this.productoNombre = productoNombre; }
+    public String getCategoriaAbonoNombre() { return categoriaAbonoNombre; }
+    public void setCategoriaAbonoNombre(String categoriaAbonoNombre) { this.categoriaAbonoNombre = categoriaAbonoNombre; }
     public String getUbicacion() { return ubicacion; }
     public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
     public Integer getCantidad() { return cantidad; }

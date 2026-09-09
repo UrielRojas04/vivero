@@ -30,7 +30,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false")
     List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockPorNegocio(@Param("unidadId") Long unidadId);
 
-    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false AND (p.dueno IS NULL OR LOWER(p.dueno) LIKE '%jefe%')")
+    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock, p.duenoAnterior, p.esDevolucion) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false AND (p.dueno IS NULL OR LOWER(p.dueno) LIKE '%jefe%')")
     List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockFisicoDisponible(@Param("unidadId") Long unidadId);
 
     @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.deleted = false ORDER BY p.stock ASC")

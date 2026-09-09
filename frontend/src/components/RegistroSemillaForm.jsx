@@ -141,7 +141,11 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
   }, [isOpen, registro]);
 
   const clientesFiltrados = busquedaCliente
-    ? clientes.filter((c) => (c.nombreRazonSocial || '').toLowerCase().includes(busquedaCliente.toLowerCase()))
+    ? clientes.filter((c) => {
+        const busqueda = busquedaCliente.toLowerCase();
+        return (c.nombreRazonSocial || '').toLowerCase().includes(busqueda) ||
+               (c.telefono || '').includes(busqueda);
+      })
     : clientes;
 
   const seleccionarCliente = (cliente) => {
@@ -532,21 +536,7 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
                         </div>
                       ))
                     ) : busquedaCliente ? (
-                      <div>
-                        <div className="px-4 py-2 text-sm text-muted">Sin coincidencias: se guardará como nombre libre</div>
-                        <button
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            crearClienteRapido();
-                          }}
-                          disabled={creandoCliente}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-accent-ink hover:bg-canvas cursor-pointer border-t border-line disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          {creandoCliente ? 'Creando...' : `Crear cliente "${busquedaCliente}"`}
-                        </button>
-                      </div>
+                      <div className="px-4 py-2 text-sm text-muted">No se encontraron clientes</div>
                     ) : (
                       <div className="px-4 py-2 text-sm text-muted">No hay clientes</div>
                     )}
@@ -559,30 +549,38 @@ const RegistroSemillaForm = ({ isOpen, registro, onSave, onCancel }) => {
               )}
             </div>
 
-            {/* Siempre visible (antes se ocultaba con formData.clienteId, escondiendo el
-                teléfono recién autocompletado al elegir un cliente en seleccionarCliente).
-                Sigue editable aunque venga autocompletado, por si el teléfono del cliente
-                está desactualizado para esta entrega puntual. */}
             {tipoDueno === 'cliente' && (
               <div className="animate-in fade-in slide-in-from-top-2 duration-200">
                 <label className="block text-sm font-medium text-body mb-1">
                   Teléfono de contacto
                 </label>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="Opcional"
-                  value={formData.telefonoContacto}
-                  onChange={(e) => {
-                    // Bug real corregido (2026-09-05, reportado por el dueño): type="tel" es sólo
-                    // semántico (teclado numérico en mobile), el navegador no bloquea letras. Ahora
-                    // que este campo se usa para crear un Cliente real (ver crearClienteRapido),
-                    // filtramos a mano lo que no sea dígito o separador típico de teléfono.
-                    const filtrado = e.target.value.replace(/[^\d+\-() ]/g, '');
-                    setFormData({ ...formData, telefonoContacto: filtrado });
-                  }}
-                  className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
-                />
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="Opcional"
+                    value={formData.telefonoContacto}
+                    onChange={(e) => {
+                      const filtrado = e.target.value.replace(/[^\d+\-() ]/g, '');
+                      setFormData(prev => ({ ...prev, telefonoContacto: filtrado }));
+                    }}
+                    className="w-full sm:flex-1 px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
+                  />
+                  {!formData.clienteId && busquedaCliente && (
+                    <button
+                      type="button"
+                      onClick={crearClienteRapido}
+                      disabled={creandoCliente}
+                      className="w-full sm:w-auto px-4 py-2 bg-accent-soft text-accent-ink hover:brightness-95 rounded-base whitespace-nowrap flex items-center justify-center gap-2 font-medium border border-accent-soft cursor-pointer transition-colors"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      {creandoCliente ? 'Creando...' : 'Crear nuevo cliente'}
+                    </button>
+                  )}
+                </div>
+                {!formData.clienteId && busquedaCliente && (
+                  <p className="mt-1 text-xs text-muted">Este cliente aún no está en tu agenda. Podés crearlo rápido con este botón para tenerlo disponible.</p>
+                )}
               </div>
             )}
 

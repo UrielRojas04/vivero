@@ -94,7 +94,7 @@ public class FinanzasServiceImpl implements FinanzasService {
 
         BigDecimal totalCostos = gastosInsumos.add(totalGastos);
         BigDecimal gananciaNeta = totalVentas.subtract(totalCostos);
-        BigDecimal margen = calcularMargen(gananciaNeta, totalVentas);
+        BigDecimal margen = calcularMargen(gananciaNeta, totalCostos);
         
         BigDecimal chequesEnCartera;
         if (unidadId != null) {
@@ -162,12 +162,12 @@ public class FinanzasServiceImpl implements FinanzasService {
         return new PageImpl<>(contenido, ventas.getPageable(), ventas.getTotalElements());
     }
 
-    private BigDecimal calcularMargen(BigDecimal gananciaNeta, BigDecimal totalVentas) {
-        if (totalVentas == null || totalVentas.compareTo(BigDecimal.ZERO) == 0) {
+    private BigDecimal calcularMargen(BigDecimal gananciaNeta, BigDecimal base) {
+        if (base == null || base.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO.setScale(2);
         }
         return gananciaNeta.multiply(BigDecimal.valueOf(100))
-                .divide(totalVentas, 2, RoundingMode.HALF_UP);
+                .divide(base, 2, RoundingMode.HALF_UP);
     }
 
     @Override

@@ -224,11 +224,14 @@ class ClienteAgendaCompartidaAbonoTest {
         assertThat(idsColega).doesNotContain(creado.getId());
     }
 
-    // --- Grupo 4: guarda de regresión — ventas siguen particionadas por cuenta ---
+    // --- Grupo 4: guarda de coherencia — sharing de clientes y sharing de ventas conviven ---
 
-    // 4.1 GUARD — con la agenda de clientes ya compartida, dos ventas sobre el mismo cliente
-    // atribuidas a cuentas distintas siguen listándose por separado. Si este test rompe, el
-    // change se desbordó hacia código de ventas (fuera de alcance — ver design.md Non-Goals).
+    // 4.1 (change historial-ventas-compartido-abono) — con la agenda de clientes ya compartida
+    // (este change) y el historial de ventas también compartido (VentaServiceImpl.listarVentas()
+    // ya no particiona por CuentaAbono, ver VentaServiceListarVentasAbonoTest), dos ventas sobre
+    // el mismo cliente atribuidas a cuentas distintas deben listarse juntas con cualquiera de las
+    // dos cuentas activa: documenta que ambos sharings — el de clientes y el de ventas — quedan
+    // coherentes entre sí, en vez de que uno esté compartido y el otro siga particionado.
     private Venta crearVentaMinima(Cliente cliente, CuentaAbono cuenta) {
         Venta v = new Venta();
         v.setUnidadNegocio(cliente.getUnidadNegocio());
@@ -244,7 +247,7 @@ class ClienteAgendaCompartidaAbonoTest {
     }
 
     @Test
-    void ventasDeAbonoSobreClienteCompartidoSiguenParticionadasPorCuenta() {
+    void ventasDeAbonoSobreClienteCompartidoTambienQuedanCompartidas() {
         ClienteDTO clienteDto = crearComoCuenta(CuentaAbono.JEFE, nombreUnico("Cliente Con Ventas De Ambos"));
         Cliente clienteEntity = clienteRepository.findById(clienteDto.getId())
                 .orElseThrow(() -> new IllegalStateException("Cliente recién creado no encontrado"));
@@ -257,7 +260,14 @@ class ClienteAgendaCompartidaAbonoTest {
 
         List<Long> idsJefe = ventaService.listarVentas().stream().map(VentaResponseDTO::getId).toList();
 
-        assertThat(idsJefe).contains(ventaJefe.getId());
-        assertThat(idsJefe).doesNotContain(ventaColega.getId());
+        assertThat(idsJefe).contains(ventaJefe.getId(), ventaColega.getId());
+
+        // Triangulación: la dirección inversa también trae las dos ventas — mismo patrón de
+        // VentaServiceListarVentasAbonoTest.unidadAbonoDevuelveVentasDeAmbasCuentasConCualquieraActiva.
+        CuentaAbonoContextHolder.setCuentaAbono(CuentaAbono.COLEGA);
+
+        List<Long> idsColega = ventaService.listarVentas().stream().map(VentaResponseDTO::getId).toList();
+
+        assertThat(idsColega).contains(ventaJefe.getId(), ventaColega.getId());
     }
 }

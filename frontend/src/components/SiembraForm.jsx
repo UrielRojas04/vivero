@@ -60,6 +60,7 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
     fechaSiembraInicio: '',
     fechaSiembraFin: '',
     dueno: '',
+    telefonoContacto: '',
     codigoLote: '',
     numeroSiembra: '',
     tipoOrigen: 'SOBRE',
@@ -116,6 +117,7 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
           fechaSiembraInicio,
           fechaSiembraFin,
           dueno: siembra.dueno || '',
+          telefonoContacto: '',
           codigoLote: siembra.codigoLote || '',
           numeroSiembra: siembra.numeroSiembra || '',
           tipoOrigen: siembra.tipoOrigen || 'SOBRE',
@@ -143,6 +145,7 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
           fechaSiembraInicio: '',
           fechaSiembraFin: '',
           dueno: 'Jefe / Vivero propio',
+          telefonoContacto: '',
           codigoLote: '',
           numeroSiembra: '',
           tipoOrigen: 'SOBRE',
@@ -186,7 +189,15 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
     ? plantas.filter(p => p.nombre.toLowerCase().includes(busquedaPlanta.toLowerCase()))
     : plantas;
 
-  const clientesMapeados = clientes.map(c => ({ id: c.id, nombre: c.nombreRazonSocial || `Cliente #${c.id}` }));
+  const clientesFiltrados = busquedaDueno
+    ? clientes.filter((c) => {
+        const busqueda = busquedaDueno.toLowerCase();
+        return (c.nombreRazonSocial || '').toLowerCase().includes(busqueda) ||
+               (c.telefono || '').includes(busqueda);
+      })
+    : clientes;
+
+  const clientesMapeados = clientes.map(c => ({ id: c.id, nombre: c.nombreRazonSocial || `Cliente #${c.id}`, telefono: c.telefono }));
 
   const duenosFiltrados = busquedaDueno 
     ? clientesMapeados.filter(d => d.nombre.toLowerCase().includes(busquedaDueno.toLowerCase()))
@@ -197,7 +208,7 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
   // por eso acá se guarda también el id, no sólo el nombre.
   const seleccionarDueno = (cliente) => {
     setBusquedaDueno(cliente.nombre);
-    setFormData(prev => ({ ...prev, dueno: cliente.nombre, clienteId: cliente.id.toString() }));
+    setFormData(prev => ({ ...prev, dueno: cliente.nombre, clienteId: cliente.id.toString(), telefonoContacto: cliente.telefono || '' }));
     setShowDuenoDropdown(false);
   };
 
@@ -211,9 +222,9 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
     if (!nombre || creandoCliente) return;
     setCreandoCliente(true);
     try {
-      const nuevo = await clientesApi.create({ nombreRazonSocial: nombre, telefono: '' });
+      const nuevo = await clientesApi.create({ nombreRazonSocial: nombre, telefono: formData.telefonoContacto || '' });
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
-      seleccionarDueno({ id: nuevo.id, nombre: nuevo.nombreRazonSocial });
+      seleccionarDueno({ id: nuevo.id, nombre: nuevo.nombreRazonSocial, telefono: nuevo.telefono });
       pushToast('success', `Cliente "${nuevo.nombreRazonSocial}" creado.`);
     } catch (err) {
       pushToast('error', getErrorMessage(err, 'No se pudo crear el cliente.'));
@@ -511,7 +522,7 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
                   )}
                 </div>
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-body mb-1">
                   Dueño *
                 </label>
@@ -522,10 +533,10 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
                     setTipoDueno(val);
                     if (val === 'jefe') {
                       setBusquedaDueno('');
-                      setFormData({ ...formData, dueno: 'Jefe / Vivero propio', clienteId: '' });
+                      setFormData({ ...formData, dueno: 'Jefe / Vivero propio', clienteId: '', telefonoContacto: '' });
                     } else {
                       setBusquedaDueno('');
-                      setFormData({ ...formData, dueno: '', clienteId: '' });
+                      setFormData({ ...formData, dueno: '', clienteId: '', telefonoContacto: '' });
                     }
                   }}
                   className="w-full px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors bg-paper mb-2"
@@ -575,21 +586,7 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
                             </div>
                           ))
                         ) : busquedaDueno ? (
-                          <div>
-                            <div className="px-4 py-2 text-sm text-muted">Sin coincidencias: se guardará como nombre libre</div>
-                            <button
-                              type="button"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                crearClienteRapido();
-                              }}
-                              disabled={creandoCliente}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-accent-ink hover:bg-canvas cursor-pointer border-t border-line disabled:opacity-50 disabled:cursor-wait"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                              {creandoCliente ? 'Creando...' : `Crear cliente "${busquedaDueno}"`}
-                            </button>
-                          </div>
+                          <div className="px-4 py-2 text-sm text-muted">No se encontraron clientes</div>
                         ) : (
                           <div className="px-4 py-2 text-sm text-muted">No hay clientes</div>
                         )}
@@ -597,6 +594,41 @@ const SiembraForm = ({ isOpen, siembra, registroSemillaInicial, onSave, onCancel
                     )}
                     {formData.clienteId && (
                       <p className="mt-1 text-xs text-accent-ink">Vinculado a cliente existente</p>
+                    )}
+                  </div>
+                )}
+                
+                {tipoDueno === 'cliente' && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-200 mt-4">
+                    <label className="block text-sm font-medium text-body mb-1">
+                      Teléfono de contacto
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        placeholder="Opcional"
+                        value={formData.telefonoContacto}
+                        onChange={(e) => {
+                          const filtrado = e.target.value.replace(/[^\d+\-() ]/g, '');
+                          setFormData(prev => ({ ...prev, telefonoContacto: filtrado }));
+                        }}
+                        className="w-full sm:flex-1 px-4 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
+                      />
+                      {!formData.clienteId && busquedaDueno && (
+                        <button
+                          type="button"
+                          onClick={crearClienteRapido}
+                          disabled={creandoCliente}
+                          className="w-full sm:w-auto px-4 py-2 bg-accent-soft text-accent-ink hover:brightness-95 rounded-base whitespace-nowrap flex items-center justify-center gap-2 font-medium border border-accent-soft cursor-pointer transition-colors"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          {creandoCliente ? 'Creando...' : 'Crear nuevo cliente'}
+                        </button>
+                      )}
+                    </div>
+                    {!formData.clienteId && busquedaDueno && (
+                      <p className="mt-1 text-xs text-muted">Este cliente aún no está en tu agenda. Podés crearlo rápido con este botón para tenerlo disponible.</p>
                     )}
                   </div>
                 )}

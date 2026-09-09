@@ -192,6 +192,12 @@ export default function NuevaVenta() {
   // creado queda seleccionado como cualquier otro de la agenda -- clienteId + clienteAdHoc: null,
   // sin ramas nuevas en el payload de la venta (Decisión 5 de design.md).
   const clienteCreadoAlVuelo = (cliente) => {
+    // Bug real corregido (2026-09-08, reportado por el dueño): "Cliente Seleccionado" quedaba en
+    // blanco tras crear al vuelo -- el nombre se busca con `clientes.find(...)`, y `clientes` sólo
+    // se carga una vez al entrar a la pantalla (fetchData del useEffect inicial), así que el
+    // cliente recién creado no estaba en esa lista todavía. Se agrega acá para que la búsqueda lo
+    // encuentre de inmediato, sin esperar a un refetch.
+    setClientes(prev => [...prev, cliente]);
     setCliente(cliente.id);
     setBusquedaCliente(cliente.nombreRazonSocial);
   };
@@ -441,6 +447,13 @@ export default function NuevaVenta() {
       queryClient.invalidateQueries({ queryKey: ['cheques'] });
       queryClient.invalidateQueries({ queryKey: ['productos'] });
       queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+      // Bug real corregido (2026-09-09, reportado por el dueño, "no quiero cabos sueltos"): una
+      // venta nueva cambia ingresosColega/ingresosJefe, que alimentan tanto "Finanzas"/"Rendiciones"
+      // (liquidacion-acumulada) como "Retiro de Ganancia" (ganancia-disponible) de Abono -- ninguna
+      // de las dos se refrescaba sola, había que navegar afuera y volver para ver el número nuevo.
+      // No-op inofensivo en Vivero/Herramientas (esas claves no están montadas ahí).
+      queryClient.invalidateQueries({ queryKey: ['abono', 'liquidacion-acumulada'] });
+      queryClient.invalidateQueries({ queryKey: ['abono', 'ganancia-disponible'] });
     } catch (error) {
       const msg = error.response?.data?.message || 'Error al registrar la venta';
       pushToast('error', msg);
