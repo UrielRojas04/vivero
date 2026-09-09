@@ -27,7 +27,7 @@ La vista MUST ser de sólo lectura: no SHALL permitir crear, editar, anular ni r
 
 El historial de cobros SHALL mostrar los pagos de **ambas** cuentas operativas juntos, en un mismo listado, sin importar cuál sea la cuenta activa de quien lo consulta. El sistema MUST NOT filtrar este listado por la cuenta en contexto de la petición.
 
-Esta no-partición SHALL ser independiente de la partición que siguen aplicando las ventas, el stock y la rendición del colega de Abono, que MUST permanecer sin cambios.
+Esta no-partición SHALL ser independiente de la partición que siguen aplicando el stock y la rendición del colega de Abono, que MUST permanecer sin cambios. El historial de ventas de Abono también dejó de particionarse por cuenta (ver change `historial-ventas-compartido-abono`): lo que permanece por cuenta en las ventas es la **atribución** de cada venta a quien la registró, no la partición de su listado.
 
 #### Scenario: El jefe ve también los cobros del colega
 
@@ -44,10 +44,10 @@ Esta no-partición SHALL ser independiente de la partición que siguen aplicando
 - **WHEN** el mismo historial se consulta con la cuenta `JEFE` en contexto y luego con la cuenta `COLEGA` en contexto, con los mismos filtros
 - **THEN** ambas consultas devuelven exactamente el mismo conjunto de cobros
 
-#### Scenario: La partición de ventas sigue vigente (guard de no regresión)
+#### Scenario: El historial de ventas de Abono también es compartido (corregido por `historial-ventas-compartido-abono`)
 
 - **WHEN** existe el historial global de cobros y se lista el historial de ventas de Abono con una cuenta en contexto
-- **THEN** el historial de ventas sigue devolviendo únicamente las ventas de esa cuenta, igual que antes de este cambio
+- **THEN** el historial de ventas devuelve las ventas de **ambas** cuentas juntas, sin importar cuál esté activa — el change `historial-ventas-compartido-abono` eliminó la partición por cuenta que este escenario documentaba antes; cada venta sigue atribuida a la cuenta que la registró, pero esa atribución ya no filtra el listado
 
 ### Requirement: Atribución del Cobro a la Persona que Cobró
 

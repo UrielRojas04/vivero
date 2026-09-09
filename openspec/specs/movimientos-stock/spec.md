@@ -1,5 +1,6 @@
-## MODIFIED Requirements
-
+## Purpose
+Define requirements for stock movements.
+## Requirements
 ### Requirement: Historial Inmutable de Movimientos de Stock
 The system SHALL log any stock change (in, out, sale, adjustment) into `MovimientoStock`, persisting the unit cost calculation frozen at the exact time of the operation, computed with the canonical cost formula defined by the `costeo-productos` capability.
 
@@ -107,3 +108,11 @@ In a business unit with layer-based costing **disabled**, such a movement SHALL 
 #### Scenario: En una unidad sin costeo por capas el costo histórico se sigue actualizando
 - **WHEN** a user edits the cost configuration of a product of a business unit with layer-based costing disabled and saves
 - **THEN** the product's historical unit cost is updated to reflect the new configuration, exactly as before
+
+### Requirement: Soporte para motivo de devolución en movimientos de stock
+El sistema MUST registrar un movimiento de ingreso en el stock cuando se procesa una devolución de bandejas llenas.
+
+#### Scenario: Registro de movimiento por devolución
+- **WHEN** se efectúa una devolución de bandejas llenas
+- **THEN** se crea un `MovimientoStock` de tipo INGRESO con el motivo `DEVOLUCION_SOBRANTE` (o similar) asociado al producto y cantidad correspondiente
+

@@ -49,7 +49,7 @@ El directorio de clientes de una unidad de negocio MUST estar delimitado únicam
 
 En consecuencia, el listado de clientes, la lectura de un cliente por id, su actualización, su baja, el ajuste manual de su saldo y la generación de su resumen de cuenta corriente MUST resolverse con el mismo criterio en Abono que en el resto de las unidades. Un cliente dado de alta por cualquiera de los dos usuarios MUST quedar inmediatamente disponible para el otro, sin recrearlo, tanto para vender como para facturar y cobrar. El sistema MUST NOT persistir en el cliente ninguna atribución de cuenta operativa al momento del alta.
 
-Esta unificación aplica **solo al directorio de clientes**. La atribución de ventas, pagos, movimientos de stock de Abono y rendición del colega a la cuenta operativa MUST permanecer intacta: cada cuenta sigue teniendo sus propias ventas, su propio stock y su propia rendición.
+Esta unificación aplica **solo al directorio de clientes**. La atribución de ventas, pagos, movimientos de stock de Abono y rendición del colega a la cuenta operativa MUST permanecer intacta: cada venta, pago y movimiento de stock sigue registrado bajo la cuenta que lo generó, y la rendición del colega sigue calculándose por cuenta. Esa atribución ya no implica que el *historial* de ventas sea privado de cada cuenta: desde `historial-ventas-compartido-abono`, el listado de ventas de Abono también es compartido entre ambas cuentas, igual que el directorio de clientes; lo que sigue siendo por cuenta es el stock y la rendición.
 
 #### Scenario: Listado compartido entre las dos cuentas
 - **WHEN** existe un cliente de la unidad Abono y se solicita el listado de clientes, primero con la cuenta `JEFE` activa y luego con la cuenta `COLEGA` activa
@@ -75,7 +75,7 @@ Esta unificación aplica **solo al directorio de clientes**. La atribución de v
 - **WHEN** se solicita el listado de clientes con una unidad de negocio distinta de Abono en contexto
 - **THEN** el sistema devuelve únicamente los clientes de esa unidad y ningún cliente de Abono
 
-#### Scenario: Ventas, stock y rendición siguen particionados por cuenta (guarda de regresión)
+#### Scenario: Stock y rendición siguen particionados por cuenta; el historial de ventas ahora también es compartido (corregido por `historial-ventas-compartido-abono`)
 - **WHEN** con la agenda de clientes ya compartida se registran ventas de Abono bajo la cuenta `JEFE` y bajo la cuenta `COLEGA` sobre el mismo cliente, y luego se listan las ventas con una de las dos cuentas activa
-- **THEN** el listado devuelve únicamente las ventas de la cuenta activa, y el stock de Abono y la rendición del colega siguen calculándose por cuenta, sin verse afectados por que el cliente sea compartido
+- **THEN** el listado devuelve las ventas de **ambas** cuentas juntas, sin importar cuál esté activa; el stock de Abono y la rendición del colega siguen calculándose por cuenta, sin verse afectados por que el cliente sea compartido — sharing de clientes y sharing de ventas quedan coherentes entre sí
 
