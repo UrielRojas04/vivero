@@ -1,10 +1,13 @@
 package com.vivero.gestion.controllers;
 
 import com.vivero.gestion.security.JwtUtils;
+import com.vivero.gestion.security.LoginAttemptService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,18 +26,34 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private final LoginAttemptService loginAttemptService;
 
     @Autowired
-    public AuthController(AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+    public AuthController(AuthenticationManager authenticationManager, JwtUtils jwtUtils, LoginAttemptService loginAttemptService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
+        this.loginAttemptService = loginAttemptService;
     }
 
+    // Hallazgo de auditoría de seguridad (2026-09-09): sin límite de intentos, este endpoint
+    // (permitAll en SecurityConfig, por necesidad) quedaba abierto a fuerza bruta de contraseña
+    // apenas fuera alcanzable desde internet. Ver LoginAttemptService para el detalle del bloqueo.
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+        if (loginAttemptService.estaBloqueado(request.getUsername())) {
+            throw new LockedException("Demasiados intentos fallidos. Esperá unos minutos antes de volver a intentar.");
+        }
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+        } catch (AuthenticationException ex) {
+            loginAttemptService.registrarFallo(request.getUsername());
+            throw ex;
+        }
+        loginAttemptService.registrarExito(request.getUsername());
 
         String token = jwtUtils.generateToken(authentication.getName());
 

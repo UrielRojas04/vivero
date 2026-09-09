@@ -52,6 +52,13 @@ test_*.py
 login.json
 *_logs*.txt
 
+# --- Scripts SQL destructivos de sesiones de trabajo (borrado masivo por unidad, resets, etc.) ---
+# NO son secretos, pero son peligrosos: nadie debería poder cloneaer el repo y correr un DELETE
+# masivo contra la base equivocada por accidente. test_seed.sql (fixtures inofensivos) SÍ se
+# versiona a propósito, no lo cubre este patrón.
+wipe_*.sql
+reset_*.sql
+
 # --- Específicos del Stack ---
 frontend/coverage/
 frontend/.eslintcache

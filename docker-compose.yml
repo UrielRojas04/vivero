@@ -5,7 +5,12 @@ services:
     env_file:
       - .env
     ports:
-      - "5433:5432"
+      # Atado a 127.0.0.1 (hallazgo de auditoría de seguridad, 2026-09-09, antes de VPS): sin esto,
+      # el puerto queda bindeado a 0.0.0.0 -- inofensivo en una PC de desarrollo detrás de un
+      # router, pero en un VPS con IP pública expone Postgres directo a internet. Sigue accesible
+      # desde el host (pgAdmin, DBeaver, etc. en localhost:5433) y desde los demás contenedores de
+      # este compose (se resuelven por nombre de servicio en la red interna, no por este binding).
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

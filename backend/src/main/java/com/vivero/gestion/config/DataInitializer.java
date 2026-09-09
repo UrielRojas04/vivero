@@ -105,6 +105,13 @@ public class DataInitializer implements CommandLineRunner {
         // Colega sea el otro "administrador" de Abono para temas financieros, no debe ver esta
         // sección en particular.
         permisosColega.remove(PermisoEnum.LEER_CONFIGURACION);
+        // LEER_ENTREGAS / ESCRIBIR_ENTREGAS también afuera (change
+        // entregas-pendientes-confirmacion-vivero, Decisión 8 de design.md): la sección Entregas
+        // es exclusiva de Vivero y COLEGA es un rol exclusivo de Abono -- un permiso que no puede
+        // ejercer en su unidad no debe figurar en su rol. Mismo criterio y mismo estilo de
+        // comentario que LEER_CONFIGURACION de arriba.
+        permisosColega.remove(PermisoEnum.LEER_ENTREGAS);
+        permisosColega.remove(PermisoEnum.ESCRIBIR_ENTREGAS);
         Rol rolColega = crearRol("COLEGA", permisosColega);
         rolColega.setPermisos(permisosColega);
         // COLEGA sólo pertenece a Abono (confirmado por el dueño — ver modelo unidadNegocio en Rol).
@@ -170,6 +177,48 @@ public class DataInitializer implements CommandLineRunner {
         negociosColega.add(unidadAbono);
         colega.setUnidadesNegocio(negociosColega);
         usuarioRepository.save(colega);
+
+        // Rol y usuario Hernán (2026-09-09, pedido del dueño): faltaban acá -- ambos se habían
+        // creado a mano desde el panel de administración en la base real, así que una base nueva
+        // (producción, VPS) no los tendría. Permisos calcados 1:1 de los que el rol "ADMIN 2" ya
+        // tiene hoy en la base real (sin ADMIN_DB: Hernán administra Herramientas pero no
+        // usuarios/roles del sistema).
+        Set<PermisoEnum> permisosAdmin2 = EnumSet.of(
+                PermisoEnum.LEER_CLIENTES, PermisoEnum.ESCRIBIR_CLIENTES,
+                PermisoEnum.LEER_STOCK, PermisoEnum.ESCRIBIR_STOCK,
+                PermisoEnum.ESCRIBIR_VENTAS,
+                PermisoEnum.LEER_PEDIDOS, PermisoEnum.ESCRIBIR_PEDIDOS,
+                PermisoEnum.LEER_FACTURACION, PermisoEnum.LEER_FINANZAS
+        );
+        Rol rolAdmin2 = crearRol("ADMIN 2", permisosAdmin2);
+        rolAdmin2.setPermisos(permisosAdmin2);
+        UnidadNegocio unidadHerramientas = unidadNegocioRepository.findByNombre("Herramientas")
+                .orElseThrow(() -> new IllegalStateException("Falta unidad Herramientas"));
+        rolAdmin2.setUnidadNegocio(unidadHerramientas);
+        rolRepository.save(rolAdmin2);
+
+        Usuario hernan = usuarioRepository.findByUsername("Hernan").orElse(new Usuario());
+        if (hernan.getId() == null) {
+            hernan.setUsername("Hernan");
+            // Mismo patrón que Sergio/Pablo: sin contraseña hardcodeada, requiere su propia
+            // variable de entorno en una base nueva.
+            String initialHernanPassword = System.getenv("INITIAL_HERNAN_PASSWORD");
+            if (initialHernanPassword == null || initialHernanPassword.isBlank()) {
+                throw new IllegalStateException(
+                        "Falta la variable de entorno INITIAL_HERNAN_PASSWORD para crear el usuario Hernán inicial.");
+            }
+            hernan.setPassword(passwordEncoder.encode(initialHernanPassword));
+
+            Set<Rol> rolesHernan = new HashSet<>();
+            rolesHernan.add(rolAdmin2);
+            hernan.setRoles(rolesHernan);
+        }
+        // Hernán sólo pertenece a Herramientas (confirmado por el dueño -- Dashboard whitelist en
+        // DashboardLayout.jsx confía en esto para no tener que acotarlo también por unidad ahí).
+        Set<UnidadNegocio> negociosHernan = new HashSet<>();
+        negociosHernan.add(unidadHerramientas);
+        hernan.setUnidadesNegocio(negociosHernan);
+        usuarioRepository.save(hernan);
 
         // 4. Inicializar Movimientos de Stock para productos existentes
         if (movimientoStockRepository.count() == 0) {

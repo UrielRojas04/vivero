@@ -127,10 +127,22 @@ public class MovimientoStockServiceImpl implements MovimientoStockService {
                     : (producto.getCostoProducto() != null ? producto.getCostoProducto() : BigDecimal.ZERO);
             aplicarDesglose(mov, producto, costoBase, monedaLinea, cotizacionAplicada, ivaPactadoExplicito, envioPactadoExplicito,
                     descuentoPactadoExplicito, descuentoPactadoDetalleExplicito);
-        } else if (porCapas) {
+        } else if (porCapas && tipo != TipoMovimientoStock.ENTREGA_PENDIENTE
+                && tipo != TipoMovimientoStock.REVERSA_ENTREGA_PENDIENTE) {
             // Rama nueva de egreso por capas (tareas 6.5-6.14): resuelve su propio desglose y
             // persiste su propio (único) MovimientoStock — retorno propio, no cae al save() de
             // abajo. Sólo alcanzable con el flag en true (Herramientas, tras la migración).
+            //
+            // ENTREGA_PENDIENTE/REVERSA_ENTREGA_PENDIENTE quedan afuera a propósito (hallazgo de
+            // auditoría, finding #4 de entregas-pendientes-confirmacion-vivero): si costeo por
+            // capas llegara a habilitarse en Vivero, tratar la reversa de una entrega rechazada
+            // como "otro egreso" descontaría capas por SEGUNDA vez (la entrega original ya las
+            // descontó al registrarse) mientras EntregaPendienteServiceImpl.rechazar() repone
+            // Producto.stock manualmente -- desincroniza stock de la suma de capas activas en
+            // silencio. Hoy es defensivo (el flag de Vivero está en false), pero la rama de abajo
+            // (ajuste directo de stock) es la única correcta para estos dos tipos sin importar el
+            // flag: son movimientos de "entra/sale sin venta", no consumen ni liberan una capa de
+            // costo real.
             return registrarEgresoPorCapas(mov, producto, cantidad);
         } else {
             // Rama de egreso de SIEMPRE, sin tocar una línea (contrato de no-regresión de Vivero,

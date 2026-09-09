@@ -3,6 +3,7 @@ package com.vivero.gestion.config;
 import com.vivero.gestion.security.CustomUserDetailsService;
 import com.vivero.gestion.security.JwtFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +31,16 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
     private final CustomUserDetailsService userDetailsService;
+
+    // Hallazgo de auditoría de seguridad (2026-09-09, antes de subir a GitHub/VPS): antes esto
+    // era un wildcard "*" ("Update in prod" quedó sin hacer). app.cors.allowed-origins YA existía
+    // en application.properties, ya toma FRONTEND_URL del .env, pero nada lo leía -- corsConfigurationSource()
+    // armaba su propia lista hardcodeada e ignoraba la property. Ahora se inyecta acá y se usa
+    // como lista fija de orígenes permitidos (setAllowedOrigins, no Patterns) -- con
+    // allowCredentials=true, Spring Security exige orígenes explícitos, "*" ni siquiera es válido
+    // en ese modo.
+    @Value("${app.cors.allowed-origins}")
+    private String corsAllowedOrigins;
 
     @Autowired
     public SecurityConfig(JwtFilter jwtFilter, CustomUserDetailsService userDetailsService) {
@@ -93,7 +104,7 @@ public class SecurityConfig {
     private UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(Arrays.asList("*")); // Update in prod
+        config.setAllowedOrigins(Arrays.asList(corsAllowedOrigins.split(",")));
         // X-Cuenta-Abono ya no existe: la cuenta activa se deriva del usuario autenticado
         // (CuentaAbonoFilter), no de un header (ver design.md, "Revisión post-implementación").
         config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Unidad-Negocio"));

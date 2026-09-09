@@ -1,0 +1,87 @@
+# Compose para el VPS -- ARCHIVO INDEPENDIENTE, no un override del docker-compose.yml de
+# desarrollo (probado empíricamente: Compose NO puede "sacar" un puerto ya publicado en el
+# archivo base con `ports: []` en un segundo archivo -- los merges de listas sólo agregan, nunca
+# quitan. Por eso esto no se usa en combinación con `-f docker-compose.yml`, se usa solo).
+#
+# Uso en el VPS:
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Diferencias clave respecto al docker-compose.yml de desarrollo:
+#   - `backend` NO publica el 8080 al host. frontend-prod (nginx) ya le pega a `backend:8080` por
+#     la red interna de Docker (vivero-net) -- publicarlo al host nunca hizo falta para eso, sólo
+#     se usaba en desarrollo porque el frontend en modo Vite (no éste) y el celular en la LAN le
+#     pegan directo a :8080. Acá no corre ese servicio, así que no hace falta.
+#   - `vivero-db` sigue en 127.0.0.1:5433 (no 0.0.0.0) -- accesible sólo por túnel SSH
+#     (`ssh -L 5433:localhost:5433 usuario@tu-vps`) para pgAdmin/DBeaver si hace falta debuggear,
+#     nunca desde internet.
+#   - `frontend-prod` publica en 127.0.0.1:8081, NO en el 80 directo. El plan (Recomendación #1)
+#     es instalar Nginx + Certbot A NIVEL DEL SISTEMA OPERATIVO del VPS (fuera de Docker) para
+#     terminar TLS: ese nginx del host escucha 80 (redirige a https) y 443 (certificado real), y
+#     hace proxy_pass a http://127.0.0.1:8081 -- que es este contenedor. Si en cambio preferís que
+#     Docker sea quien escuche el 80/443 directamente (con otra herramienta tipo Caddy/Traefik en
+#     vez de nginx del sistema), este archivo hay que ajustarlo -- consultar antes de asumir.
+#   - No incluye el servicio `frontend` (Vite dev, HMR) -- ese no tiene ningún motivo para correr
+#     en un VPS público.
+#   - Activa el perfil de Spring `prod` (application-prod.properties: apaga show-sql) vía
+#     SPRING_PROFILES_ACTIVE.
+#
+# Sigue leyendo las mismas variables desde .env (env_file) -- en el VPS ese .env tiene que tener
+# sus PROPIOS valores nuevos (DB_PASS, JWT_SECRET, FRONTEND_URL=https://tu-dominio.com, etc.),
+# nunca los mismos que en desarrollo local ni los que quedaron expuestos en el historial de git
+# (ver aviso de seguridad de esta sesión).
+
+services:
+  vivero-db:
+    image: postgres:15
+    container_name: vivero-postgres
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vivero-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d vivero_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: vivero-backend
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      vivero-db:
+        condition: service_healthy
+    networks:
+      - vivero-net
+    restart: unless-stopped
+
+  frontend-prod:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+    container_name: vivero-frontend-prod
+    ports:
+      - "127.0.0.1:8081:80"
+    depends_on:
+      - backend
+    networks:
+      - vivero-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  vivero-net:
+    driver: bridge
