@@ -21,6 +21,8 @@
 #     hace proxy_pass a http://127.0.0.1:8081 -- que es este contenedor. Si en cambio preferís que
 #     Docker sea quien escuche el 80/443 directamente (con otra herramienta tipo Caddy/Traefik en
 #     vez de nginx del sistema), este archivo hay que ajustarlo -- consultar antes de asumir.
+#     Config real de ese nginx del sistema (probada en el VPS de weblopez.online, con el fix de
+#     redirect www -> sin-www para que no choque con CORS) documentada en deploy/nginx-vps.conf.
 #   - No incluye el servicio `frontend` (Vite dev, HMR) -- ese no tiene ningún motivo para correr
 #     en un VPS público.
 #   - Activa el perfil de Spring `prod` (application-prod.properties: apaga show-sql) vía
