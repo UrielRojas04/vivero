@@ -1,8 +1,5 @@
-# devolucion-repique-bandejas Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change repique-devolucion-bandejas. Update Purpose after archive.
-## Requirements
 ### Requirement: Registro de devolución de bandejas llenas
 El sistema MUST permitir al usuario registrar la devolución de bandejas llenas (repique/sobrante) por parte de un cliente. La operación MUST dejar rastro itemizado de los dos movimientos que produce: el crédito en dinero MUST quedar asentado como un `Pago` de la factura del cliente, y la bandeja repuesta MUST quedar asentada como un movimiento de tipo `DEVOLUCION` en el historial de bandejas. La operación MUST NOT limitarse a modificar los saldos acumulados (`CuentaCorrienteDinero.balancePesos`, `CuentaCorrienteBandejas.balanceBandejas`) sin dejar esos registros.
 
@@ -21,6 +18,8 @@ El sistema MUST permitir al usuario registrar la devolución de bandejas llenas 
 #### Scenario: Falla al escribir el rastro
 - **WHEN** la creación del `Pago` o del movimiento de historial de bandejas falla
 - **THEN** la operación completa se revierte —producto de devolución, movimiento de stock, saldos y registros— y no queda un saldo movido sin su rastro correspondiente
+
+## ADDED Requirements
 
 ### Requirement: Registro del crédito de la devolución como pago de la factura
 Al registrar una devolución de producto sobrante con un monto a acreditar mayor que cero, el sistema SHALL crear un `Pago` asociado a la factura en estado `ABIERTA` del cliente en la unidad de negocio activa, con el monto acreditado, la fecha de la operación y un `metodoPago` que lo identifique como devolución y no como un cobro en efectivo, cheque ni transferencia. El sistema SHALL seguir actualizando el `balancePesos` de la cuenta corriente del cliente como lo hacía antes: el `Pago` se agrega al registro existente, no lo reemplaza.
@@ -68,4 +67,3 @@ Al registrar una devolución de producto sobrante con una cantidad mayor que cer
 #### Scenario: La devolución de bandejas sueltas no cambia
 - **WHEN** se registra una devolución de bandejas sueltas, sin producto
 - **THEN** el comportamiento es exactamente el mismo que antes de este cambio: un movimiento `DEVOLUCION` en el historial y el descuento del balance, sin ningún efecto sobre la factura del cliente
-
