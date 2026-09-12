@@ -75,6 +75,22 @@ public class DevolucionServiceImpl implements DevolucionService {
         Producto producto = productoRepository.findById(dto.getProductoId())
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
+        // Resuelto y validado ANTES de tocar producto/stock (hallazgo real en producción: sin
+        // este guard, un cliente terminó con balanceBandejas en -6 porque nada impedía devolver
+        // más de lo que debía). Mismo criterio que BandejasServiceImpl.registrarDevolucion.
+        CuentaCorrienteBandejas ccb = cliente.getCuentaCorrienteBandejas();
+        if (ccb == null) {
+            ccb = new CuentaCorrienteBandejas();
+            ccb.setCliente(cliente);
+            ccb.setBalanceBandejas(0);
+            cliente.setCuentaCorrienteBandejas(ccb);
+        }
+        if (dto.getCantidad() != null && dto.getCantidad() > ccb.getBalanceBandejas()) {
+            throw new IllegalArgumentException(
+                    "No se puede devolver más bandejas de las que el cliente debe (debe "
+                            + ccb.getBalanceBandejas() + ", se intentó devolver " + dto.getCantidad() + ")");
+        }
+
         // Crear un nuevo producto para la devolución (para no afectar el stock original de Juan)
         Producto devolucion = new Producto();
         org.springframework.beans.BeanUtils.copyProperties(producto, devolucion, "id", "stock", "esDevolucion", "dueno", "duenoAnterior", "nombre", "descuentos");
@@ -105,14 +121,7 @@ public class DevolucionServiceImpl implements DevolucionService {
                 admin
         );
 
-        // Descontar las bandejas devueltas del saldo del cliente
-        CuentaCorrienteBandejas ccb = cliente.getCuentaCorrienteBandejas();
-        if (ccb == null) {
-            ccb = new CuentaCorrienteBandejas();
-            ccb.setCliente(cliente);
-            ccb.setBalanceBandejas(0);
-            cliente.setCuentaCorrienteBandejas(ccb);
-        }
+        // Descontar las bandejas devueltas del saldo del cliente (ccb ya resuelto y validado arriba)
         ccb.setBalanceBandejas(ccb.getBalanceBandejas() - dto.getCantidad());
         clienteRepository.save(cliente);
 

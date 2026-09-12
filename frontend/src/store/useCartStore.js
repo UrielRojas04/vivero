@@ -8,7 +8,6 @@ const initialState = {
   metodoPago: 'EFECTIVO',
   fechaVenta: '',
   nota: '',
-  bandejasEntregadas: '',
 };
 
 export const useCartStore = create(
@@ -37,7 +36,6 @@ export const useCartStore = create(
         ),
       })),
       setDescuento: (descuento) => set({ descuento }),
-      setBandejasEntregadas: (bandejasEntregadas) => set({ bandejasEntregadas }),
       setMetodoPago: (metodoPago) => set({ metodoPago }),
       setFechaVenta: (fechaVenta) => set({ fechaVenta }),
       setNota: (nota) => set({ nota }),

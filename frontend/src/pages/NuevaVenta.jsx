@@ -57,7 +57,6 @@ export default function NuevaVenta() {
   const clienteId = useCartStore(state => state.clienteSeleccionado);
   const detalles = useCartStore(state => state.detalles);
   const descuento = useCartStore(state => state.descuento);
-  const bandejasEntregadas = useCartStore(state => state.bandejasEntregadas);
   const setCliente = useCartStore(state => state.setCliente);
   const setDetalles = useCartStore(state => state.setDetalles);
   const addDetalle = useCartStore(state => state.addDetalle);
@@ -65,7 +64,6 @@ export default function NuevaVenta() {
   const updateDetalleCantidad = useCartStore(state => state.updateDetalleCantidad);
   const updateDetallePrecio = useCartStore(state => state.updateDetallePrecio);
   const setDescuento = useCartStore(state => state.setDescuento);
-  const setBandejasEntregadas = useCartStore(state => state.setBandejasEntregadas);
   const clearCart = useCartStore(state => state.clearCart);
 
   // Sincronizar stock en vivo con el estado local
@@ -88,15 +86,6 @@ export default function NuevaVenta() {
     }));
   }, [liveStocks, setDetalles, unidadNegocioActiva]);
 
-  // Auto-calcular bandejas según la cantidad de productos en el carrito
-  useEffect(() => {
-    const totalProductos = detalles.reduce((sum, d) => sum + (parseInt(d.cantidad) || 1), 0);
-    if (totalProductos > 0) {
-      setBandejasEntregadas(totalProductos.toString());
-    } else {
-      setBandejasEntregadas('');
-    }
-  }, [detalles, setBandejasEntregadas]);
 
   // Estados para Modal Liquidación (transitorios, no persisten)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -410,7 +399,6 @@ export default function NuevaVenta() {
       clienteId: isClienteExpress ? null : parseInt(clienteId),
       clienteAdHoc: clienteAdHocPayload,
       porcentajeDescuento: descuentoVal,
-      bandejasEntregadas: parseInt(bandejasEntregadas) || 0,
       detalles: detalles.map(d => ({
         productoId: d.productoId,
         cantidad: parseInt(d.cantidad) || 1,

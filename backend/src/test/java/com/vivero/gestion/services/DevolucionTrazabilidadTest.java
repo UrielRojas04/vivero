@@ -239,7 +239,10 @@ class DevolucionTrazabilidadTest {
         Cliente cliente = crearCliente(vivero);
         Producto producto = crearProducto(vivero, 20);
         FacturaCliente factura = crearFacturaAbierta(cliente, vivero);
-        prepararCuentasCorrientes(cliente, 0, BigDecimal.ZERO);
+        // Balance inicial >= cantidad devuelta (hallazgo de auditoría, guard de saldo negativo en
+        // DevolucionServiceImpl): antes se probaba con balance 0 y devolución 5, un estado que ya
+        // no es válido -- el fixture ahora refleja un cliente que realmente debía 5 bandejas.
+        prepararCuentasCorrientes(cliente, 5, BigDecimal.ZERO);
 
         devolucionService.registrarDevolucionLlenas(
                 devolucion(cliente.getId(), producto.getId(), 5, new BigDecimal("1500.00")));
@@ -297,7 +300,7 @@ class DevolucionTrazabilidadTest {
 
         Cliente cliente = crearCliente(vivero);
         Producto producto = crearProducto(vivero, 20);
-        prepararCuentasCorrientes(cliente, 0, BigDecimal.ZERO);
+        prepararCuentasCorrientes(cliente, 3, BigDecimal.ZERO);
 
         assertThatCode(() -> devolucionService.registrarDevolucionLlenas(
                 devolucion(cliente.getId(), producto.getId(), 3, new BigDecimal("900.00"))))
@@ -327,7 +330,7 @@ class DevolucionTrazabilidadTest {
         Cliente cliente = crearCliente(vivero);
         Producto producto = crearProducto(vivero, 20);
         FacturaCliente facturaExistente = crearFacturaAbierta(cliente, vivero);
-        prepararCuentasCorrientes(cliente, 0, BigDecimal.ZERO);
+        prepararCuentasCorrientes(cliente, 2, BigDecimal.ZERO);
 
         devolucionService.registrarDevolucionLlenas(
                 devolucion(cliente.getId(), producto.getId(), 2, new BigDecimal("400.00")));
@@ -395,7 +398,7 @@ class DevolucionTrazabilidadTest {
         Cliente cliente = crearCliente(vivero);
         Producto producto = crearProducto(vivero, 20);
         FacturaCliente factura = crearFacturaAbierta(cliente, vivero);
-        prepararCuentasCorrientes(cliente, 0, BigDecimal.ZERO);
+        prepararCuentasCorrientes(cliente, 3, BigDecimal.ZERO);
 
         FacturaClienteDTO antes = facturaClienteService.obtenerFacturaActiva(cliente.getId());
         BigDecimal totalPagosAntes = antes.getTotalPagos();
@@ -512,7 +515,7 @@ class DevolucionTrazabilidadTest {
         Producto productoA = crearProducto(vivero, 20);
         Producto productoB = crearProducto(vivero, 20);
         FacturaCliente factura = crearFacturaAbierta(cliente, vivero);
-        prepararCuentasCorrientes(cliente, 0, BigDecimal.ZERO);
+        prepararCuentasCorrientes(cliente, 5, BigDecimal.ZERO); // 2 + 3 de las dos devoluciones de abajo
 
         devolucionService.registrarDevolucionLlenas(
                 devolucion(cliente.getId(), productoA.getId(), 2, new BigDecimal("100.00")));
@@ -576,7 +579,7 @@ class DevolucionTrazabilidadTest {
         Cliente cliente = crearCliente(vivero);
         Producto producto = crearProducto(vivero, 20);
         FacturaCliente factura = crearFacturaAbierta(cliente, vivero);
-        prepararCuentasCorrientes(cliente, 0, BigDecimal.ZERO);
+        prepararCuentasCorrientes(cliente, 2, BigDecimal.ZERO);
 
         LocalDateTime desde = LocalDateTime.now().minusDays(1);
         LocalDateTime hasta = LocalDateTime.now().plusDays(1);

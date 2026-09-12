@@ -49,8 +49,19 @@ public class BandejasServiceImpl implements BandejasService {
         historial.setUsuario(usuario);
         historialRepository.save(historial);
 
+        // Get-or-create (mismo criterio que DevolucionServiceImpl.registrarDevolucionLlenas):
+        // antes de derivar bandejasEntregadas de las líneas de la venta (fix del bug de
+        // producción), una venta sin CuentaCorrienteBandejas previa nunca llegaba hasta acá porque
+        // el campo separado casi siempre llegaba en 0/null. Ahora que se deriva de la cantidad
+        // real vendida, la primera entrega de un cliente nuevo debe poder crear la cuenta en vez
+        // de fallar la venta entera por una cuenta que todavía no existía.
         CuentaCorrienteBandejas ccb = ccbRepository.findByClienteId(clienteId)
-                .orElseThrow(() -> new RuntimeException("Cuenta Corriente de Bandejas no encontrada"));
+                .orElseGet(() -> {
+                    CuentaCorrienteBandejas nueva = new CuentaCorrienteBandejas();
+                    nueva.setCliente(cliente);
+                    nueva.setBalanceBandejas(0);
+                    return nueva;
+                });
         ccb.setBalanceBandejas(ccb.getBalanceBandejas() + cantidad); // Suma deuda
         ccbRepository.save(ccb);
     }
@@ -65,6 +76,17 @@ public class BandejasServiceImpl implements BandejasService {
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        // Guardia contra saldo negativo (hallazgo real en producción: un cliente terminó con
+        // balanceBandejas en -6 porque nada impedía devolver más de lo que debía). Se valida
+        // ANTES de escribir el historial o tocar el saldo.
+        CuentaCorrienteBandejas ccb = ccbRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RuntimeException("Cuenta Corriente de Bandejas no encontrada"));
+        if (cantidad > ccb.getBalanceBandejas()) {
+            throw new IllegalArgumentException(
+                    "No se puede devolver más bandejas de las que el cliente debe (debe "
+                            + ccb.getBalanceBandejas() + ", se intentó devolver " + cantidad + ")");
+        }
+
         HistorialBandejas historial = new HistorialBandejas();
         historial.setCliente(cliente);
         historial.setCantidad(cantidad);
@@ -73,8 +95,6 @@ public class BandejasServiceImpl implements BandejasService {
         historial.setUsuario(usuario);
         historialRepository.save(historial);
 
-        CuentaCorrienteBandejas ccb = ccbRepository.findByClienteId(clienteId)
-                .orElseThrow(() -> new RuntimeException("Cuenta Corriente de Bandejas no encontrada"));
         ccb.setBalanceBandejas(ccb.getBalanceBandejas() - cantidad); // Resta deuda
         ccbRepository.save(ccb);
     }

@@ -378,9 +378,21 @@ public class VentaServiceImpl implements VentaService {
         }
         
         // --- Historial Bandejas ---
-        if (request.getBandejasEntregadas() != null && request.getBandejasEntregadas() > 0) {
-            if (cliente != null) {
-                bandejasService.registrarEntrega(cliente.getId(), request.getBandejasEntregadas(), ventaGuardada, username);
+        // Antes se confiaba en request.getBandejasEntregadas(): un campo separado, autocalculado
+        // en el frontend (suma de cantidades del carrito) y nunca mostrado en pantalla -- sin
+        // ningún input que lo edite. Confirmado en desarrollo y en producción que ese valor puede
+        // llegar en 0/null aunque la venta tenga detalles reales, dejando la entrega de bandejas
+        // sin registrar (bug real: un cliente terminó con saldo negativo tras una devolución,
+        // porque su entrega nunca se había sumado). Se deriva ahora directo de las líneas ya
+        // guardadas -- mismo criterio que ya usa FacturaCliente.jsx para el cálculo por factura
+        // ("cada unidad de producto vendida sale en una bandeja") -- así que no puede
+        // desincronizarse del contenido real de la venta.
+        if (cliente != null) {
+            int totalBandejas = ventaGuardada.getDetalles().stream()
+                    .mapToInt(d -> d.getCantidad() != null ? d.getCantidad() : 0)
+                    .sum();
+            if (totalBandejas > 0) {
+                bandejasService.registrarEntrega(cliente.getId(), totalBandejas, ventaGuardada, username);
             }
         }
 
