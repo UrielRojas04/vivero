@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @TestPropertySource(properties = {
-    "spring.datasource.password=root",
+    "spring.datasource.password=${DB_PASS}",
     "spring.datasource.url=jdbc:postgresql://localhost:5433/vivero_db?serverTimezone=UTC"
 })
 class PagoHistorialAbonoRepositoryTest {
