@@ -27,13 +27,16 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query(value = "SELECT COALESCE(SUM(p.stock * COALESCE((SELECT m.costo_unitario FROM movimientos_stock m WHERE m.producto_id = p.id AND m.tipo_movimiento IN ('INGRESO', 'AJUSTE_INICIAL') ORDER BY m.fecha DESC LIMIT 1), 0)), 0) FROM productos p WHERE p.unidad_negocio_id = :unidadId AND p.deleted = false", nativeQuery = true)
     BigDecimal sumarCostoInventario(@Param("unidadId") Long unidadId);
 
-    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false")
+    // LEFT JOIN, no navegación implícita (p.categoriaAbono.nombre): esta query sirve a los 3
+    // negocios -- Vivero/Herramientas no categorizan productos (categoriaAbono siempre null), un
+    // INNER JOIN implícito los excluiría del todo del gráfico de torta.
+    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock, c.nombre) FROM Producto p LEFT JOIN p.categoriaAbono c WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false")
     List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockPorNegocio(@Param("unidadId") Long unidadId);
 
     @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock, p.duenoAnterior, p.esDevolucion) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.stock > 0 AND p.deleted = false AND (p.dueno IS NULL OR LOWER(p.dueno) LIKE '%jefe%')")
     List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockFisicoDisponible(@Param("unidadId") Long unidadId);
 
-    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock) FROM Producto p WHERE p.unidadNegocio.id = :unidadId AND p.deleted = false ORDER BY p.stock ASC")
+    @Query("SELECT new com.vivero.gestion.dto.StockPorNegocioDTO(p.nombre, p.stock, c.nombre) FROM Producto p LEFT JOIN p.categoriaAbono c WHERE p.unidadNegocio.id = :unidadId AND p.deleted = false ORDER BY p.stock ASC")
     List<com.vivero.gestion.dto.StockPorNegocioDTO> findStockCritico(@Param("unidadId") Long unidadId, org.springframework.data.domain.Pageable pageable);
 
     // Productos asociados a un proveedor, con su costo actual (tarea 3.6 de

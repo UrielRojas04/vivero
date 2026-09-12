@@ -91,14 +91,20 @@ const StockPieChart = ({ unidadNegocioId }) => {
                                 />
                             ))}
                         </Pie>
-                        <Tooltip 
+                        <Tooltip
                             content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
+                                    // Categoría (pedido del dueño 2026-09-09): sólo Abono categoriza
+                                    // productos -- categoriaAbonoNombre viene null para el resto.
+                                    const categoria = payload[0].payload?.categoriaAbonoNombre;
                                     return (
                                         <div className="bg-paper border border-line p-3 rounded-panel shadow-md">
                                             <p className="text-ink font-medium">
                                                 {`${payload[0].name} : ${new Intl.NumberFormat('es-AR').format(payload[0].value)} Unidades`}
                                             </p>
+                                            {categoria && (
+                                                <p className="text-xs text-muted mt-0.5">{categoria}</p>
+                                            )}
                                         </div>
                                     );
                                 }

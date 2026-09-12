@@ -5,6 +5,9 @@ public class StockPorNegocioDTO {
     private Integer cantidad;
     private String duenoAnterior;
     private boolean esDevolucion;
+    // Sólo se completa para productos de Abono (pedido del dueño 2026-09-09) -- el resto de los
+    // negocios no categoriza productos, así que queda null y el frontend simplemente no la muestra.
+    private String categoriaAbonoNombre;
 
     public StockPorNegocioDTO() {
     }
@@ -19,6 +22,12 @@ public class StockPorNegocioDTO {
         this.cantidad = cantidad;
         this.duenoAnterior = duenoAnterior;
         this.esDevolucion = esDevolucion;
+    }
+
+    public StockPorNegocioDTO(String productoNombre, Integer cantidad, String categoriaAbonoNombre) {
+        this.productoNombre = productoNombre;
+        this.cantidad = cantidad;
+        this.categoriaAbonoNombre = categoriaAbonoNombre;
     }
 
     public String getProductoNombre() {
@@ -51,5 +60,13 @@ public class StockPorNegocioDTO {
 
     public void setEsDevolucion(boolean esDevolucion) {
         this.esDevolucion = esDevolucion;
+    }
+
+    public String getCategoriaAbonoNombre() {
+        return categoriaAbonoNombre;
+    }
+
+    public void setCategoriaAbonoNombre(String categoriaAbonoNombre) {
+        this.categoriaAbonoNombre = categoriaAbonoNombre;
     }
 }

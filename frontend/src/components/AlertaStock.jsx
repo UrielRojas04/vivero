@@ -49,8 +49,14 @@ const AlertaStock = ({ unidadNegocioId }) => {
                             
                             return (
                                 <li key={index} className="flex justify-between items-center p-3 bg-surface rounded-md border border-line">
-                                    <span className="text-ink font-medium truncate pr-4" title={item.productoNombre}>
-                                        {item.productoNombre}
+                                    <span className="min-w-0 pr-4">
+                                        <span className="block text-ink font-medium truncate" title={item.productoNombre}>
+                                            {item.productoNombre}
+                                        </span>
+                                        {/* Categoría (pedido del dueño 2026-09-09): sólo Abono categoriza productos. */}
+                                        {item.categoriaAbonoNombre && (
+                                            <span className="block text-xs text-muted truncate">{item.categoriaAbonoNombre}</span>
+                                        )}
                                     </span>
                                     <span className={`font-bold whitespace-nowrap ${isZero ? 'text-red-500' : isVeryLow ? 'text-orange-500' : 'text-emerald-500'}`}>
                                         {new Intl.NumberFormat('es-AR').format(item.cantidad)} un.

@@ -223,7 +223,8 @@ export default function NuevaVenta() {
         // editable; `precioLista` es sólo referencia para mostrar y para el botón de restaurar.
         precioLista: producto.precio,
         cantidad: 1,
-        stock: producto.stock
+        stock: producto.stock,
+        categoriaAbonoNombre: producto.categoriaAbonoNombre
       });
     }
     setBusquedaProducto('');
@@ -516,9 +517,10 @@ export default function NuevaVenta() {
                     <label className="block text-sm font-medium text-body mb-1">Teléfono</label>
                     <input
                       type="text"
+                      inputMode="numeric"
                       className="w-full px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper"
                       value={clienteExpressData.telefono}
-                      onChange={(e) => setClienteExpressData({ ...clienteExpressData, telefono: e.target.value })}
+                      onChange={(e) => setClienteExpressData({ ...clienteExpressData, telefono: e.target.value.replace(/\D/g, '') })}
                       placeholder="Opcional"
                     />
                   </div>
@@ -536,9 +538,10 @@ export default function NuevaVenta() {
                       </select>
                       <input
                         type="text"
-                        className="flex-1 px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper disabled:opacity-50 disabled:cursor-not-allowed"
+                        inputMode="numeric"
+                        className="flex-1 min-w-0 px-3 py-2 border border-line rounded-base focus:ring-2 focus:ring-accent outline-none bg-paper disabled:opacity-50 disabled:cursor-not-allowed"
                         value={clienteExpressData.documentoValor}
-                        onChange={(e) => setClienteExpressData({ ...clienteExpressData, documentoValor: e.target.value })}
+                        onChange={(e) => setClienteExpressData({ ...clienteExpressData, documentoValor: e.target.value.replace(/\D/g, '') })}
                         disabled={!clienteExpressData.documentoTipo}
                         placeholder={clienteExpressData.documentoTipo ? `Número de ${clienteExpressData.documentoTipo}` : 'Opcional'}
                       />
@@ -832,6 +835,11 @@ export default function NuevaVenta() {
                           <p className="text-sm font-medium text-ink truncate">{d.nombre}</p>
                           <p className="text-xs text-muted">
                             x{cantidadFinal}
+                            {/* Categoría (pedido del dueño 2026-09-09): sólo tiene sentido en Abono,
+                                es el único negocio con productos categorizados. */}
+                            {isAbono && d.categoriaAbonoNombre && (
+                              <span className="ml-2 text-muted">· {d.categoriaAbonoNombre}</span>
+                            )}
                             {esAjustado && (
                               <span className="ml-2 text-accent-ink">Lista: ${formatCurrency(precioListaRef)}</span>
                             )}
